@@ -5,6 +5,6 @@ import { ffmpegPath, run } from '../config/binaries'
 export async function makeThumbnail(input: string, dir: string, durationSeconds: number): Promise<string> {
   const output = path.join(dir, 'thumbnail.jpg')
   const at = Math.min(1, durationSeconds / 2)
-  await run(ffmpegPath, ['-y', '-ss', at.toFixed(2), '-i', input, '-frames:v', '1', '-vf', 'scale=640:-2', '-q:v', '4', output])
+  await run(ffmpegPath, ['-y', '-ss', at.toFixed(2), '-i', input, '-frames:v', '1', '-vf', 'scale=640:-2', '-q:v', '4', output], 2 * 60 * 1000)
   return output
 }

@@ -1,5 +1,5 @@
 import { query, queryOne } from '@shared/db'
-import type { AdminOverview, PaymentRecord, ReportItem, VideoStatus, VideoSummary } from '@shared/types'
+import type { AdminOverview, PaymentRecord, VideoSummary } from '@shared/types'
 import { HttpError, readJson, sendJson, type Router } from '../../http'
 import { requireAdmin } from '../../middleware/authorization'
 import { uuid } from '../../middleware/request-validation'
@@ -12,25 +12,6 @@ interface CountsRow {
   sessions24h: number
   volume: number
   volume24h: number
-  reports: number
-}
-
-interface ReportRow {
-  id: string
-  reason: string
-  details: string
-  status: 'open' | 'resolved'
-  resolution: string | null
-  created_at: Date
-  reporter: string
-  video_id: string | null
-  video_title: string | null
-  video_creator: string | null
-  video_status: VideoStatus | null
-  comment_id: string | null
-  comment_body: string | null
-  comment_author: string | null
-  comment_video: string | null
 }
 
 interface PaymentRow {
@@ -54,34 +35,6 @@ interface UserRow {
   earned: number
 }
 
-function mapReport(row: ReportRow): ReportItem {
-  const target: ReportItem['target'] = row.video_id
-    ? {
-        kind: 'video',
-        id: row.video_id,
-        title: row.video_title ?? 'Deleted video',
-        creator: row.video_creator ?? '',
-        status: row.video_status ?? 'removed',
-      }
-    : {
-        kind: 'comment',
-        id: row.comment_id ?? '',
-        body: row.comment_body ?? '',
-        author: row.comment_author ?? '',
-        videoId: row.comment_video ?? '',
-      }
-  return {
-    id: row.id,
-    reason: row.reason,
-    details: row.details,
-    status: row.status,
-    resolution: row.resolution,
-    createdAt: row.created_at.toISOString(),
-    reporter: row.reporter,
-    target,
-  }
-}
-
 export function registerAdminRoutes(router: Router): void {
   router.get('/admin/overview', 'required', async (ctx) => {
     requireAdmin(ctx)
@@ -92,8 +45,7 @@ export function registerAdminRoutes(router: Router): void {
          (select count(*)::int from videos where status = 'removed') as removed,
          (select count(*)::int from playback_sessions where started_at > now() - interval '24 hours') as "sessions24h",
          (select coalesce(sum(amount_micro), 0) from payments where status <> 'failed') as volume,
-         (select coalesce(sum(amount_micro), 0) from payments where status <> 'failed' and created_at > now() - interval '24 hours') as volume24h,
-         (select count(*)::int from reports where status = 'open') as reports`,
+         (select coalesce(sum(amount_micro), 0) from payments where status <> 'failed' and created_at > now() - interval '24 hours') as volume24h`,
     )
     const overview: AdminOverview = {
       users: row?.users ?? 0,
@@ -102,48 +54,8 @@ export function registerAdminRoutes(router: Router): void {
       sessions24h: row?.sessions24h ?? 0,
       volumeTotalMicro: row?.volume ?? 0,
       volume24hMicro: row?.volume24h ?? 0,
-      openReports: row?.reports ?? 0,
     }
     sendJson(ctx.res, 200, { overview })
-  })
-
-  router.get('/admin/reports', 'required', async (ctx) => {
-    requireAdmin(ctx)
-    const status = ctx.url.searchParams.get('status') === 'resolved' ? 'resolved' : 'open'
-    const rows = await query<ReportRow>(
-      `select r.id, r.reason, r.details, r.status, r.resolution, r.created_at, r.reporter,
-         v.id as video_id, v.title as video_title, v.creator as video_creator, v.status as video_status,
-         c.id as comment_id, c.body as comment_body, c.author as comment_author, c.video_id as comment_video
-       from reports r
-       left join videos v on v.id = r.video_id
-       left join comments c on c.id = r.comment_id
-       where r.status = $1 order by r.created_at desc limit 100`,
-      [status],
-    )
-    sendJson(ctx.res, 200, { reports: rows.map(mapReport) })
-  })
-
-  router.post('/admin/reports/:id/resolve', 'required', async (ctx) => {
-    const admin = requireAdmin(ctx)
-    const body = await readJson(ctx.req, 4 * 1024)
-    const action = body.action === 'remove' ? 'remove' : body.action === 'dismiss' ? 'dismiss' : null
-    if (!action) throw new HttpError(400, 'Choose remove or dismiss', 'invalid_request')
-    const report = await queryOne<{ id: string; video_id: string | null; comment_id: string | null }>(
-      `select id, video_id, comment_id from reports where id = $1 and status = 'open'`,
-      [uuid(ctx.params.id ?? '')],
-    )
-    if (!report) throw new HttpError(404, 'Report not found', 'not_found')
-    if (action === 'remove') {
-      if (report.video_id) await query(`update videos set status = 'removed', updated_at = now() where id = $1`, [report.video_id])
-      if (report.comment_id) await query('update comments set removed = true where id = $1', [report.comment_id])
-    }
-    // Resolve every open report about the same item at once.
-    await query(
-      `update reports set status = 'resolved', resolution = $2, resolved_by = $3, resolved_at = now()
-       where status = 'open' and (video_id = $1 or comment_id = $4)`,
-      [report.video_id, action === 'remove' ? 'removed' : 'dismissed', admin, report.comment_id],
-    )
-    sendJson(ctx.res, 200, { ok: true })
   })
 
   router.get('/admin/videos', 'required', async (ctx) => {

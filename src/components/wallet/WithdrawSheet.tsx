@@ -92,7 +92,7 @@ export function WithdrawSheet({ open, onClose }: { open: boolean; onClose: () =>
     <Sheet open={open} onClose={close} title="Move money back">
       <div className="space-y-4">
         <p className="text-pretty text-sm text-[var(--muted)]">
-          Send unused spending balance back to your connected wallet. A small network fee applies, and the first time
+          Send unused spending balance back to your connected wallet. A small Gateway fee applies, so leave a little in your balance to cover it. The first time
           you may be asked to confirm a one-off 0.10 USDC top-up so your spending address can pay it.
         </p>
         <AmountInput

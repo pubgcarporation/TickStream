@@ -10,7 +10,8 @@ interface QueryState<T> {
 
 /** Loads `path` and reloads when it changes. Pass null to stay idle (for example while signed out). */
 export function useApi<T>(path: string | null): QueryState<T> {
-  const [data, setData] = useState<T | null>(null)
+  // Data is remembered with the path it came from, so a new path never shows the previous page's data.
+  const [loaded, setLoaded] = useState<{ path: string; data: T } | null>(null)
   const [error, setError] = useState<ApiError | Error | null>(null)
   const [loading, setLoading] = useState(path !== null)
   const [tick, setTick] = useState(0)
@@ -24,7 +25,7 @@ export function useApi<T>(path: string | null): QueryState<T> {
       try {
         const result = await api<T>(path)
         if (id !== latest.current) return
-        setData(result)
+        setLoaded({ path, data: result })
         setError(null)
       } catch (caught) {
         if (id !== latest.current) return
@@ -37,5 +38,6 @@ export function useApi<T>(path: string | null): QueryState<T> {
   }, [path, tick])
 
   const reload = useCallback(() => setTick((value) => value + 1), [])
+  const data = path !== null && loaded?.path === path ? loaded.data : null
   return { data, error, loading: path === null ? false : loading, reload }
 }

@@ -1,3 +1,4 @@
+import { pipeline } from 'node:stream/promises'
 import { CATEGORY_SLUGS, MAX_PREVIEW_SECONDS, MAX_PRICE_PER_SECOND, MIN_PRICE_PER_SECOND } from '@shared/constants'
 import { query } from '@shared/db'
 import { getStorage } from '@shared/storage'
@@ -83,7 +84,8 @@ export function registerVideoRoutes(router: Router): void {
       'Content-Length': object.size,
       'Cache-Control': 'public, max-age=3600',
     })
-    object.stream.pipe(ctx.res)
+    // pipeline closes the file when the viewer disconnects and surfaces read errors instead of leaking descriptors.
+    await pipeline(object.stream, ctx.res).catch(() => undefined)
   })
 
   router.post('/videos', 'required', async (ctx) => {

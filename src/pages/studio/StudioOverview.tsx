@@ -46,9 +46,9 @@ export function StudioOverview() {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Total earned" value={formatMicro(summary.totalMicro)} unit="USDC" />
+        <StatCard label="Total earned" value={formatMicro(summary.totalMicro)} unit="USDC" trend={summary.daily.map((day) => day.earnedMicro)} />
         <StatCard label="Last 24 hours" value={formatMicro(summary.last24hMicro)} unit="USDC" />
-        <StatCard label="Time watched" value={formatDuration(summary.secondsSold)} hint="Seconds viewers paid for" />
+        <StatCard label="Time watched" value={formatDuration(summary.secondsSold)} hint="Seconds viewers paid for" trend={summary.daily.map((day) => day.secondsSold)} />
         <StatCard label="Still batching" value={formatMicro(summary.pendingMicro)} unit="USDC" hint="Accepted, waiting for onchain settlement" />
       </div>
       <Panel>

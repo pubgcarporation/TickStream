@@ -1,3 +1,4 @@
+import { FileVideo, UploadCloud } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { CATEGORIES, DEFAULT_PRICE_PER_SECOND, MAX_PREVIEW_SECONDS, MAX_PRICE_PER_SECOND, MIN_PRICE_PER_SECOND } from '@shared/constants'
@@ -29,6 +30,9 @@ export function StudioUpload() {
   const [file, setFile] = useState<File | null>(null)
   const [progress, setProgress] = useState<number | null>(null)
   const [busy, setBusy] = useState(false)
+  const [dragging, setDragging] = useState(false)
+  // If the upload fails after the video was created, retrying reuses it instead of leaving an empty draft behind.
+  const draftId = useRef<string | null>(null)
 
   const priceMicro = priceToMicro(price)
   const fileError = file && file.size > MAX_BYTES ? 'That file is over 1 GB.' : null
@@ -38,12 +42,21 @@ export function StudioUpload() {
     if (!valid || !file || priceMicro === null) return
     setBusy(true)
     try {
-      const created = await api<{ id: string }>('videos', {
-        method: 'POST',
-        body: { title: title.trim(), description: description.trim(), category, priceMicro, previewSeconds },
-      })
+      if (draftId.current) {
+        await api(`videos/${draftId.current}`, {
+          method: 'PATCH',
+          body: { title: title.trim(), description: description.trim(), category, priceMicro, previewSeconds },
+        })
+      } else {
+        const created = await api<{ id: string }>('videos', {
+          method: 'POST',
+          body: { title: title.trim(), description: description.trim(), category, priceMicro, previewSeconds },
+        })
+        draftId.current = created.id
+      }
       setProgress(0)
-      await uploadSource(created.id, file, setProgress)
+      await uploadSource(draftId.current, file, setProgress)
+      draftId.current = null
       toast.success('Uploaded. Encoding now, it will appear in your videos when ready.')
       navigate('/studio/videos')
     } catch (error) {
@@ -85,16 +98,35 @@ export function StudioUpload() {
           <button
             type="button"
             onClick={() => fileInput.current?.click()}
+            onDragOver={(event) => {
+              event.preventDefault()
+              setDragging(true)
+            }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={(event) => {
+              event.preventDefault()
+              setDragging(false)
+              const dropped = event.dataTransfer.files[0]
+              if (dropped && dropped.type.startsWith('video/')) setFile(dropped)
+              else toast.error('Drop a video file')
+            }}
             disabled={busy}
-            className="glass-inner flex w-full min-h-24 flex-col items-center justify-center gap-1 rounded-2xl border-dashed px-4 py-6 text-center text-sm text-[var(--muted)] hover:text-[var(--ink)]"
+            className={`glass-inner flex min-h-32 w-full flex-col items-center justify-center gap-2 rounded-2xl border-dashed px-4 py-6 text-center text-sm transition-colors ${
+              dragging ? 'border-[var(--accent)] bg-white/10 text-[var(--ink)]' : 'text-[var(--muted)] hover:text-[var(--ink)]'
+            }`}
           >
             {file ? (
               <>
-                <span className="font-semibold text-[var(--ink)]">{file.name}</span>
-                <span className="tabular-nums">{(file.size / 1024 / 1024).toFixed(1)} MB</span>
+                <FileVideo className="size-7 text-[var(--accent)]" aria-hidden />
+                <span className="max-w-full truncate font-semibold text-[var(--ink)]">{file.name}</span>
+                <span className="tabular-nums">{(file.size / 1024 / 1024).toFixed(1)} MB. Click to choose a different file.</span>
               </>
             ) : (
-              <span>Choose a video file (MP4, MOV, WebM, up to 1 GB)</span>
+              <>
+                <UploadCloud className="size-7" aria-hidden />
+                <span className="font-semibold text-[var(--ink)]">Drop a video here or click to browse</span>
+                <span>MP4, MOV or WebM, up to 1 GB</span>
+              </>
             )}
           </button>
           {fileError && <p className="mt-2 text-sm text-[var(--danger)]">{fileError}</p>}
@@ -161,6 +193,10 @@ export function StudioUpload() {
             <div className="flex justify-between px-4 py-3">
               <dt className="text-[var(--muted)]">One hour</dt>
               <dd>{ratePerHour(priceMicro)} USDC</dd>
+            </div>
+            <div className="flex justify-between px-4 py-3">
+              <dt className="text-[var(--muted)]">A viewer who watches 10 minutes</dt>
+              <dd>{formatMicro(priceMicro * 600)} USDC</dd>
             </div>
           </dl>
         )}

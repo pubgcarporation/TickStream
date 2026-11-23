@@ -4,6 +4,7 @@ import { erc20Abi } from 'viem'
 import { useAccount, useReadContract } from 'wagmi'
 import { toast } from 'sonner'
 import { RequireAuth } from '@/components/creator/RequireAuth'
+import { AnimatedAmount } from '@/components/ui/AnimatedAmount'
 import { Button, Panel } from '@/components/ui/primitives'
 import { DepositSheet } from '@/components/wallet/DepositSheet'
 import { WithdrawSheet } from '@/components/wallet/WithdrawSheet'
@@ -38,7 +39,7 @@ function WalletContent() {
       <Panel>
         <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--subtle)]">Spending balance</p>
         <p className="display mt-3 text-6xl font-bold tabular-nums">
-          {balance ? formatMicro(balance.available) : loading ? '...' : '0.00'}
+          {balance ? <AnimatedAmount micro={Number(balance.available)} /> : loading ? '...' : '0.00'}
           <span className="ml-2 text-xl font-medium text-[var(--subtle)]">USDC</span>
         </p>
         <p className="mt-2 text-sm text-[var(--muted)]">
@@ -120,7 +121,7 @@ export function WalletPage() {
   return (
     <div className="space-y-6">
       <h1 className="display text-4xl font-bold">Wallet</h1>
-      <RequireAuth title="Connect to see your wallet" body="Connect and sign in to add money and see your spending balance.">
+      <RequireAuth title="Sign in to see your wallet" body="Sign in to add money and see your spending balance.">
         <WalletContent />
       </RequireAuth>
     </div>

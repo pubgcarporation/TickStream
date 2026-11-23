@@ -19,6 +19,8 @@ export interface PlaybackView {
   session: SessionInfo | null
   position: number
   playedSeconds: number
+  /** Seconds of the creator's free preview this session started with. They are never billed. */
+  freeSeconds: number
   paying: boolean
   paused: boolean
 }
@@ -49,6 +51,7 @@ export function usePaidPlayback(videoId: string, owner: string | undefined) {
     session: null,
     position: 0,
     playedSeconds: 0,
+    freeSeconds: 0,
     paying: false,
     paused: true,
   })
@@ -172,13 +175,13 @@ export function usePaidPlayback(videoId: string, owner: string | undefined) {
       payingRef.current = false
       playedRef.current = 0
       lastTimeRef.current = 0
-      patch({ phase: 'starting', message: null, playedSeconds: 0, position: options.startSecond ?? 0, paused: false })
+      patch({ phase: 'starting', message: null, playedSeconds: 0, freeSeconds: 0, position: options.startSecond ?? 0, paused: false })
       try {
         const created = await api<{ session: SessionInfo }>(`videos/${videoId}/sessions`, {
           method: 'POST',
           body: { payer, capMicro: options.capMicro, chunkSeconds: options.chunkSeconds, startSecond: options.startSecond ?? 0 },
         })
-        patch({ session: created.session })
+        patch({ session: created.session, freeSeconds: created.session.authorizedSeconds })
         // A creator's free preview is already unlocked; otherwise the first interval is paid before playback.
         const paid = created.session.authorizedSeconds > 0 ? created.session : await payNext()
         if (!paid) return
@@ -239,11 +242,10 @@ export function usePaidPlayback(videoId: string, owner: string | undefined) {
       teardownPlayer()
       videoRef.current?.pause()
       if (session && phaseRef.current !== 'idle') {
-        await api(`sessions/${session.id}/position`, { method: 'PUT', body: { second: Math.floor(position()) } }).catch(() => undefined)
-        await api(`sessions/${session.id}`, { method: 'DELETE' }).catch(() => undefined)
+        await api(`sessions/${session.id}`, { method: 'DELETE', body: { second: Math.floor(position()) } }).catch(() => undefined)
       }
       sessionRef.current = null
-      patch({ phase: 'idle', message, session: null, paying: false, position: 0 })
+      patch({ phase: 'idle', message, session: null, paying: false, position: 0, freeSeconds: 0 })
     },
     [patch, teardownPlayer, position],
   )
@@ -261,7 +263,7 @@ export function usePaidPlayback(videoId: string, owner: string | undefined) {
       setView((current) => ({ ...current, position: here, playedSeconds: playedRef.current, paused: video.paused }))
       if (video.ended || (session.complete && here >= session.durationSeconds - 0.4)) {
         stopPlayback('ended', 'Finished. You were charged only for what played.')
-        void api(`sessions/${session.id}`, { method: 'DELETE' }).catch(() => undefined)
+        void api(`sessions/${session.id}`, { method: 'DELETE', body: { second: Math.floor(here) } }).catch(() => undefined)
         return
       }
       const lead = session.authorizedEndSecond - here

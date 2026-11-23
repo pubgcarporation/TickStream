@@ -47,17 +47,11 @@ export function isFundsError(error: unknown): boolean {
 
 export function endSessionKeepalive(sessionId: string, token: string | null, second?: number): void {
   if (!token) return
-  if (second !== undefined) {
-    void fetch(`/api/sessions/${sessionId}/position`, {
-      method: 'PUT',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ second: Math.max(0, Math.floor(second)) }),
-      keepalive: true,
-    }).catch(() => undefined)
-  }
+  // One request ends the session and saves the position, so the two can never arrive out of order.
   void fetch(`/api/sessions/${sessionId}`, {
     method: 'DELETE',
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ second: Math.max(0, Math.floor(second ?? 0)) }),
     keepalive: true,
   }).catch(() => undefined)
 }

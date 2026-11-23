@@ -12,7 +12,6 @@ import { registerEarningsRoutes } from './modules/earnings/earnings.routes'
 import { registerGrantRoutes } from './modules/payments/grant.routes'
 import { registerWithdrawRoutes } from './modules/payments/withdraw.routes'
 import { registerPlaybackRoutes } from './modules/playback/playback.routes'
-import { registerReportRoutes } from './modules/reports/reports.routes'
 import { registerSubscriptionRoutes } from './modules/subscriptions/subscriptions.routes'
 import { registerUploadRoutes } from './modules/uploads/uploads.routes'
 import { registerUserRoutes } from './modules/users/users.routes'
@@ -46,7 +45,6 @@ registerWithdrawRoutes(router)
 registerAnalyticsRoutes(router)
 registerCommentRoutes(router)
 registerSubscriptionRoutes(router)
-registerReportRoutes(router)
 registerAdminRoutes(router)
 
 export async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> {

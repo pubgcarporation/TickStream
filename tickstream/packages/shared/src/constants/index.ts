@@ -33,14 +33,6 @@ export const SEGMENT_LOOKAHEAD = 4
 export const AUTH_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 7
 export const AUTH_NONCE_TTL_SECONDS = 60 * 5
 
-export const REPORT_REASONS = [
-  { value: 'copyright', label: 'Copyright' },
-  { value: 'misleading', label: 'Misleading or scam' },
-  { value: 'abuse', label: 'Hate or abuse' },
-  { value: 'illegal', label: 'Illegal content' },
-  { value: 'other', label: 'Something else' },
-] as const
-
 export const COMMENT_MAX_LENGTH = 500
 
 export const MAX_PREVIEW_SECONDS = 60

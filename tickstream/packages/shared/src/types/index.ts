@@ -119,18 +119,5 @@ export interface AdminOverview {
   sessions24h: number
   volumeTotalMicro: number
   volume24hMicro: number
-  openReports: number
 }
 
-export interface ReportItem {
-  id: string
-  reason: string
-  details: string
-  status: 'open' | 'resolved'
-  resolution: string | null
-  createdAt: string
-  reporter: string
-  target:
-    | { kind: 'video'; id: string; title: string; creator: string; status: VideoStatus }
-    | { kind: 'comment'; id: string; body: string; author: string; videoId: string }
-}

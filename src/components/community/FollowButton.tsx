@@ -9,7 +9,7 @@ import { useAuth } from '@/providers/AuthProvider'
 
 export function FollowButton({ username, creatorAddress }: { username: string; creatorAddress: string }) {
   const { user, signIn } = useAuth()
-  const { data, reload } = useApi<FollowState>(`creators/${encodeURIComponent(username)}/follow`)
+  const { data, reload } = useApi<FollowState>(`creators/${encodeURIComponent(username)}/follow?as=${user?.address ?? 'guest'}`)
   const [busy, setBusy] = useState(false)
   const isSelf = user?.address === creatorAddress
 

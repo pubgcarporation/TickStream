@@ -10,6 +10,7 @@ interface CommentRow {
   id: string
   body: string
   created_at: Date
+  cursor: string
   author: string
   username: string
   display_name: string | null
@@ -17,7 +18,7 @@ interface CommentRow {
 }
 
 const SELECT = `
-  select c.id, c.body, c.created_at, c.author, u.username, u.display_name, v.creator as video_creator
+  select c.id, c.body, c.created_at, to_char(c.created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as cursor, c.author, u.username, u.display_name, v.creator as video_creator
   from comments c
   join users u on u.address = c.author
   join videos v on v.id = c.video_id`
@@ -46,7 +47,7 @@ export function registerCommentRoutes(router: Router): void {
     const page = rows.slice(0, 30)
     sendJson(ctx.res, 200, {
       comments: page.map((row) => mapComment(row, ctx.user)),
-      nextBefore: rows.length > 30 ? page[page.length - 1]?.created_at.toISOString() : null,
+      nextBefore: rows.length > 30 ? (page[page.length - 1]?.cursor ?? null) : null,
     })
   })
 

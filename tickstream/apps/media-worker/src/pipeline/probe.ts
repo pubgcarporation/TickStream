@@ -14,8 +14,13 @@ interface ProbeJson {
 }
 
 export async function probe(file: string): Promise<ProbeResult> {
-  const { stdout } = await run(ffprobePath, ['-v', 'error', '-print_format', 'json', '-show_format', '-show_streams', file])
-  const data = JSON.parse(stdout) as ProbeJson
+  let data: ProbeJson
+  try {
+    const { stdout } = await run(ffprobePath, ['-v', 'error', '-print_format', 'json', '-show_format', '-show_streams', file], 2 * 60 * 1000)
+    data = JSON.parse(stdout) as ProbeJson
+  } catch {
+    throw new Error('This file could not be read as a video. Try exporting it as MP4.')
+  }
   const streams = data.streams ?? []
   const video = streams.find((s) => s.codec_type === 'video')
   const audio = streams.find((s) => s.codec_type === 'audio')

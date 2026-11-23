@@ -1,7 +1,8 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { useAccount, useDisconnect, useSignMessage } from 'wagmi'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useAccount, useSignMessage } from 'wagmi'
 import { toast } from 'sonner'
 import type { UserProfile } from '@shared/types'
+import { useWalletDisconnect } from '@/hooks/useWalletDisconnect'
 import { api, getToken, onTokenChange, setToken } from '@/lib/api'
 
 interface AuthState {
@@ -11,6 +12,8 @@ interface AuthState {
   ready: boolean
   signingIn: boolean
   signIn: () => Promise<boolean>
+  /** Remember that the person wants to sign in, so the signature is requested as soon as a wallet connects. */
+  requestSignIn: () => void
   signOut: () => Promise<void>
   refresh: () => Promise<void>
 }
@@ -24,12 +27,13 @@ function isRejection(error: unknown): boolean {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { address, isConnected } = useAccount()
-  const { disconnect } = useDisconnect()
+  const disconnect = useWalletDisconnect()
   const { signMessageAsync } = useSignMessage()
   const [user, setUser] = useState<UserProfile | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [ready, setReady] = useState(false)
   const [signingIn, setSigningIn] = useState(false)
+  const wantSignIn = useRef(false)
 
   const refresh = useCallback(async () => {
     if (!getToken()) {
@@ -86,6 +90,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [address, signMessageAsync])
 
+  const requestSignIn = useCallback(() => {
+    wantSignIn.current = true
+  }, [])
+
+  useEffect(() => {
+    if (!wantSignIn.current || !isConnected || !address || signingIn) return
+    wantSignIn.current = false
+    if (user) return
+    const timer = setTimeout(() => void signIn(), 0)
+    return () => clearTimeout(timer)
+  }, [isConnected, address, signingIn, user, signIn])
+
   const signOut = useCallback(async () => {
     try {
       await api('auth/logout', { method: 'POST' })
@@ -97,8 +113,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [disconnect])
 
   const value = useMemo(
-    () => ({ user, isAdmin, ready, signingIn, signIn, signOut, refresh }),
-    [user, isAdmin, ready, signingIn, signIn, signOut, refresh],
+    () => ({ user, isAdmin, ready, signingIn, signIn, requestSignIn, signOut, refresh }),
+    [user, isAdmin, ready, signingIn, signIn, requestSignIn, signOut, refresh],
   )
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

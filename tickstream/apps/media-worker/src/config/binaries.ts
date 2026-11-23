@@ -28,9 +28,11 @@ export interface RunResult {
 }
 
 /** Runs a binary without a shell and rejects with the tail of stderr on a non-zero exit. */
-export function run(binary: string, args: string[]): Promise<RunResult> {
+export function run(binary: string, args: string[], timeoutMs = 3 * 60 * 60 * 1000): Promise<RunResult> {
   return new Promise((resolve, reject) => {
     const child = spawn(binary, args, { stdio: ['ignore', 'pipe', 'pipe'] })
+    // A stuck encoder must never block the queue forever.
+    const timer = setTimeout(() => child.kill('SIGKILL'), timeoutMs)
     let stdout = ''
     let stderr = ''
     child.stdout.on('data', (chunk: Buffer) => {
@@ -39,8 +41,12 @@ export function run(binary: string, args: string[]): Promise<RunResult> {
     child.stderr.on('data', (chunk: Buffer) => {
       stderr = (stderr + chunk.toString()).slice(-4000)
     })
-    child.on('error', reject)
+    child.on('error', (error) => {
+      clearTimeout(timer)
+      reject(error)
+    })
     child.on('close', (code) => {
+      clearTimeout(timer)
       if (code === 0) resolve({ stdout, stderr })
       else reject(new Error(`${binary.split('/').pop()} exited with ${code}: ${stderr.slice(-600)}`))
     })

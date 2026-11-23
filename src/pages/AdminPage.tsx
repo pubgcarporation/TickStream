@@ -4,13 +4,11 @@ import { EmptyState } from '@/components/ui/primitives'
 import { Link } from '@/lib/router'
 import { useAuth } from '@/providers/AuthProvider'
 import { AdminOverview } from './admin/AdminOverview'
-import { AdminReports } from './admin/AdminReports'
 import { AdminPayments, AdminUsers } from './admin/AdminTables'
 import { AdminVideos } from './admin/AdminVideos'
 
 const TABS = [
   { section: '', label: 'Overview' },
-  { section: 'reports', label: 'Reports' },
   { section: 'videos', label: 'Videos' },
   { section: 'payments', label: 'Payments' },
   { section: 'users', label: 'Users' },
@@ -43,7 +41,6 @@ function Console({ section }: { section: string }) {
         ))}
       </nav>
       {section === '' && <AdminOverview />}
-      {section === 'reports' && <AdminReports />}
       {section === 'videos' && <AdminVideos />}
       {section === 'payments' && <AdminPayments />}
       {section === 'users' && <AdminUsers />}
@@ -55,7 +52,7 @@ export function AdminPage({ section }: { section: string }) {
   return (
     <div className="space-y-6">
       <h1 className="display text-4xl font-bold">Admin</h1>
-      <RequireAuth title="Sign in to continue" body="Connect and sign in with an administrator wallet.">
+      <RequireAuth title="Sign in to continue" body="Sign in with an administrator account.">
         <Console section={section} />
       </RequireAuth>
     </div>

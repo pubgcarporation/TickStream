@@ -40,10 +40,17 @@ export class Router {
 
   add(method: string, pattern: string, auth: AuthMode, handler: Handler): void {
     const names: string[] = []
-    const source = pattern.replace(/:([a-zA-Z]+)/g, (_match, name: string) => {
-      names.push(name)
-      return '([^/]+)'
-    })
+    // Escape regex characters in the literal parts of the pattern; only :name segments are captures.
+    const source = pattern
+      .split(/(:[a-zA-Z]+)/)
+      .map((part) => {
+        if (part.startsWith(':') && /^:[a-zA-Z]+$/.test(part)) {
+          names.push(part.slice(1))
+          return '([^/]+)'
+        }
+        return part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      })
+      .join('')
     this.routes.push({ method, regex: new RegExp(`^${source}$`), names, handler, auth })
   }
 
@@ -69,9 +76,13 @@ export class Router {
       const found = route.regex.exec(pathname)
       if (!found) continue
       const params: Record<string, string> = {}
-      route.names.forEach((name, index) => {
-        params[name] = decodeURIComponent(found[index + 1] ?? '')
-      })
+      try {
+        route.names.forEach((name, index) => {
+          params[name] = decodeURIComponent(found[index + 1] ?? '')
+        })
+      } catch {
+        throw new HttpError(400, 'Malformed address', 'invalid_request')
+      }
       return { route, params }
     }
     return undefined

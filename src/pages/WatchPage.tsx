@@ -1,4 +1,4 @@
-import { Flag, Link2 } from 'lucide-react'
+import { Link2 } from 'lucide-react'
 import { useState } from 'react'
 import { useAccount } from 'wagmi'
 import { toast } from 'sonner'
@@ -6,7 +6,7 @@ import { CATEGORIES, DEFAULT_CHUNK_SECONDS } from '@shared/constants'
 import type { VideoSummary } from '@shared/types'
 import { CommentsSection } from '@/components/community/CommentsSection'
 import { FollowButton } from '@/components/community/FollowButton'
-import { ReportSheet } from '@/components/community/ReportSheet'
+import { billedMicro } from '@/components/player/billing'
 import { CostMeter } from '@/components/player/CostMeter'
 import { PlayerSurface } from '@/components/player/PlayerSurface'
 import { StartPanel } from '@/components/player/StartPanel'
@@ -32,7 +32,6 @@ export function WatchPage({ videoId }: { videoId: string }) {
   const [capChoice, setCapChoice] = useState(DEFAULT_CAP)
   const [chunkSeconds, setChunkSeconds] = useState<number>(DEFAULT_CHUNK_SECONDS)
   const [depositOpen, setDepositOpen] = useState(false)
-  const [reportOpen, setReportOpen] = useState(false)
   const shareUrl = useShareLink(`/watch/${videoId}`)
 
   const video = data?.video
@@ -88,6 +87,7 @@ export function WatchPage({ videoId }: { videoId: string }) {
           view={view}
           viewer={address}
           durationSeconds={video.durationSeconds ?? 0}
+          costMicro={billedMicro(view, video.priceMicro)}
           onToggle={playback.togglePlay}
           onSeek={(second) => void playback.seek(second)}
         />
@@ -106,9 +106,6 @@ export function WatchPage({ videoId }: { videoId: string }) {
               <Button variant="ghost" onClick={() => void copyLink()} disabled={!shareUrl} className="min-h-10 px-3">
                 <Link2 className="size-4" aria-hidden /> Copy link
               </Button>
-              <Button variant="ghost" onClick={() => setReportOpen(true)} className="min-h-10 px-3" aria-label="Report video">
-                <Flag className="size-4" aria-hidden />
-              </Button>
             </div>
           </div>
           {video.description && <p className="mt-4 max-w-2xl text-pretty text-[var(--muted)]">{video.description}</p>}
@@ -120,6 +117,7 @@ export function WatchPage({ videoId }: { videoId: string }) {
         {idle ? (
           <StartPanel
             priceMicro={video.priceMicro}
+            durationSeconds={video.durationSeconds}
             previewSeconds={video.previewSeconds}
             resumeAt={resumeAt}
             onResumeAt={(second) => start(second)}
@@ -147,7 +145,6 @@ export function WatchPage({ videoId }: { videoId: string }) {
         <RelatedVideos videoId={video.id} />
       </aside>
       <DepositSheet open={depositOpen} onClose={() => setDepositOpen(false)} />
-      <ReportSheet target={reportOpen ? { kind: 'video', id: video.id } : null} onClose={() => setReportOpen(false)} />
     </div>
   )
 }

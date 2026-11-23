@@ -80,7 +80,7 @@ export async function listVideos(filter: VideoFilter): Promise<VideoSummary[]> {
   const limit = push(filter.limit)
   const offset = push(filter.offset)
   const rows = await query<VideoRow>(
-    `${SELECT} where ${where.join(' and ')} order by ${order} limit ${limit} offset ${offset}`,
+    `${SELECT} ${where.length ? `where ${where.join(' and ')}` : ''} order by ${order} limit ${limit} offset ${offset}`,
     params,
   )
   return rows.map(mapVideo)

@@ -1,6 +1,9 @@
 import { Pause, Play, Square } from 'lucide-react'
+import { AnimatedAmount } from '@/components/ui/AnimatedAmount'
 import { Button, Panel } from '@/components/ui/primitives'
 import { formatDuration, formatMicro } from '@/lib/format'
+import { billedMicro } from './billing'
+import { TimelineStrip } from './TimelineStrip'
 import type { PlaybackView } from './usePaidPlayback'
 
 interface CostMeterProps {
@@ -19,7 +22,8 @@ const CAP_STEPS = [250_000, 1_000_000, 5_000_000]
 export function CostMeter({ view, priceMicro, onToggle, onEnd, onAddFunds, onResume, onRaiseCap, availableMicro }: CostMeterProps) {
   const session = view.session
   if (!session) return null
-  const cost = Math.round(priceMicro * view.playedSeconds)
+  // The free preview is never billed, so only time past it counts toward the cost.
+  const cost = billedMicro(view, priceMicro)
   const prepaid = Math.max(0, session.spentMicro - cost)
   const capUsed = Math.min(1, session.spentMicro / session.capMicro)
   const live = view.phase === 'playing' && !view.paused
@@ -35,13 +39,15 @@ export function CostMeter({ view, priceMicro, onToggle, onEnd, onAddFunds, onRes
           </span>
         </div>
         <p className="display mt-2 text-5xl font-bold tabular-nums">
-          {formatMicro(cost)}
+          <AnimatedAmount micro={cost} />
           <span className="ml-2 text-lg font-medium text-[var(--subtle)]">USDC</span>
         </p>
         <p className="mt-1 text-xs tabular-nums text-[var(--muted)]">
           {formatDuration(view.playedSeconds)} watched at ${formatMicro(priceMicro)} per second
         </p>
       </div>
+
+      <TimelineStrip view={view} />
 
       <dl className="glass-inner divide-y divide-[var(--border)] rounded-2xl text-sm">
         <div className="flex justify-between px-4 py-3">

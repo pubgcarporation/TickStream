@@ -4,7 +4,9 @@ export type GatewayTransferStatus = 'received' | 'batched' | 'confirmed' | 'comp
 
 /** Looks up one nanopayment transfer in Circle Gateway. Returns 'unknown' if the lookup itself fails. */
 export async function fetchTransferStatus(transferId: string): Promise<GatewayTransferStatus> {
-  const response = await fetch(`${env.gatewayApiUrl()}/v1/x402/transfers/${encodeURIComponent(transferId)}`)
+  const response = await fetch(`${env.gatewayApiUrl()}/v1/x402/transfers/${encodeURIComponent(transferId)}`, {
+    signal: AbortSignal.timeout(10_000),
+  })
   if (!response.ok) return 'unknown'
   const data = (await response.json()) as { status?: string }
   switch (data.status) {

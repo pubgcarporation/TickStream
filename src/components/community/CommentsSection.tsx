@@ -1,4 +1,4 @@
-import { Flag, Trash2 } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { COMMENT_MAX_LENGTH } from '@shared/constants'
@@ -8,7 +8,6 @@ import { api } from '@/lib/api'
 import { timeAgo } from '@/lib/format'
 import { Link } from '@/lib/router'
 import { useAuth } from '@/providers/AuthProvider'
-import { ReportSheet, type ReportTarget } from './ReportSheet'
 
 interface Page {
   comments: CommentItem[]
@@ -22,7 +21,6 @@ export function CommentsSection({ videoId }: { videoId: string }) {
   const [loading, setLoading] = useState(true)
   const [draft, setDraft] = useState('')
   const [posting, setPosting] = useState(false)
-  const [report, setReport] = useState<ReportTarget | null>(null)
 
   const load = useCallback(
     async (before?: string) => {
@@ -121,15 +119,6 @@ export function CommentsSection({ videoId }: { videoId: string }) {
                 <p className="mt-1 whitespace-pre-wrap break-words text-pretty text-sm">{comment.body}</p>
               </div>
               <div className="flex shrink-0 gap-1">
-                {user && user.address !== comment.author.address && (
-                  <button
-                    onClick={() => setReport({ kind: 'comment', id: comment.id })}
-                    aria-label="Report comment"
-                    className="flex size-9 items-center justify-center rounded-full text-[var(--subtle)] hover:bg-white/10 hover:text-[var(--ink)]"
-                  >
-                    <Flag className="size-4" />
-                  </button>
-                )}
                 {comment.canRemove && (
                   <button
                     onClick={() => void remove(comment.id)}
@@ -149,7 +138,6 @@ export function CommentsSection({ videoId }: { videoId: string }) {
           Show more
         </Button>
       )}
-      <ReportSheet target={report} onClose={() => setReport(null)} />
     </section>
   )
 }

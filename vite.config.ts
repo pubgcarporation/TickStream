@@ -21,6 +21,8 @@ export default defineConfig({
       '@tanstack/react-query',
       'wagmi',
       'wagmi/chains',
+      '@privy-io/react-auth',
+      '@privy-io/wagmi',
       'wagmi/connectors',
       'viem',
       'viem/chains',

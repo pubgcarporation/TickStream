@@ -10,11 +10,10 @@ export function AdminOverview() {
   if (!data) return <EmptyState title="Could not load the overview" body={error?.message} />
   const o = data.overview
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
       <StatCard label="Users" value={String(o.users)} />
       <StatCard label="Videos" value={String(o.videos)} hint={`${o.removedVideos} removed`} />
       <StatCard label="Sessions, 24h" value={String(o.sessions24h)} />
-      <StatCard label="Open reports" value={String(o.openReports)} />
       <StatCard label="Volume, all time" value={formatMicro(o.volumeTotalMicro)} unit="USDC" />
       <StatCard label="Volume, 24h" value={formatMicro(o.volume24hMicro)} unit="USDC" />
     </div>

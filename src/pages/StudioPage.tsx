@@ -11,7 +11,7 @@ export function StudioPage({ section }: { section: string }) {
   return (
     <div>
       <StudioNav />
-      <RequireAuth title="Sign in to open your studio" body="Connect your wallet and sign in. Payments from viewers go straight to that wallet's address.">
+      <RequireAuth title="Sign in to open your studio" body="Sign in to continue. Payments from viewers go straight to that wallet's address.">
         {section === 'videos' && <StudioVideos />}
         {section === 'upload' && <StudioUpload />}
         {section === 'analytics' && <StudioAnalytics />}

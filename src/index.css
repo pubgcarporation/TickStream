@@ -20,6 +20,7 @@
   --success: #8dd89f;
   --danger: #e86d7a;
   --warn: #f0c674;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 * {
@@ -28,6 +29,7 @@
 
 html {
   color-scheme: dark;
+  scroll-behavior: smooth;
 }
 
 body {
@@ -38,7 +40,26 @@ body {
   background-attachment: fixed;
   color: var(--ink);
   font-family: 'DM Sans', sans-serif;
+  font-feature-settings: 'ss01', 'cv11';
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* One quiet pool of light behind the page. Static, never animated. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(70% 45% at 50% -8%, rgba(172, 198, 233, 0.13), transparent 70%),
+    radial-gradient(40% 30% at 100% 100%, rgba(141, 216, 159, 0.04), transparent 70%);
+}
+
+::selection {
+  background: rgba(172, 198, 233, 0.32);
+  color: var(--ink);
 }
 
 .display {
@@ -50,9 +71,13 @@ body {
   font-family: 'JetBrains Mono', Menlo, monospace;
 }
 
+/* Surfaces: depth comes from a faint top highlight and a soft shadow, not from heavier borders. */
 .glass {
-  background: var(--surface);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.085) 0%, rgba(255, 255, 255, 0.055) 100%);
   border: 1px solid var(--border);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 12px 32px -16px rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(24px) saturate(160%);
   -webkit-backdrop-filter: blur(24px) saturate(160%);
 }
@@ -60,6 +85,14 @@ body {
 .glass-inner {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border);
+  transition:
+    background-color 0.2s var(--ease-out),
+    border-color 0.2s var(--ease-out);
+}
+
+button.glass-inner:hover,
+a.glass-inner:hover {
+  background: rgba(255, 255, 255, 0.09);
 }
 
 :focus-visible {
@@ -72,14 +105,77 @@ a {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Slim scrollbars that match the surface. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+/* Skeletons shimmer once per second and stop for people who prefer less motion. */
+.skeleton {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.05) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* Route and card entrance: a short rise, staggered by --i when a list sets it. */
+.rise {
+  animation: rise 0.42s var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.skip-link {
+  position: fixed;
+  left: 12px;
+  top: -64px;
+  z-index: 100;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+  transition: top 0.2s var(--ease-out);
+}
+
+.skip-link:focus {
+  top: 12px;
+}
+
 /* Wallet modal and toasts sit above the app shell. */
 [data-sonner-toaster] {
   --width: 360px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  * {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
 }

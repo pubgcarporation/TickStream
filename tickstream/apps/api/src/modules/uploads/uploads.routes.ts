@@ -40,6 +40,11 @@ export function registerUploadRoutes(router: Router): void {
     const declared = Number(ctx.req.headers['content-length'] ?? 0)
     if (declared > env.maxUploadBytes) throw new HttpError(413, 'That file is larger than the upload limit', 'too_large')
 
+    // Two uploads for one video would write the same scratch file, so only one may run at a time.
+    const lockKey = `upload:lock:${row.id}`
+    const locked = await getRedis().set(lockKey, '1', 'EX', 3600, 'NX')
+    if (locked !== 'OK') throw new HttpError(409, 'An upload for this video is already in progress', 'upload_in_progress')
+
     await mkdir(env.tmpDir, { recursive: true })
     const tmp = path.join(env.tmpDir, `${row.id}.upload`)
     try {
@@ -54,6 +59,7 @@ export function registerUploadRoutes(router: Router): void {
       sendJson(ctx.res, 200, { status: 'processing' })
     } finally {
       await rm(tmp, { force: true })
+      await getRedis().del(lockKey)
     }
   })
 }

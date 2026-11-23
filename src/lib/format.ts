@@ -2,6 +2,7 @@ import { formatUsdc } from '@/onchain-money'
 
 /** USDC base units (integer, 6 decimals) to a display string with at least 2 and at most 6 decimals. */
 export function formatMicro(micro: number | bigint): string {
+  if (typeof micro === 'number' && !Number.isFinite(micro)) return '0.00'
   const raw = typeof micro === 'bigint' ? micro : BigInt(Math.round(micro))
   const exact = formatUsdc(raw)
   const [whole, fraction = ''] = exact.split('.')

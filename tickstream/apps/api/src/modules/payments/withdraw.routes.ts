@@ -28,6 +28,9 @@ export function registerWithdrawRoutes(router: Router): void {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify([{ burnIntent, signature }]),
+      signal: AbortSignal.timeout(20_000),
+    }).catch(() => {
+      throw new HttpError(502, 'Circle Gateway did not answer. Try again in a moment.', 'gateway_unreachable')
     })
     const result: unknown = await response.json().catch(() => ({}))
     if (!response.ok) {

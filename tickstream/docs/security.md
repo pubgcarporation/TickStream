@@ -15,8 +15,8 @@
 
 ## Community safety
 
-- Comments and reports require a signed-in wallet and are rate limited. A wallet can report an item once.
-- Creators can remove comments on their videos. Administrators review reports and can take videos down or restore them.
+- Comments require a signed-in wallet and are rate limited.
+- Creators can remove comments on their videos. Administrators can take videos down or restore them.
 - Administrator access is a list of wallet addresses in server configuration, never something a browser can claim.
 - Withdrawals are signed by the creator's own wallet. The server only forwards intents for the signed-in address.
 

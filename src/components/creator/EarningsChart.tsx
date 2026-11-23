@@ -1,15 +1,21 @@
 import type { EarningsSummary } from '@shared/types'
+import { Sparkline } from '@/components/ui/Sparkline'
 import { formatMicro } from '@/lib/format'
 
-export function StatCard({ label, value, unit, hint }: { label: string; value: string; unit?: string; hint?: string }) {
+export function StatCard({ label, value, unit, hint, trend }: { label: string; value: string; unit?: string; hint?: string; trend?: number[] }) {
   return (
-    <div className="glass rounded-3xl p-5">
+    <div className="glass rise rounded-3xl p-5">
       <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--subtle)]">{label}</p>
       <p className="display mt-3 text-3xl font-bold tabular-nums">
         {value}
         {unit && <span className="ml-1.5 text-sm font-medium text-[var(--subtle)]">{unit}</span>}
       </p>
       {hint && <p className="mt-1 text-xs text-[var(--muted)]">{hint}</p>}
+      {trend && (
+        <div className="mt-3">
+          <Sparkline data={trend} label={`${label}, last 14 days`} />
+        </div>
+      )}
     </div>
   )
 }
@@ -23,7 +29,10 @@ export function EarningsChart({ daily }: { daily: EarningsSummary['daily'] }) {
   }
   return (
     <figure>
-      <div className="flex h-40 items-end gap-1.5" role="img" aria-label="Earnings per day for the last 14 days">
+      <div className="mb-1 flex justify-between text-[10px] tabular-nums text-[var(--subtle)]">
+        <span>{formatMicro(max)} USDC peak day</span>
+      </div>
+      <div className="flex h-40 items-end gap-1.5 border-b border-[var(--border)]" role="img" aria-label="Earnings per day for the last 14 days">
         {daily.map((day) => (
           <div key={day.day} className="group relative flex h-full flex-1 items-end">
             <div

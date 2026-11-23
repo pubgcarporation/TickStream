@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { pipeline } from 'node:stream/promises'
 import { CHUNK_SECONDS_OPTIONS, SEGMENT_LOOKAHEAD } from '@shared/constants'
 import { query } from '@shared/db'
 import { chunkSegments, segmentsAmount } from '@shared/pricing'
@@ -151,7 +152,14 @@ export function registerPlaybackRoutes(router: Router): void {
   router.delete('/sessions/:id', 'required', async (ctx) => {
     const viewer = requireUser(ctx)
     const session = await loadSession(uuid(ctx.params.id ?? ''), false)
-    if (session && session.viewer === viewer) await endSession(session, 'ended_by_viewer')
+    if (session && session.viewer === viewer) {
+      // The final position travels with the request, so closing a tab still saves where the viewer stopped.
+      const body = await readJson(ctx.req, 1024).catch(() => ({}) as Record<string, unknown>)
+      if (typeof body.second === 'number' && Number.isInteger(body.second) && body.second >= 0 && body.second < 10 * 24 * 3600) {
+        await query('update playback_sessions set last_position = $2 where id = $1', [session.id, body.second])
+      }
+      await endSession(session, 'ended_by_viewer')
+    }
     sendJson(ctx.res, 200, { ok: true })
   })
 
@@ -208,6 +216,6 @@ export function registerPlaybackRoutes(router: Router): void {
       'Cache-Control': 'no-store',
       'X-Content-Type-Options': 'nosniff',
     })
-    object.stream.pipe(ctx.res)
+    await pipeline(object.stream, ctx.res).catch(() => undefined)
   })
 }

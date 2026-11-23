@@ -38,8 +38,10 @@ export async function processVideo(videoId: string): Promise<void> {
     )
     console.log(`[media] ${video.id} ready (${segments.length} segments)`)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Processing failed'
-    console.error(`[media] ${video.id} failed: ${message}`)
+    const detail = error instanceof Error ? error.message : 'Processing failed'
+    console.error(`[media] ${video.id} failed: ${detail}`)
+    // Encoder output can contain server paths, so creators see a plain message instead.
+    const message = detail.includes(' exited with ') ? 'The video could not be encoded. Try exporting it as MP4 (H.264) and uploading again.' : detail
     await query(`update videos set status = 'failed', error = $2, updated_at = now() where id = $1`, [video.id, message.slice(0, 400)])
   } finally {
     await workspace.cleanup()

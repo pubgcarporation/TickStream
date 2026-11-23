@@ -58,7 +58,6 @@ are shown without the prefix. Send the sign-in token as `Authorization: Bearer <
 | `GET /me/feed` | required | Latest videos from creators you follow. |
 | `GET /videos/:id/related` | none | Up to six related videos. |
 | `GET /categories` | none | Number of ready videos per category. |
-| `POST /videos/:id/report`, `POST /comments/:id/report` | required | Report content with a reason. |
 
 ## Creator
 
@@ -73,9 +72,7 @@ Admins are the wallet addresses listed in `ADMIN_ADDRESSES`. All routes return 4
 
 | Method and path | Purpose |
 | --- | --- |
-| `GET /admin/overview` | Users, videos, sessions, volume and open reports. |
-| `GET /admin/reports?status=open\|resolved` | Reports queue. |
-| `POST /admin/reports/:id/resolve` | `{ "action": "remove" \| "dismiss" }`. |
+| `GET /admin/overview` | Users, videos, sessions and volume. |
 | `GET /admin/videos?q=` | All videos, including taken-down ones. |
 | `POST /admin/videos/:id/status` | `{ "status": "removed" \| "ready" }`. |
 | `GET /admin/payments`, `GET /admin/users` | Recent payments and users. |

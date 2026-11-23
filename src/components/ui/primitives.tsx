@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { Loader2, X } from 'lucide-react'
-import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import { useEffect, type ButtonHTMLAttributes, type ReactNode } from 'react'
 import { clsx } from 'clsx'
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
@@ -38,7 +38,7 @@ export function Button({ variant = 'primary', loading, full, className, children
 }
 
 export function Panel({ className, children }: { className?: string; children: ReactNode }) {
-  return <section className={clsx('glass rounded-3xl p-5', className)}>{children}</section>
+  return <section className={clsx('glass rise rounded-3xl p-5', className)}>{children}</section>
 }
 
 export function Chip({
@@ -71,7 +71,7 @@ export function Chip({
 }
 
 export function Skeleton({ className }: { className?: string }) {
-  return <div className={clsx('animate-pulse rounded-2xl bg-white/[0.07]', className)} aria-hidden />
+  return <div className={clsx('skeleton rounded-2xl', className)} aria-hidden />
 }
 
 export function EmptyState({ title, body, action }: { title: string; body?: string; action?: ReactNode }) {
@@ -95,6 +95,14 @@ export function Sheet({
   title: string
   children: ReactNode
 }) {
+  useEffect(() => {
+    if (!open) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, onClose])
   return (
     <AnimatePresence>
       {open && (
@@ -104,7 +112,6 @@ export function Sheet({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          onKeyDown={(event) => event.key === 'Escape' && onClose()}
           role="dialog"
           aria-modal="true"
           aria-label={title}
@@ -119,6 +126,7 @@ export function Sheet({
             transition={{ type: 'spring', stiffness: 380, damping: 36 }}
             onClick={(event) => event.stopPropagation()}
           >
+            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-white/20 sm:hidden" aria-hidden />
             <div className="mb-4 flex items-center justify-between">
               <h2 className="display text-xl font-semibold">{title}</h2>
               <button

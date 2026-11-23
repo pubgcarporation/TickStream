@@ -1,7 +1,7 @@
-import { ConnectKitButton } from 'connectkit'
 import { Wallet } from 'lucide-react'
 import { CHUNK_SECONDS_OPTIONS } from '@shared/constants'
 import { Button, Chip, Panel } from '@/components/ui/primitives'
+import { WalletConnect } from '@/components/wallet/WalletConnect'
 import { formatDuration, formatMicro, ratePerHour, ratePerMinute } from '@/lib/format'
 import { useAuth } from '@/providers/AuthProvider'
 import { useSpendingWallet } from '@/providers/SpendingWalletProvider'
@@ -10,6 +10,7 @@ const CAP_CHOICES = [100_000, 500_000, 1_000_000, 5_000_000]
 
 interface StartPanelProps {
   priceMicro: number
+  durationSeconds: number | null
   previewSeconds: number
   resumeAt: number
   onResumeAt: (second: number) => void
@@ -23,7 +24,7 @@ interface StartPanelProps {
   message: string | null
 }
 
-export function StartPanel({ priceMicro, previewSeconds, resumeAt, onResumeAt, chunkSeconds, capMicro, onChunk, onCap, onStart, onAddFunds, starting, message }: StartPanelProps) {
+export function StartPanel({ priceMicro, durationSeconds, previewSeconds, resumeAt, onResumeAt, chunkSeconds, capMicro, onChunk, onCap, onStart, onAddFunds, starting, message }: StartPanelProps) {
   const { user, signIn, signingIn } = useAuth()
   const { balance, error: balanceError } = useSpendingWallet()
   const chunkCost = priceMicro * chunkSeconds
@@ -43,6 +44,11 @@ export function StartPanel({ priceMicro, previewSeconds, resumeAt, onResumeAt, c
         <p className="mt-1 text-xs tabular-nums text-[var(--muted)]">
           {ratePerMinute(priceMicro)} a minute, {ratePerHour(priceMicro)} an hour. Pausing stops the meter.
         </p>
+        {durationSeconds ? (
+          <p className="mt-1 text-xs tabular-nums text-[var(--muted)]">
+            About <span className="font-semibold text-[var(--ink)]">${formatMicro(priceMicro * durationSeconds)}</span> to watch all {formatDuration(durationSeconds)}.
+          </p>
+        ) : null}
         {previewSeconds > 0 && (
           <p className="mt-2 inline-block rounded-full bg-[var(--success)]/15 px-3 py-1 text-xs font-semibold text-[var(--success)]">
             First {previewSeconds} seconds are free
@@ -78,12 +84,12 @@ export function StartPanel({ priceMicro, previewSeconds, resumeAt, onResumeAt, c
       {message && <p className="text-pretty rounded-2xl bg-white/5 p-3 text-sm text-[var(--muted)]">{message}</p>}
       {balanceError && <p className="text-xs text-[var(--danger)]">Could not read your spending balance: {balanceError}</p>}
 
-      <ConnectKitButton.Custom>
+      <WalletConnect>
         {({ isConnected, show }) => {
           if (!isConnected) {
             return (
               <Button full onClick={show}>
-                <Wallet className="size-4" aria-hidden /> Connect wallet to watch
+                <Wallet className="size-4" aria-hidden /> Sign in to watch
               </Button>
             )
           }
@@ -114,7 +120,7 @@ export function StartPanel({ priceMicro, previewSeconds, resumeAt, onResumeAt, c
             </div>
           )
         }}
-      </ConnectKitButton.Custom>
+      </WalletConnect>
       {balance && (
         <p className="text-center text-xs tabular-nums text-[var(--subtle)]">
           Spending balance {formatMicro(balance.available)} USDC

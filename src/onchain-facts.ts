@@ -1,8 +1,8 @@
 /*
  * Onchain facts for this app. GENERATED — do not edit.
  *
- * Arc Studio writes this file from its onchain facts registry, so the values here are
- * the ones Arc Studio itself deploys and links against. Edits are overwritten.
+ * the platform writes this file from its onchain facts registry, so the values here are
+ * the ones the platform itself deploys and links against. Edits are overwritten.
  *
  * Import a fact instead of typing one:
  *
@@ -575,7 +575,7 @@ export function requireChain(chainId: number): OnchainChain {
   const chain = getChain(chainId);
 
   if (!chain) {
-    throw new Error('Unknown chain ID ' + chainId + ' — ask Arc Studio to add it to its onchain facts registry');
+    throw new Error('Unknown chain ID ' + chainId + ' — ask the platform to add it to its onchain facts registry');
   }
 
   return chain;
@@ -590,7 +590,7 @@ export function requireChainByScpBlockchain(blockchain: string): OnchainChain {
 
   if (!chain) {
     throw new Error(
-      "No chain for SCP blockchain '" + blockchain + "' — ask Arc Studio to add it to its onchain facts registry",
+      "No chain for SCP blockchain '" + blockchain + "' — ask the platform to add it to its onchain facts registry",
     );
   }
 

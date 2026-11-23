@@ -165,7 +165,7 @@ function usage(): string {
     '  --artifact <path>        Foundry artifact (default: contracts/out/<Name>.sol/<Name>.json)',
     '  --mode <fork|live|fork-then-live|verify>   default: fork-then-live',
     '',
-    '  verify mode: deploys onto a fresh anvil fork through a FRESH Arc Studio Create2Factory',
+    '  verify mode: deploys onto a fresh anvil fork through a FRESH the platform Create2Factory',
     "  (not Compass's default factory), prints a ready JSON with forkRpcUrl + predictedAddress,",
     '  then stays alive (no live broadcast, no Circle creds) so a separate process can attach and',
     '  test against the same fork. Run it via execute_background, tail its redirected log for the',
@@ -867,7 +867,7 @@ async function verifyOnFork(options: CliOptions, targetArtifact: CompiledArtifac
       );
     }
 
-    console.log(`Deploying Arc Studio's Create2Factory onto the fork (${forkRpcUrl})...`);
+    console.log(`Deploying the platform's Create2Factory onto the fork (${forkRpcUrl})...`);
     const factoryDeployTxHash = await walletClient.deployContract({
       abi: factoryArtifact.abi as Abi,
       bytecode: factoryArtifact.bytecode,
@@ -877,7 +877,7 @@ async function verifyOnFork(options: CliOptions, targetArtifact: CompiledArtifac
     const factoryReceipt = await publicClient.waitForTransactionReceipt({ hash: factoryDeployTxHash });
     if (factoryReceipt.status !== 'success') {
       throw new Error(
-        `Fork verify: Arc Studio's Create2Factory deployment reverted on the fork (tx ${factoryDeployTxHash}). ` +
+        `Fork verify: the platform's Create2Factory deployment reverted on the fork (tx ${factoryDeployTxHash}). ` +
           'This is a fork-infrastructure failure, NOT a failure of the contract under test.',
       );
     }
@@ -940,7 +940,7 @@ async function verifyOnFork(options: CliOptions, targetArtifact: CompiledArtifac
         deployerAddress: account.address,
         note:
           "This fork's throwaway deployer namespaces the salt, so predictedAddress will NOT match the live A′ " +
-          "address (which namespaces by the real DCW wallet). This verifies Arc Studio's Create2Factory contract and " +
+          "address (which namespaces by the real DCW wallet). This verifies the platform's Create2Factory contract and " +
           'the target contract deploy and behave correctly, not address parity with the live deploy. ' +
           'No signing key is published: obtain every sender on this fork via anvil_impersonateAccount + ' +
           'anvil_setBalance, including deployerAddress and factory.',
@@ -1250,7 +1250,7 @@ async function runCustodyDeploy(
   if (forkPredicted) {
     console.log(
       `(Fork rehearsal used Compass's default factory → ${forkPredicted}; the live A′ address differs because ` +
-        'it deploys through Arc Studio\'s Create2Factory. The rehearsal validated that the initcode deploys, not the address.)',
+        'it deploys through the platform\'s Create2Factory. The rehearsal validated that the initcode deploys, not the address.)',
     );
   }
 

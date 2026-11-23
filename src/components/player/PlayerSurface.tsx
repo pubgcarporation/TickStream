@@ -1,5 +1,6 @@
 import { Loader2, Maximize2, Pause, Play, Volume2, VolumeX } from 'lucide-react'
-import { useRef, useState, type RefObject } from 'react'
+import { useRef, useState, type KeyboardEvent, type RefObject } from 'react'
+import { AnimatedAmount } from '@/components/ui/AnimatedAmount'
 import { thumbnailUrl } from '@/lib/api'
 import { formatDuration } from '@/lib/format'
 import type { PlaybackView } from './usePaidPlayback'
@@ -11,17 +12,21 @@ interface PlayerSurfaceProps {
   view: PlaybackView
   viewer: string | undefined
   durationSeconds: number
+  /** Cost of what has been watched so far, in USDC base units. */
+  costMicro: number
   onToggle: () => void
   onSeek: (second: number) => void
 }
 
-export function PlayerSurface({ videoId, videoRef, view, viewer, durationSeconds, onToggle, onSeek }: PlayerSurfaceProps) {
+export function PlayerSurface({ videoId, videoRef, view, viewer, durationSeconds, costMicro, onToggle, onSeek }: PlayerSurfaceProps) {
   const frame = useRef<HTMLDivElement | null>(null)
   const [muted, setMuted] = useState(false)
   const [scrub, setScrub] = useState<number | null>(null)
+  const [buffering, setBuffering] = useState(false)
   const active = view.phase === 'playing' || view.phase === 'needs-funds' || view.phase === 'capped'
   const showPoster = view.phase === 'idle' || view.phase === 'starting' || view.phase === 'ended' || view.phase === 'error'
   const shown = scrub ?? view.position
+  const metering = view.phase === 'playing' && !view.paused
 
   const fullscreen = () => {
     const element = frame.current
@@ -30,8 +35,27 @@ export function PlayerSurface({ videoId, videoRef, view, viewer, durationSeconds
     else void element.requestFullscreen()
   }
 
+  // Space or K plays and pauses, arrows jump ten seconds, M mutes, F goes fullscreen.
+  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (!active || event.target instanceof HTMLInputElement) return
+    const key = event.key.toLowerCase()
+    if (key === ' ' || key === 'k') onToggle()
+    else if (key === 'm') setMuted((value) => !value)
+    else if (key === 'f') fullscreen()
+    else if (key === 'arrowright') onSeek(Math.min(durationSeconds, view.position + 10))
+    else if (key === 'arrowleft') onSeek(Math.max(0, view.position - 10))
+    else return
+    event.preventDefault()
+  }
+
   return (
-    <div ref={frame} className="group relative aspect-video overflow-hidden rounded-3xl bg-black">
+    <div
+      ref={frame}
+      tabIndex={0}
+      onKeyDown={onKeyDown}
+      aria-label="Video player. Space plays or pauses, arrow keys skip ten seconds."
+      className="group relative aspect-video overflow-hidden rounded-3xl bg-black shadow-[0_24px_60px_-24px_rgba(0,0,0,0.7)] ring-1 ring-white/10 focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+    >
       <video
         ref={videoRef}
         playsInline
@@ -40,6 +64,9 @@ export function PlayerSurface({ videoId, videoRef, view, viewer, durationSeconds
         controlsList="nodownload noremoteplayback"
         onContextMenu={(event) => event.preventDefault()}
         onClick={onToggle}
+        onWaiting={() => setBuffering(true)}
+        onPlaying={() => setBuffering(false)}
+        onCanPlay={() => setBuffering(false)}
         className="size-full object-contain"
       />
       {showPoster && (
@@ -52,22 +79,50 @@ export function PlayerSurface({ videoId, videoRef, view, viewer, durationSeconds
               event.currentTarget.style.display = 'none'
             }}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30" />
-          {view.phase === 'starting' && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Loader2 className="size-9 animate-spin text-white/80" aria-label="Starting" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-black/30" />
+          {view.phase === 'starting' ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+              <Loader2 className="size-9 animate-spin text-white/80" aria-hidden />
+              <p className="text-sm text-white/80">Starting your session...</p>
             </div>
+          ) : (
+            view.phase === 'idle' && (
+              <div className="absolute inset-0 flex items-center justify-center" aria-hidden>
+                <span className="flex size-16 items-center justify-center rounded-full bg-white/15 backdrop-blur ring-1 ring-white/25">
+                  <Play className="size-7 translate-x-0.5 fill-white text-white" />
+                </span>
+              </div>
+            )
           )}
         </div>
       )}
       {active && viewer && view.session && <Watermark address={viewer} sessionId={view.session.id} />}
-      {view.phase === 'playing' && view.paying && (
-        <span className="mono absolute right-3 top-3 rounded-full bg-black/60 px-2.5 py-1 text-[10px] text-[var(--accent)]">
-          Paying next interval
-        </span>
-      )}
+
       {active && (
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 pb-3 pt-10 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
+        <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-2 rounded-full bg-black/60 px-3 py-1.5 backdrop-blur" aria-live="off">
+          <span className={`size-1.5 rounded-full ${metering ? 'bg-[var(--success)]' : 'bg-[var(--subtle)]'}`} aria-hidden />
+          <span className="mono text-[11px] tabular-nums text-white">
+            $<AnimatedAmount micro={costMicro} />
+          </span>
+          {view.paying && <span className="mono text-[10px] text-[var(--accent)]">paying</span>}
+        </div>
+      )}
+
+      {view.phase === 'playing' && buffering && !view.paused && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <Loader2 className="size-10 animate-spin text-white/80" aria-label="Buffering" />
+        </div>
+      )}
+      {view.phase === 'playing' && view.paused && (
+        <button onClick={onToggle} aria-label="Play" className="absolute inset-0 flex items-center justify-center">
+          <span className="flex size-16 items-center justify-center rounded-full bg-white/15 backdrop-blur ring-1 ring-white/25 transition-transform hover:scale-105">
+            <Play className="size-7 translate-x-0.5 fill-white text-white" />
+          </span>
+        </button>
+      )}
+
+      {active && (
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent px-4 pb-3 pt-12 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
           <input
             type="range"
             min={0}

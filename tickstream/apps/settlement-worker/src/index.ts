@@ -6,12 +6,19 @@ const RECONCILE_EVERY_MS = 10_000
 const EXPIRE_EVERY_MS = 30_000
 const PURGE_EVERY_MS = 60 * 60 * 1000
 
+const running = new Set<string>()
+
 async function safely(name: string, job: () => Promise<number>): Promise<void> {
+  // A slow run must not overlap the next tick.
+  if (running.has(name)) return
+  running.add(name)
   try {
     const touched = await job()
     if (touched > 0) console.log(`[settlement] ${name}: ${touched} updated`)
   } catch (error) {
     console.error(`[settlement] ${name} failed`, error)
+  } finally {
+    running.delete(name)
   }
 }
 
