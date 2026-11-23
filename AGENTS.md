@@ -1,43 +1,38 @@
-# [App Name]
+# TickStream
 
-> Built with Arc Studio - money-powered apps in minutes
+Pay-per-second video streaming. Viewers pay in USDC for the seconds that play; creators set a price per second.
 
-This is the **project memory** - what Arc Studio remembers about building this app. It helps future agents (or humans) understand and extend the project.
+## Tech stack
 
----
+- Web: React 18, Vite, TypeScript, Tailwind CSS, wagmi v2, viem v2, ConnectKit, hls.js
+- Services (run with Bun): API, media worker, settlement worker in `tickstream/apps/*`
+- Data: PostgreSQL and Redis in Docker (`bun run stack:up`), SQL schema in `tickstream/packages/database/migrations`
+- Payments: x402 over Circle Gateway nanopayments (`@circle-fin/x402-batching`), Arc Testnet (chain 5042002), USDC
+- Media: ffmpeg (bundled via ffmpeg-static), AES-128 encrypted HLS, private storage (local or Cloudflare R2)
 
-## What This App Does
+## Key files
 
-[Brief description of what the app does and its primary use case]
+- `src/App.tsx`: routes. Pages in `src/pages`, player in `src/components/player`.
+- `src/components/player/usePaidPlayback.ts`: session, payments and HLS playback.
+- `src/lib/spending-wallet.ts`: browser spending key and Gateway client.
+- `tickstream/apps/api/src`: routes by module (auth, videos, uploads, playback, payments, earnings, users).
+- `tickstream/packages/payment-sdk/src/x402-server.ts`: 402 requirements and Gateway settlement.
+- `tickstream/packages/shared/src`: env, db, redis, storage, pricing, constants, types (imported as `@shared/*`).
+- `tickstream/docs`: architecture, payment flow, playback flow, security, API reference, deployment.
 
-## Tech Stack
+## Rules
 
-- Frontend: React 18, Vite, TypeScript, Tailwind CSS
-- Web3: wagmi v2, viem v2, ConnectKit
-- Contracts: Solidity 0.8.28 + Foundry. Sources in `contracts/`, unit tests in `contracts/test/*.t.sol`. Build with `bun run contracts:build` (`forge build`), test with `bun run contracts:test` (`forge test`).
-- Wallet: injected (MetaMask, etc.)
-- Chain: Arc Testnet (Chain ID: 5042002, imported from `viem/chains`)
-- Token: USDC (6 decimals) (Address: 0x3600000000000000000000000000000000000000, Chain: Arc Testnet)
-- Toasts: Sonner
+- Amounts are integers in USDC base units (6 decimals). Use `@/onchain-money` and `@/onchain-facts` in the web app.
+- The server decides what is paid and unlocked. Never trust amounts or playback state from the browser.
+- No secrets in code or in URLs. The sign-in token travels in the `Authorization` header.
+- Build any link a user copies with `buildShareLink` from `src/lib/share.ts`, and keep path-based routing.
 
-## Key Files
-
-- `src/App.tsx` - Main application logic
-- `src/components/` - UI components
-- `src/config.ts` - wagmi config (chains, connectors, transports)
-
-## Share links
-
-- Starter apps already ship `getShareBase`, `buildShareLink` and `installShareSync` in `src/lib/share.ts`; import them instead of rewriting them.
-- Keep shareable state in the URL path or query, not in the `#fragment`.
-- Never put a secret (private key, claim secret, seed phrase, session token, API key) in the URL path or query, encoded or not: every in-app path and query is mirrored to the visitor's studio.arc.io address bar and browser history and reaches servers. A bearer claim secret goes only in the `#fragment` appended to the share link (`` `${await buildShareLink('/claim')}#${secret}` ``) and is read from `location.hash` on load. A link to the app's own share URL shown inside the app must be copy-only or open in a new tab with `target="_blank" rel="noopener noreferrer"`.
-- Build every link a user copies or sends with `buildShareLink()` from `src/lib/share.ts`.
-- Keep the `installShareSync()` call in `src/main.tsx` when editing it; it keeps the Studio address bar in step with in-app navigation.
-- Navigate inside the app with relative links.
-
-## To Run
+## To run
 
 ```bash
 bun install
+bun run stack:up
+bun run seed
+bun run stack
 bun run dev
 ```

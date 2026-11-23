@@ -14,7 +14,7 @@ interface SpendingWalletState {
   balance: GatewayBalance | null
   loading: boolean
   error: string | null
-  refresh: () => Promise<void>
+  refresh: () => Promise<GatewayBalance | null>
 }
 
 const SpendingWalletContext = createContext<SpendingWalletState | null>(null)
@@ -27,18 +27,21 @@ export function SpendingWalletProvider({ children }: { children: ReactNode }) {
 
   const spender = useMemo(() => (address ? getSpendingAccount(address).address : undefined), [address])
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (): Promise<GatewayBalance | null> => {
     if (!address) {
       setBalance(null)
-      return
+      return null
     }
     setLoading(true)
     try {
       const balances = await createGatewayClient(address).getBalances()
-      setBalance({ available: balances.gateway.available, total: balances.gateway.total })
+      const next = { available: balances.gateway.available, total: balances.gateway.total }
+      setBalance(next)
       setError(null)
+      return next
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Could not read your balance')
+      return null
     } finally {
       setLoading(false)
     }

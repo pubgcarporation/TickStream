@@ -1,3 +1,20 @@
-# Playback Flow
+# Playback flow
 
-Status: planned.
+1. `POST /videos/:id/sessions` creates a session. Starting a session ends any other active session for the same wallet,
+   so one wallet watches in one place at a time.
+2. The player pays the first interval (see `payment-flow.md`). The server then lists only the paid segments in the
+   playlist. Unpaid segments are not in the playlist and are refused if requested directly.
+3. The player loads `GET /play/:session/playlist.m3u8`. The playlist grows as intervals are paid. Segment and key
+   requests carry the viewer's sign-in token and the session id.
+4. About half an interval before the paid video runs out, the player pays for the next one. If the video is paused, it
+   does not pay.
+5. Jumping ahead to video that is not unlocked starts a new playlist window at that point. Skipped video is never billed,
+   and segments already paid for in the session stay unlocked.
+6. Closing the tab, pausing for long, or ending the session stops payments. A session with no activity for 90 seconds is
+   dropped.
+
+## What the page shows
+
+- **Cost so far** is price per second times the seconds that actually played.
+- **Paid ahead** is what has been paid beyond what has played.
+- **Your cap** is enforced by the server.

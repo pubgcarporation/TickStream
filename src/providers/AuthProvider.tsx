@@ -46,8 +46,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    void refresh()
-    return onTokenChange(() => void refresh())
+    const first = setTimeout(() => void refresh(), 0)
+    const unsubscribe = onTokenChange(() => void refresh())
+    return () => {
+      clearTimeout(first)
+      unsubscribe()
+    }
   }, [refresh])
 
   // A session belongs to one wallet. If the connected wallet changes, the old sign-in no longer applies.
