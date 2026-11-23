@@ -1,0 +1,5 @@
+{
+  "name": "@tickstream/settlement-worker",
+  "version": "0.0.0",
+  "private": true
+}

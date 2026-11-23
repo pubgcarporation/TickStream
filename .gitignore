@@ -1,0 +1,12 @@
+node_modules
+dist
+.env
+.env.*
+!.env.example
+.circle
+*.log
+traces.jsonl
+console.jsonl
+tickstream/.data
+contracts/out
+contracts/cache

@@ -1,0 +1,12 @@
+node_modules
+.env
+.env.*
+!.env.example
+.next
+.turbo
+dist
+coverage
+contracts/out
+contracts/cache
+contracts/lib
+*.log

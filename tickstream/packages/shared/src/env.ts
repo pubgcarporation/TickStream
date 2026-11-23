@@ -1,0 +1,36 @@
+import { fileURLToPath } from 'node:url'
+import path from 'node:path'
+
+function required(name: string): string {
+  const value = process.env[name]
+  if (!value) throw new Error(`Missing required environment variable ${name}`)
+  return value
+}
+
+function optional(name: string): string | undefined {
+  const value = process.env[name]
+  return value ? value : undefined
+}
+
+const tickstreamRoot = path.resolve(fileURLToPath(new URL('../../../', import.meta.url)))
+const dataDir = path.join(tickstreamRoot, '.data')
+
+export const env = {
+  root: tickstreamRoot,
+  dataDir,
+  databaseUrl: () => required('DATABASE_URL'),
+  redisUrl: () => required('REDIS_URL'),
+  sessionSecret: () => required('SESSION_SECRET'),
+  apiPort: Number(optional('API_PORT') ?? '3001'),
+  gatewayApiUrl: () => required('GATEWAY_API_URL'),
+  storageDriver: (optional('STORAGE_DRIVER') ?? 'local') as 'local' | 'r2',
+  storageDir: optional('STORAGE_DIR') ?? path.join(dataDir, 'storage'),
+  tmpDir: optional('TMP_DIR') ?? path.join(dataDir, 'tmp'),
+  r2: {
+    accountId: optional('R2_ACCOUNT_ID'),
+    accessKeyId: optional('R2_ACCESS_KEY_ID'),
+    secretAccessKey: optional('R2_SECRET_ACCESS_KEY'),
+    bucket: optional('R2_BUCKET'),
+  },
+  maxUploadBytes: Number(optional('MAX_UPLOAD_BYTES') ?? String(1024 * 1024 * 1024)),
+} as const
