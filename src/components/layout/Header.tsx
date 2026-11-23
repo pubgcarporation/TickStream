@@ -1,6 +1,7 @@
 import { TokenUSDC } from '@web3icons/react'
-import { Menu, Search, UserCircle } from 'lucide-react'
+import { Bell, ChevronDown, Menu, Search, UserCircle } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { toast } from 'sonner'
 import { Avatar } from '@/components/ui/Avatar'
 import { WalletConnect } from '@/components/wallet/WalletConnect'
 import { Button } from '@/components/ui/primitives'
@@ -27,6 +28,7 @@ function RatePill() {
     >
       <TokenUSDC variant="branded" size={22} aria-hidden />
       {text}
+      <ChevronDown className="size-4 text-[var(--accent)]" aria-hidden />
     </Link>
   )
 }
@@ -108,7 +110,7 @@ export function Header() {
           aria-label="Search videos"
           className="h-full min-w-0 flex-1 rounded-l-full border border-[#303030] bg-[#121212] px-5 text-sm outline-none placeholder:text-[var(--subtle)] focus:border-[var(--accent)]"
         />
-        <button type="submit" aria-label="Search" className="flex h-full w-16 items-center justify-center rounded-r-full border border-l-0 border-[#303030] bg-[#222] hover:bg-[#2f2f2f]">
+        <button type="submit" aria-label="Search" className="flex h-full w-[72px] items-center justify-center rounded-r-full border border-l-0 border-[#303030] bg-[#222] hover:bg-[#2f2f2f]">
           <Search className="size-5" />
         </button>
       </form>
@@ -118,6 +120,14 @@ export function Header() {
           <Search className="size-5" />
         </Link>
         <RatePill />
+        <button
+          type="button"
+          onClick={() => toast('You are all caught up')}
+          aria-label="Notifications"
+          className="hidden size-11 items-center justify-center rounded-full hover:bg-white/10 sm:flex"
+        >
+          <Bell className="size-6" />
+        </button>
         <AccountArea />
       </div>
     </header>

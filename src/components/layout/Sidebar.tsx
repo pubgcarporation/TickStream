@@ -83,10 +83,10 @@ function Row({ item, wide, onNavigate }: { item: Item; wide: boolean; onNavigate
       className={clsx(
         'relative flex items-center rounded-xl transition-colors',
         wide ? 'min-h-11 gap-4 px-3 text-sm' : 'min-h-16 flex-col justify-center gap-1 px-1 text-[10px]',
-        active ? 'bg-[var(--accent)]/15 font-semibold text-white' : 'text-[var(--ink)] hover:bg-white/10',
+        active ? 'bg-[#12311b] font-semibold text-white' : 'text-[var(--ink)] hover:bg-white/10',
       )}
     >
-      {active && wide && <span className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-[var(--accent)]" aria-hidden />}
+      {active && wide && <span className="absolute inset-y-0 left-0 w-1 rounded-l-xl bg-[var(--accent)]" aria-hidden />}
       <item.icon className={clsx('size-5 shrink-0', active && 'text-[var(--accent)]')} aria-hidden />
       <span className="truncate">{item.label}</span>
     </Link>

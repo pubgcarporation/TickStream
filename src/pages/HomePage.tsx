@@ -77,8 +77,10 @@ export function HomePage() {
       ) : (
         <>
           <section aria-labelledby="trending" className="space-y-4">
-            <SectionHeader id="trending" title="Trending now" to="/explore?sort=trending" />
-            <VideoGrid videos={trending.data?.videos ?? null} loading={trending.loading && !trending.data} />
+            <h2 id="trending" className="sr-only">
+              Trending now
+            </h2>
+            <VideoGrid lead videos={trending.data?.videos ?? null} loading={trending.loading && !trending.data} />
           </section>
 
           {previews.length > 0 && (

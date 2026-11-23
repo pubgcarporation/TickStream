@@ -24,8 +24,8 @@ from the viewer.
 
 ## Where things differ from the first sketch
 
-- The web client runs from the project root `src/` because the preview serves a Vite app. `apps/web` is reserved.
+- The web client runs from the project root `src/` because the preview serves a Vite app.
 - The data layer is plain SQL migrations (`packages/database/migrations`) instead of Prisma.
-- No custom contract is needed. USDC moves through Circle Gateway, so `contracts/` holds only planned placeholders.
+- Live payments use Circle Gateway, not a custom contract. The optional escrow, vault, registry and distributor contracts in the project root `contracts/` are not connected to the app yet.
 - Video and DRM: segments use AES-128 encryption with per-session key delivery. Licensed DRM (Widevine, FairPlay) is
   not included.

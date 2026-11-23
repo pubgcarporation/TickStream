@@ -59,8 +59,10 @@ export function Chip({
       disabled={disabled}
       aria-pressed={active}
       className={clsx(
-        'min-h-9 whitespace-nowrap rounded-lg px-3.5 text-sm font-medium transition-colors disabled:opacity-40',
-        active ? 'bg-[#f1f1f1] text-[#0f0f0f]' : 'bg-[#272727] text-[var(--ink)] hover:bg-[#3a3a3a]',
+        'min-h-9 whitespace-nowrap rounded-full border px-4 text-sm font-medium transition-colors disabled:opacity-40',
+        active
+          ? 'border-[#f1f1f1] bg-[#f1f1f1] text-[#0f0f0f]'
+          : 'border-[var(--border)] bg-[#181818] text-[var(--ink)] hover:bg-[#2a2a2a]',
       )}
     >
       {children}

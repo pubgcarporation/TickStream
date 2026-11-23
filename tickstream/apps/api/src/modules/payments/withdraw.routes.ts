@@ -20,7 +20,8 @@ export function registerWithdrawRoutes(router: Router): void {
     if (!isRecord(burnIntent) || !isRecord(burnIntent.spec) || typeof signature !== 'string') {
       throw new HttpError(400, 'Malformed withdrawal request', 'invalid_request')
     }
-    const depositor = String(burnIntent.spec.sourceDepositor ?? '').toLowerCase()
+    const rawDepositor = burnIntent.spec.sourceDepositor
+    const depositor = typeof rawDepositor === 'string' ? rawDepositor.toLowerCase() : ''
     if (!depositor.endsWith(addr.slice(2)) || depositor.length !== 66) {
       throw new HttpError(403, 'You can only withdraw your own balance', 'forbidden')
     }

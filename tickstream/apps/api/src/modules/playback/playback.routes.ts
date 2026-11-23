@@ -154,7 +154,7 @@ export function registerPlaybackRoutes(router: Router): void {
     const session = await loadSession(uuid(ctx.params.id ?? ''), false)
     if (session && session.viewer === viewer) {
       // The final position travels with the request, so closing a tab still saves where the viewer stopped.
-      const body = await readJson(ctx.req, 1024).catch(() => ({}) as Record<string, unknown>)
+      const body = await readJson(ctx.req, 1024).catch((): Record<string, unknown> => ({}))
       if (typeof body.second === 'number' && Number.isInteger(body.second) && body.second >= 0 && body.second < 10 * 24 * 3600) {
         await query('update playback_sessions set last_position = $2 where id = $1', [session.id, body.second])
       }
