@@ -8,6 +8,7 @@ export interface VideoRow {
   description: string
   category: string
   price_micro: number
+  preview_seconds: number
   status: VideoStatus
   error: string | null
   duration_seconds: number | null
@@ -32,6 +33,7 @@ export function mapVideo(row: VideoRow): VideoSummary {
     description: row.description,
     category: row.category,
     priceMicro: row.price_micro,
+    previewSeconds: row.preview_seconds,
     durationSeconds: row.duration_seconds,
     status: row.status,
     views: row.views,

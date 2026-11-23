@@ -20,3 +20,12 @@ export async function expireIdleSessions(): Promise<number> {
   }
   return idle.length
 }
+
+/** Uploads that never finished (the creator closed the tab) are taken down after a day. */
+export async function purgeStaleUploads(): Promise<number> {
+  const rows = await query<{ id: string }>(
+    `update videos set status = 'removed', error = 'upload did not finish', updated_at = now()
+     where status = 'uploading' and created_at < now() - interval '1 day' returning id`,
+  )
+  return rows.length
+}

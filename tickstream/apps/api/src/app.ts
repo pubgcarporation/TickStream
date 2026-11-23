@@ -1,4 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
+import { getPool } from '@shared/db'
+import { getRedis } from '@shared/redis'
 import { clientIp, HttpError, Router, sendJson, type Ctx } from './http'
 import { authenticate } from './middleware/authentication'
 import { handleError } from './middleware/error-handler'
@@ -18,6 +20,21 @@ import { registerVideoRoutes } from './modules/videos/videos.routes'
 
 const router = new Router()
 router.get('/health', 'none', (ctx) => sendJson(ctx.res, 200, { ok: true }))
+router.get('/health/ready', 'none', async (ctx) => {
+  const checks = { database: false, redis: false }
+  try {
+    await getPool().query('select 1')
+    checks.database = true
+  } catch {
+    // reported below
+  }
+  try {
+    checks.redis = (await getRedis().ping()) === 'PONG'
+  } catch {
+    // reported below
+  }
+  sendJson(ctx.res, checks.database && checks.redis ? 200 : 503, { ok: checks.database && checks.redis, ...checks })
+})
 registerAuthRoutes(router)
 registerUserRoutes(router)
 registerVideoRoutes(router)
@@ -33,6 +50,15 @@ registerReportRoutes(router)
 registerAdminRoutes(router)
 
 export async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const startedAt = Date.now()
+  res.on('finish', () => {
+    const path = (req.url ?? '/').split('?')[0] ?? '/'
+    // Segment and heartbeat traffic is high volume; log only failures for it.
+    const noisy = path.startsWith('/play/') || path.startsWith('/health')
+    if (!noisy || res.statusCode >= 400) {
+      console.log(`[api] ${req.method} ${path} ${res.statusCode} ${Date.now() - startedAt}ms`)
+    }
+  })
   try {
     res.setHeader('X-Content-Type-Options', 'nosniff')
     res.setHeader('Referrer-Policy', 'no-referrer')

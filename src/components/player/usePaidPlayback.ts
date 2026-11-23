@@ -179,7 +179,8 @@ export function usePaidPlayback(videoId: string, owner: string | undefined) {
           body: { payer, capMicro: options.capMicro, chunkSeconds: options.chunkSeconds, startSecond: options.startSecond ?? 0 },
         })
         patch({ session: created.session })
-        const paid = await payNext()
+        // A creator's free preview is already unlocked; otherwise the first interval is paid before playback.
+        const paid = created.session.authorizedSeconds > 0 ? created.session : await payNext()
         if (!paid) return
         patch({ phase: 'playing' })
         loadPlaylist(paid)
@@ -238,12 +239,13 @@ export function usePaidPlayback(videoId: string, owner: string | undefined) {
       teardownPlayer()
       videoRef.current?.pause()
       if (session && phaseRef.current !== 'idle') {
+        await api(`sessions/${session.id}/position`, { method: 'PUT', body: { second: Math.floor(position()) } }).catch(() => undefined)
         await api(`sessions/${session.id}`, { method: 'DELETE' }).catch(() => undefined)
       }
       sessionRef.current = null
       patch({ phase: 'idle', message, session: null, paying: false, position: 0 })
     },
-    [patch, teardownPlayer],
+    [patch, teardownPlayer, position],
   )
 
   // Once a second: count what actually played, update the position, and pay ahead only when needed.
@@ -275,7 +277,8 @@ export function usePaidPlayback(videoId: string, owner: string | undefined) {
     const timer = setInterval(() => {
       const session = sessionRef.current
       if (!session || phaseRef.current === 'idle' || phaseRef.current === 'ended') return
-      api<{ session: SessionInfo }>(`sessions/${session.id}`).catch((error: unknown) => {
+      // The heartbeat also saves where the viewer is, so they can pick up from the same spot later.
+      api<{ session: SessionInfo }>(`sessions/${session.id}/position`, { method: 'PUT', body: { second: Math.floor(position()) } }).catch((error: unknown) => {
         if (error instanceof ApiError && error.status === 410) {
           const reason = error.body.reason
           stopPlayback(
@@ -288,14 +291,14 @@ export function usePaidPlayback(videoId: string, owner: string | undefined) {
       })
     }, HEARTBEAT_MS)
     return () => clearInterval(timer)
-  }, [stopPlayback])
+  }, [stopPlayback, position])
 
   // Leaving the page ends the session so billing stops immediately.
   useEffect(() => {
     const onHide = () => {
       const session = sessionRef.current
       if (session && phaseRef.current !== 'idle' && phaseRef.current !== 'ended') {
-        endSessionKeepalive(session.id, getToken())
+        endSessionKeepalive(session.id, getToken(), position())
       }
     }
     window.addEventListener('pagehide', onHide)
@@ -305,7 +308,7 @@ export function usePaidPlayback(videoId: string, owner: string | undefined) {
       hlsRef.current?.destroy()
       hlsRef.current = null
     }
-  }, [])
+  }, [position])
 
   return { videoRef, view, start, resume, seek, togglePlay, end, lastOptions: optionsRef }
 }

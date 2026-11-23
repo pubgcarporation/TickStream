@@ -45,8 +45,16 @@ export function isFundsError(error: unknown): boolean {
   return error.status === 402 && (text.includes('insufficient') || text.includes('balance') || text.includes('funds'))
 }
 
-export function endSessionKeepalive(sessionId: string, token: string | null): void {
+export function endSessionKeepalive(sessionId: string, token: string | null, second?: number): void {
   if (!token) return
+  if (second !== undefined) {
+    void fetch(`/api/sessions/${sessionId}/position`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ second: Math.max(0, Math.floor(second)) }),
+      keepalive: true,
+    }).catch(() => undefined)
+  }
   void fetch(`/api/sessions/${sessionId}`, {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${token}` },

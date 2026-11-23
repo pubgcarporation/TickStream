@@ -2,7 +2,7 @@ import { Check, Loader2, Pencil, SlidersHorizontal, Trash2, X } from 'lucide-rea
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import type { VideoSummary } from '@shared/types'
-import { CATEGORIES, MAX_PRICE_PER_SECOND, MIN_PRICE_PER_SECOND } from '@shared/constants'
+import { CATEGORIES, MAX_PREVIEW_SECONDS, MAX_PRICE_PER_SECOND, MIN_PRICE_PER_SECOND } from '@shared/constants'
 import { Button, Chip, EmptyState, Sheet, Skeleton, inputClass } from '@/components/ui/primitives'
 import { useApi } from '@/hooks/useApi'
 import { api, thumbnailUrl } from '@/lib/api'
@@ -21,12 +21,13 @@ function DetailsSheet({ video, open, onClose, onSaved }: { video: VideoSummary; 
   const [title, setTitle] = useState(video.title)
   const [description, setDescription] = useState(video.description)
   const [category, setCategory] = useState(video.category)
+  const [preview, setPreview] = useState(video.previewSeconds)
   const [saving, setSaving] = useState(false)
 
   const save = async () => {
     setSaving(true)
     try {
-      await api(`videos/${video.id}`, { method: 'PATCH', body: { title, description, category } })
+      await api(`videos/${video.id}`, { method: 'PATCH', body: { title, description, category, previewSeconds: preview } })
       toast.success('Details saved')
       onSaved()
       onClose()
@@ -48,6 +49,22 @@ function DetailsSheet({ video, open, onClose, onSaved }: { video: VideoSummary; 
               {item.label}
             </Chip>
           ))}
+        </div>
+        <div>
+          <label htmlFor="edit-preview" className="mb-2 flex items-center justify-between text-sm font-semibold">
+            Free preview
+            <span className="tabular-nums text-[var(--muted)]">{preview === 0 ? 'Off' : `${preview}s`}</span>
+          </label>
+          <input
+            id="edit-preview"
+            type="range"
+            min={0}
+            max={MAX_PREVIEW_SECONDS}
+            step={5}
+            value={preview}
+            onChange={(e) => setPreview(Number(e.target.value))}
+            className="w-full accent-[var(--accent)]"
+          />
         </div>
         <Button full loading={saving} disabled={title.trim().length < 2} onClick={() => void save()}>
           Save details

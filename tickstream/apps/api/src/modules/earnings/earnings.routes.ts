@@ -45,6 +45,8 @@ interface HistoryRow {
   seconds: number
   started_at: Date
   status: string
+  last_position: number
+  duration_seconds: number | null
 }
 
 export function registerEarningsRoutes(router: Router): void {
@@ -122,7 +124,7 @@ export function registerEarningsRoutes(router: Router): void {
     const addr = requireUser(ctx)
     const rows = await query<HistoryRow>(
       `select s.id, s.video_id, v.title, u.username, s.spent_micro, s.segments_authorized * v.segment_seconds as seconds,
-         s.started_at, s.status
+         s.started_at, s.status, s.last_position, v.duration_seconds
        from playback_sessions s join videos v on v.id = s.video_id join users u on u.address = v.creator
        where s.viewer = $1 and s.spent_micro > 0 order by s.started_at desc limit 60`,
       [addr],
@@ -137,6 +139,8 @@ export function registerEarningsRoutes(router: Router): void {
         seconds: row.seconds,
         startedAt: row.started_at.toISOString(),
         status: row.status,
+        positionSecond: row.last_position,
+        durationSeconds: row.duration_seconds,
       })),
     })
   })

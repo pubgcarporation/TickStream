@@ -36,5 +36,6 @@ export const env = {
     .split(',')
     .map((value) => value.trim().toLowerCase())
     .filter(Boolean),
+  trustProxy: optional('TRUST_PROXY') === '1',
   maxUploadBytes: Number(optional('MAX_UPLOAD_BYTES') ?? String(1024 * 1024 * 1024)),
 } as const

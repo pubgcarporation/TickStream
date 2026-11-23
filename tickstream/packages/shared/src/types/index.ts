@@ -11,6 +11,8 @@ export interface VideoSummary {
   description: string
   category: string
   priceMicro: number
+  /** Seconds at the start of the video that anyone can watch without paying. */
+  previewSeconds: number
   durationSeconds: number | null
   status: VideoStatus
   views: number

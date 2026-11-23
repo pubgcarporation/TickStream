@@ -32,6 +32,11 @@ export function VideoCard({ video }: { video: VideoSummary }) {
               className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
             />
           )}
+          {video.previewSeconds > 0 && (
+            <span className="absolute left-2 top-2 rounded-full bg-[var(--success)]/90 px-2.5 py-1 text-[11px] font-semibold text-[#0d1b2f]">
+              {video.previewSeconds}s free
+            </span>
+          )}
           <div className="absolute inset-x-2 bottom-2 flex items-center justify-between">
             <PriceTag priceMicro={video.priceMicro} />
             <span className="mono flex items-center gap-1 rounded-full bg-black/55 px-2.5 py-1 text-[11px] tabular-nums backdrop-blur">

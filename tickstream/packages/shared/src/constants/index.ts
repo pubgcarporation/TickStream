@@ -42,3 +42,5 @@ export const REPORT_REASONS = [
 ] as const
 
 export const COMMENT_MAX_LENGTH = 500
+
+export const MAX_PREVIEW_SECONDS = 60

@@ -1,4 +1,4 @@
-import { CATEGORY_SLUGS, MAX_PRICE_PER_SECOND, MIN_PRICE_PER_SECOND } from '@shared/constants'
+import { CATEGORY_SLUGS, MAX_PREVIEW_SECONDS, MAX_PRICE_PER_SECOND, MIN_PRICE_PER_SECOND } from '@shared/constants'
 import { query } from '@shared/db'
 import { getStorage } from '@shared/storage'
 import { HttpError, readJson, requireUser, sendJson, type Ctx, type Router } from '../../http'
@@ -92,10 +92,11 @@ export function registerVideoRoutes(router: Router): void {
     const title = str(body.title, 'title', 2, 120)
     const description = optionalStr(body.description, 'description', 2000) ?? ''
     const priceMicro = int(body.priceMicro, 'priceMicro', MIN_PRICE_PER_SECOND, MAX_PRICE_PER_SECOND)
+    const previewSeconds = body.previewSeconds === undefined ? 0 : int(body.previewSeconds, 'previewSeconds', 0, MAX_PREVIEW_SECONDS)
     const rows = await query<{ id: string }>(
-      `insert into videos (creator, title, description, category, price_micro)
-       values ($1, $2, $3, $4, $5) returning id`,
-      [addr, title, description, category(body.category), priceMicro],
+      `insert into videos (creator, title, description, category, price_micro, preview_seconds)
+       values ($1, $2, $3, $4, $5, $6) returning id`,
+      [addr, title, description, category(body.category), priceMicro, previewSeconds],
     )
     sendJson(ctx.res, 201, { id: rows[0]?.id })
   })
@@ -107,9 +108,10 @@ export function registerVideoRoutes(router: Router): void {
     const description = body.description !== undefined ? (optionalStr(body.description, 'description', 2000) ?? '') : row.description
     const cat = body.category !== undefined ? category(body.category) : row.category
     const price = body.priceMicro !== undefined ? int(body.priceMicro, 'priceMicro', MIN_PRICE_PER_SECOND, MAX_PRICE_PER_SECOND) : row.price_micro
+    const preview = body.previewSeconds !== undefined ? int(body.previewSeconds, 'previewSeconds', 0, MAX_PREVIEW_SECONDS) : row.preview_seconds
     await query(
-      `update videos set title = $2, description = $3, category = $4, price_micro = $5, updated_at = now() where id = $1`,
-      [row.id, title, description, cat, price],
+      `update videos set title = $2, description = $3, category = $4, price_micro = $5, preview_seconds = $6, updated_at = now() where id = $1`,
+      [row.id, title, description, cat, price, preview],
     )
     const updated = await getVideoRow(row.id)
     sendJson(ctx.res, 200, { video: updated ? mapVideo(updated) : null })

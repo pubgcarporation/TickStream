@@ -13,6 +13,12 @@
 6. Closing the tab, pausing for long, or ending the session stops payments. A session with no activity for 90 seconds is
    dropped.
 
+## Free preview and resuming
+
+- A creator can make the first 5 to 60 seconds free. A session that starts from the beginning unlocks those segments
+  without a payment. Payments begin when the preview is about to run out.
+- The page saves the viewer's position every 20 seconds and when they leave. The next visit offers "Resume at".
+
 ## What the page shows
 
 - **Cost so far** is price per second times the seconds that actually played.

@@ -2,9 +2,10 @@ import { Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { CATEGORIES } from '@shared/constants'
 import type { VideoSummary } from '@shared/types'
-import { Chip, EmptyState, inputClass } from '@/components/ui/primitives'
+import { Button, Chip, EmptyState, inputClass } from '@/components/ui/primitives'
 import { VideoGrid } from '@/components/video/VideoGrid'
 import { useApi } from '@/hooks/useApi'
+import { api } from '@/lib/api'
 import { navigate, useLocation } from '@/lib/router'
 
 const SORTS = [
@@ -35,10 +36,30 @@ export function ExplorePage() {
     navigate(query ? `/explore?${query}` : '/explore', { replace: true })
   }
 
-  const params = new URLSearchParams({ sort, limit: '48' })
+  const PAGE = 48
+  const params = new URLSearchParams({ sort, limit: String(PAGE) })
   if (category) params.set('category', category)
   if (q) params.set('q', q)
   const { data, loading } = useApi<{ videos: VideoSummary[] }>(`videos?${params.toString()}`)
+  const filterKey = params.toString()
+  const [extra, setExtra] = useState<{ key: string; videos: VideoSummary[]; done: boolean }>({ key: filterKey, videos: [], done: false })
+  const [loadingMore, setLoadingMore] = useState(false)
+  // Extra pages belong to one set of filters; changing the filters starts over.
+  const more = extra.key === filterKey ? extra : { key: filterKey, videos: [], done: false }
+  const videos = data ? [...data.videos, ...more.videos] : null
+  const canLoadMore = Boolean(data) && data!.videos.length === PAGE && !more.done
+
+  const loadMore = async () => {
+    setLoadingMore(true)
+    try {
+      const next = new URLSearchParams(params)
+      next.set('offset', String(PAGE + more.videos.length))
+      const result = await api<{ videos: VideoSummary[] }>(`videos?${next.toString()}`)
+      setExtra({ key: filterKey, videos: [...more.videos, ...result.videos], done: result.videos.length < PAGE })
+    } finally {
+      setLoadingMore(false)
+    }
+  }
 
   return (
     <div className="space-y-8">
@@ -80,13 +101,20 @@ export function ExplorePage() {
         ))}
       </div>
 
-      {data && data.videos.length === 0 ? (
+      {videos && videos.length === 0 ? (
         <EmptyState
           title="Nothing here yet"
           body={q || category ? 'No videos match those filters. Try clearing them.' : 'No videos have been published yet.'}
         />
       ) : (
-        <VideoGrid videos={data?.videos ?? null} loading={loading} />
+        <VideoGrid videos={videos} loading={loading} />
+      )}
+      {canLoadMore && (
+        <div className="flex justify-center">
+          <Button variant="secondary" loading={loadingMore} onClick={() => void loadMore()}>
+            Show more
+          </Button>
+        </div>
       )}
     </div>
   )

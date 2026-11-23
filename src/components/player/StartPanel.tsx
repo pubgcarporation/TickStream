@@ -2,7 +2,7 @@ import { ConnectKitButton } from 'connectkit'
 import { Wallet } from 'lucide-react'
 import { CHUNK_SECONDS_OPTIONS } from '@shared/constants'
 import { Button, Chip, Panel } from '@/components/ui/primitives'
-import { formatMicro, ratePerHour, ratePerMinute } from '@/lib/format'
+import { formatDuration, formatMicro, ratePerHour, ratePerMinute } from '@/lib/format'
 import { useAuth } from '@/providers/AuthProvider'
 import { useSpendingWallet } from '@/providers/SpendingWalletProvider'
 
@@ -10,6 +10,9 @@ const CAP_CHOICES = [100_000, 500_000, 1_000_000, 5_000_000]
 
 interface StartPanelProps {
   priceMicro: number
+  previewSeconds: number
+  resumeAt: number
+  onResumeAt: (second: number) => void
   chunkSeconds: number
   capMicro: number
   onChunk: (seconds: number) => void
@@ -20,7 +23,7 @@ interface StartPanelProps {
   message: string | null
 }
 
-export function StartPanel({ priceMicro, chunkSeconds, capMicro, onChunk, onCap, onStart, onAddFunds, starting, message }: StartPanelProps) {
+export function StartPanel({ priceMicro, previewSeconds, resumeAt, onResumeAt, chunkSeconds, capMicro, onChunk, onCap, onStart, onAddFunds, starting, message }: StartPanelProps) {
   const { user, signIn, signingIn } = useAuth()
   const { balance, error: balanceError } = useSpendingWallet()
   const chunkCost = priceMicro * chunkSeconds
@@ -40,6 +43,11 @@ export function StartPanel({ priceMicro, chunkSeconds, capMicro, onChunk, onCap,
         <p className="mt-1 text-xs tabular-nums text-[var(--muted)]">
           {ratePerMinute(priceMicro)} a minute, {ratePerHour(priceMicro)} an hour. Pausing stops the meter.
         </p>
+        {previewSeconds > 0 && (
+          <p className="mt-2 inline-block rounded-full bg-[var(--success)]/15 px-3 py-1 text-xs font-semibold text-[var(--success)]">
+            First {previewSeconds} seconds are free
+          </p>
+        )}
       </div>
 
       <div>
@@ -94,9 +102,16 @@ export function StartPanel({ priceMicro, chunkSeconds, capMicro, onChunk, onCap,
             )
           }
           return (
-            <Button full loading={starting} disabled={!capOk} onClick={onStart}>
-              Start watching
-            </Button>
+            <div className="space-y-2">
+              {resumeAt > 0 && (
+                <Button full loading={starting} disabled={!capOk} onClick={() => onResumeAt(resumeAt)}>
+                  Resume at {formatDuration(resumeAt)}
+                </Button>
+              )}
+              <Button full variant={resumeAt > 0 ? 'secondary' : 'primary'} loading={starting && resumeAt === 0} disabled={!capOk} onClick={onStart}>
+                {resumeAt > 0 ? 'Start from the beginning' : 'Start watching'}
+              </Button>
+            </div>
           )
         }}
       </ConnectKitButton.Custom>

@@ -15,6 +15,8 @@ interface HistoryItem {
   spentMicro: number
   seconds: number
   startedAt: string
+  positionSecond: number
+  durationSeconds: number | null
 }
 
 function History() {
@@ -50,6 +52,11 @@ function History() {
                 {item.creator} · {formatDuration(item.seconds)} paid for · {timeAgo(item.startedAt)}
               </p>
             </div>
+            {item.durationSeconds && item.positionSecond >= 10 && item.positionSecond < item.durationSeconds - 10 && (
+              <Link to={`/watch/${item.videoId}`} className="hidden rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold hover:bg-white/15 sm:inline-block">
+                Resume at {formatDuration(item.positionSecond)}
+              </Link>
+            )}
             <span className="font-semibold tabular-nums">
               {formatMicro(item.spentMicro)} <span className="text-xs font-medium text-[var(--subtle)]">USDC</span>
             </span>

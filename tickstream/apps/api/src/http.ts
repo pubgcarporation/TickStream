@@ -1,3 +1,4 @@
+import { env } from '@shared/env'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 
 export class HttpError extends Error {
@@ -110,8 +111,17 @@ export function requireUser(ctx: Ctx): string {
   return ctx.user
 }
 
+/**
+ * The caller's address, used only for rate limits. Forwarded headers are client-controlled unless a trusted proxy
+ * sits in front, so they are read only when TRUST_PROXY is set, and then only the last entry (the one the proxy added).
+ */
 export function clientIp(req: IncomingMessage): string {
-  const forwarded = req.headers['x-forwarded-for']
-  const first = Array.isArray(forwarded) ? forwarded[0] : forwarded?.split(',')[0]
-  return (first ?? req.socket.remoteAddress ?? 'unknown').trim()
+  if (env.trustProxy) {
+    const forwarded = req.headers['x-forwarded-for']
+    const raw = Array.isArray(forwarded) ? forwarded.join(',') : forwarded
+    const parts = raw?.split(',') ?? []
+    const last = parts[parts.length - 1]?.trim()
+    if (last) return last
+  }
+  return req.socket.remoteAddress ?? 'unknown'
 }

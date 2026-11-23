@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
-import { CATEGORIES, DEFAULT_PRICE_PER_SECOND, MAX_PRICE_PER_SECOND, MIN_PRICE_PER_SECOND } from '@shared/constants'
+import { CATEGORIES, DEFAULT_PRICE_PER_SECOND, MAX_PREVIEW_SECONDS, MAX_PRICE_PER_SECOND, MIN_PRICE_PER_SECOND } from '@shared/constants'
 import { Button, Chip, Panel, inputClass } from '@/components/ui/primitives'
 import { api, uploadSource } from '@/lib/api'
 import { formatMicro, ratePerHour, ratePerMinute } from '@/lib/format'
@@ -25,6 +25,7 @@ export function StudioUpload() {
   const [description, setDescription] = useState('')
   const [category, setCategory] = useState('other')
   const [price, setPrice] = useState(formatUsdc(BigInt(DEFAULT_PRICE_PER_SECOND)))
+  const [previewSeconds, setPreviewSeconds] = useState(0)
   const [file, setFile] = useState<File | null>(null)
   const [progress, setProgress] = useState<number | null>(null)
   const [busy, setBusy] = useState(false)
@@ -39,7 +40,7 @@ export function StudioUpload() {
     try {
       const created = await api<{ id: string }>('videos', {
         method: 'POST',
-        body: { title: title.trim(), description: description.trim(), category, priceMicro },
+        body: { title: title.trim(), description: description.trim(), category, priceMicro, previewSeconds },
       })
       setProgress(0)
       await uploadSource(created.id, file, setProgress)
@@ -132,6 +133,24 @@ export function StudioUpload() {
               Enter between {formatMicro(MIN_PRICE_PER_SECOND)} and {formatMicro(MAX_PRICE_PER_SECOND)} USDC per second.
             </p>
           )}
+        </div>
+        <div>
+          <label htmlFor="preview" className="mb-2 flex items-center justify-between text-sm font-semibold">
+            Free preview
+            <span className="tabular-nums text-[var(--muted)]">{previewSeconds === 0 ? 'Off' : `${previewSeconds}s`}</span>
+          </label>
+          <input
+            id="preview"
+            type="range"
+            min={0}
+            max={MAX_PREVIEW_SECONDS}
+            step={5}
+            value={previewSeconds}
+            disabled={busy}
+            onChange={(e) => setPreviewSeconds(Number(e.target.value))}
+            className="w-full accent-[var(--accent)]"
+          />
+          <p className="mt-1 text-xs text-[var(--subtle)]">The first seconds anyone can watch before paying anything.</p>
         </div>
         {priceMicro !== null && (
           <dl className="glass-inner divide-y divide-[var(--border)] rounded-2xl text-sm tabular-nums">

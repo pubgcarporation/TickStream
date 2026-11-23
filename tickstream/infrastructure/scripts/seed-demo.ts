@@ -116,8 +116,8 @@ async function main() {
       continue
     }
     const rows = await query<{ id: string }>(
-      `insert into videos (creator, title, description, category, price_micro) values ($1, $2, $3, $4, $5) returning id`,
-      [creator, spec.title, spec.description, spec.category, spec.priceMicro],
+      `insert into videos (creator, title, description, category, price_micro, preview_seconds) values ($1, $2, $3, $4, $5, $6) returning id`,
+      [creator, spec.title, spec.description, spec.category, spec.priceMicro, spec.title === 'Gradient Drift' || spec.title === 'Signal Check' ? 10 : 0],
     )
     const id = rows[0]?.id
     if (!id) continue

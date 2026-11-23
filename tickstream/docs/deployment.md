@@ -24,6 +24,7 @@ Names only. Put values in `.env`.
 | `STORAGE_DRIVER` | API, media worker | `local` or `r2`. |
 | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` | API, media worker | Needed when `STORAGE_DRIVER=r2`. |
 | `ADMIN_ADDRESSES` | API | Comma-separated wallet addresses allowed into the admin console. |
+| `TRUST_PROXY` | API | Set to `1` only behind a proxy you control, so rate limits use the real client address. |
 | `FFMPEG_PATH`, `FFPROBE_PATH` | media worker | Optional. Defaults to the bundled binaries. |
 
 ## Containers

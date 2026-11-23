@@ -8,7 +8,7 @@ import { HttpError, readJson, requireUser, sendJson, type Router } from '../../h
 import { rateLimit } from '../../middleware/rate-limit'
 import { address, int, uuid } from '../../middleware/request-validation'
 import { getVideoRow } from '../videos/videos.repository'
-import { endSession, firstUnpaid, getManifest, requireSession } from './playback.service'
+import { endSession, firstUnpaid, getManifest, paidKey, requireSession } from './playback.service'
 import { loadSession, patchSession, saveSession, toSessionInfo, type LiveSession } from './session-store'
 
 const MAX_CAP_MICRO = 100_000_000
@@ -62,11 +62,14 @@ export function registerPlaybackRoutes(router: Router): void {
       if (previous) await endSession(previous, 'replaced')
     }
 
+    // The creator's free preview covers the first seconds of the video, for anyone who starts from the beginning.
+    const previewSegs = startSeg === 0 ? Math.min(Math.ceil(video.preview_seconds / segSeconds), segCount) : 0
+
     const id = randomUUID()
     await query(
-      `insert into playback_sessions (id, video_id, viewer, payer, cap_micro, chunk_seconds)
-       values ($1, $2, $3, $4, $5, $6)`,
-      [id, video.id, viewer, payer, capMicro, chunkSeconds],
+      `insert into playback_sessions (id, video_id, viewer, payer, cap_micro, chunk_seconds, segments_authorized, last_position)
+       values ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [id, video.id, viewer, payer, capMicro, chunkSeconds, previewSegs, startSeg * segSeconds],
     )
     await query('update videos set views = views + 1 where id = $1', [video.id])
 
@@ -81,7 +84,7 @@ export function registerPlaybackRoutes(router: Router): void {
       capMicro,
       spentMicro: 0,
       startSeg,
-      authEnd: startSeg,
+      authEnd: startSeg + previewSegs,
       served: startSeg - 1,
       segCount,
       segSeconds,
@@ -89,6 +92,10 @@ export function registerPlaybackRoutes(router: Router): void {
       epoch: 1,
     }
     await saveSession(session)
+    if (previewSegs > 0) {
+      await redis.sadd(paidKey(id), ...Array.from({ length: previewSegs }, (_, index) => String(startSeg + index)))
+      await redis.expire(paidKey(id), 6 * 3600)
+    }
     await redis.set(keys.viewerActive(viewer), id, 'EX', 6 * 3600)
     sendJson(ctx.res, 201, { session: toSessionInfo(session) })
   })
@@ -100,6 +107,26 @@ export function registerPlaybackRoutes(router: Router): void {
       await query('update playback_sessions set last_seen_at = now() where id = $1', [session.id])
     }
     sendJson(ctx.res, 200, { session: toSessionInfo(session) })
+  })
+
+  router.put('/sessions/:id/position', 'required', async (ctx) => {
+    const viewer = requireUser(ctx)
+    await rateLimit('position', viewer, 30, 60)
+    const session = await requireSession(uuid(ctx.params.id ?? ''), viewer)
+    const body = await readJson(ctx.req, 1024)
+    const second = int(body.second, 'second', 0, 10 * 24 * 3600)
+    await query('update playback_sessions set last_position = $2, last_seen_at = now() where id = $1', [session.id, second])
+    sendJson(ctx.res, 200, { session: toSessionInfo(session) })
+  })
+
+  router.get('/videos/:id/progress', 'required', async (ctx) => {
+    const viewer = requireUser(ctx)
+    const rows = await query<{ last_position: number }>(
+      `select last_position from playback_sessions where video_id = $1 and viewer = $2 and last_position > 0
+       order by last_seen_at desc limit 1`,
+      [uuid(ctx.params.id ?? ''), viewer],
+    )
+    sendJson(ctx.res, 200, { second: rows[0]?.last_position ?? 0 })
   })
 
   router.post('/sessions/:id/seek', 'required', async (ctx) => {

@@ -79,3 +79,11 @@ Admins are the wallet addresses listed in `ADMIN_ADDRESSES`. All routes return 4
 | `GET /admin/videos?q=` | All videos, including taken-down ones. |
 | `POST /admin/videos/:id/status` | `{ "status": "removed" \| "ready" }`. |
 | `GET /admin/payments`, `GET /admin/users` | Recent payments and users. |
+
+## Playback additions
+
+| Method and path | Auth | Purpose |
+| --- | --- | --- |
+| `PUT /sessions/:id/position` | required | Saves the viewer's position `{ "second": n }` and keeps the session alive. |
+| `GET /videos/:id/progress` | required | The last saved position for this video. |
+| `GET /health/ready` | none | Checks Postgres and Redis. |

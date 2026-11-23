@@ -17,6 +17,7 @@ import { DepositSheet } from '@/components/wallet/DepositSheet'
 import { useApi } from '@/hooks/useApi'
 import { useShareLink } from '@/hooks/useShareLink'
 import { Link } from '@/lib/router'
+import { useAuth } from '@/providers/AuthProvider'
 import { useSpendingWallet } from '@/providers/SpendingWalletProvider'
 
 const DEFAULT_CAP = 1_000_000
@@ -25,6 +26,8 @@ export function WatchPage({ videoId }: { videoId: string }) {
   const { address } = useAccount()
   const { spender, balance } = useSpendingWallet()
   const { data, error, loading } = useApi<{ video: VideoSummary; error: string | null }>(`videos/${videoId}`)
+  const { user } = useAuth()
+  const progress = useApi<{ second: number }>(user ? `videos/${videoId}/progress` : null)
   const playback = usePaidPlayback(videoId, address)
   const [capChoice, setCapChoice] = useState(DEFAULT_CAP)
   const [chunkSeconds, setChunkSeconds] = useState<number>(DEFAULT_CHUNK_SECONDS)
@@ -33,6 +36,8 @@ export function WatchPage({ videoId }: { videoId: string }) {
   const shareUrl = useShareLink(`/watch/${videoId}`)
 
   const video = data?.video
+  const lastSecond = progress.data?.second ?? 0
+  const resumeAt = video?.durationSeconds && lastSecond >= 10 && lastSecond < video.durationSeconds - 10 ? lastSecond : 0
   const { view } = playback
   const idle = view.phase === 'idle' || view.phase === 'starting' || !view.session
 
@@ -115,6 +120,9 @@ export function WatchPage({ videoId }: { videoId: string }) {
         {idle ? (
           <StartPanel
             priceMicro={video.priceMicro}
+            previewSeconds={video.previewSeconds}
+            resumeAt={resumeAt}
+            onResumeAt={(second) => start(second)}
             chunkSeconds={chunkSeconds}
             capMicro={capMicro}
             onChunk={setChunkSeconds}
