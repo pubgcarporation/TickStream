@@ -5,6 +5,7 @@ import { query, queryOne } from '@shared/db'
 import { getRedis, keys } from '@shared/redis'
 import { HttpError, readJson, requireUser, sendJson, type Router } from '../../http'
 import { bearerToken, issueToken, revokeToken } from '../../middleware/authentication'
+import { isAdmin } from '../../middleware/authorization'
 import { rateLimit } from '../../middleware/rate-limit'
 import { address, str } from '../../middleware/request-validation'
 import { mapUser, type UserRow } from '../users/users.mapper'
@@ -67,13 +68,13 @@ export function registerAuthRoutes(router: Router): void {
     await redis.del(keys.authNonce(addr))
     const user = await ensureUser(addr)
     const token = await issueToken(addr)
-    sendJson(ctx.res, 200, { token, user: mapUser(user) })
+    sendJson(ctx.res, 200, { token, user: mapUser(user), isAdmin: isAdmin(addr) })
   })
 
   router.get('/auth/me', 'required', async (ctx) => {
     const addr = requireUser(ctx)
     const user = await ensureUser(addr)
-    sendJson(ctx.res, 200, { user: mapUser(user) })
+    sendJson(ctx.res, 200, { user: mapUser(user), isAdmin: isAdmin(addr) })
   })
 
   router.post('/auth/logout', 'required', async (ctx) => {

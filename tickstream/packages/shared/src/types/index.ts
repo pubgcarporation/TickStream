@@ -70,3 +70,65 @@ export interface PaymentRecord {
   transferId: string | null
   createdAt: string
 }
+
+export interface CommentItem {
+  id: string
+  body: string
+  createdAt: string
+  author: { address: string; username: string; displayName: string | null }
+  canRemove: boolean
+}
+
+export interface FollowState {
+  following: boolean
+  followers: number
+}
+
+export interface CreatorSummary {
+  address: string
+  username: string
+  displayName: string | null
+  videos: number
+  followers: number
+}
+
+export interface VideoAnalytics {
+  videoId: string
+  title: string
+  views: number
+  sessions: number
+  viewers: number
+  avgWatchSeconds: number
+  avgCompletionPercent: number
+  earnedMicro: number
+  /** Share of sessions that paid for 0-25, 25-50, 50-75 and 75-100 percent of the video. */
+  completion: [number, number, number, number]
+}
+
+export interface CreatorAnalytics {
+  videos: VideoAnalytics[]
+  dailyViewers: Array<{ day: string; viewers: number }>
+}
+
+export interface AdminOverview {
+  users: number
+  videos: number
+  removedVideos: number
+  sessions24h: number
+  volumeTotalMicro: number
+  volume24hMicro: number
+  openReports: number
+}
+
+export interface ReportItem {
+  id: string
+  reason: string
+  details: string
+  status: 'open' | 'resolved'
+  resolution: string | null
+  createdAt: string
+  reporter: string
+  target:
+    | { kind: 'video'; id: string; title: string; creator: string; status: VideoStatus }
+    | { kind: 'comment'; id: string; body: string; author: string; videoId: string }
+}

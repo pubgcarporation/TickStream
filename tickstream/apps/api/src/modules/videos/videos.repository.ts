@@ -43,6 +43,9 @@ export function mapVideo(row: VideoRow): VideoSummary {
 export interface VideoFilter {
   creator?: string
   status?: VideoStatus
+  /** Include videos taken down (admin only). */
+  includeRemoved?: boolean
+  exclude?: string
   category?: string
   q?: string
   sort: 'new' | 'trending' | 'price'
@@ -58,7 +61,8 @@ export async function listVideos(filter: VideoFilter): Promise<VideoSummary[]> {
     return `$${params.length}`
   }
   if (filter.status) where.push(`v.status = ${push(filter.status)}`)
-  else where.push(`v.status <> 'removed'`)
+  else if (!filter.includeRemoved) where.push(`v.status <> 'removed'`)
+  if (filter.exclude) where.push(`v.id <> ${push(filter.exclude)}`)
   if (filter.creator) where.push(`v.creator = ${push(filter.creator)}`)
   if (filter.category) where.push(`v.category = ${push(filter.category)}`)
   if (filter.q) {

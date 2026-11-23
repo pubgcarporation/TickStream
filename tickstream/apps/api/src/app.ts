@@ -2,10 +2,16 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import { clientIp, HttpError, Router, sendJson, type Ctx } from './http'
 import { authenticate } from './middleware/authentication'
 import { handleError } from './middleware/error-handler'
+import { registerAdminRoutes } from './modules/admin/admin.routes'
+import { registerAnalyticsRoutes } from './modules/analytics/analytics.routes'
 import { registerAuthRoutes } from './modules/auth/auth.routes'
+import { registerCommentRoutes } from './modules/comments/comments.routes'
 import { registerEarningsRoutes } from './modules/earnings/earnings.routes'
 import { registerGrantRoutes } from './modules/payments/grant.routes'
+import { registerWithdrawRoutes } from './modules/payments/withdraw.routes'
 import { registerPlaybackRoutes } from './modules/playback/playback.routes'
+import { registerReportRoutes } from './modules/reports/reports.routes'
+import { registerSubscriptionRoutes } from './modules/subscriptions/subscriptions.routes'
 import { registerUploadRoutes } from './modules/uploads/uploads.routes'
 import { registerUserRoutes } from './modules/users/users.routes'
 import { registerVideoRoutes } from './modules/videos/videos.routes'
@@ -19,6 +25,12 @@ registerUploadRoutes(router)
 registerPlaybackRoutes(router)
 registerGrantRoutes(router)
 registerEarningsRoutes(router)
+registerWithdrawRoutes(router)
+registerAnalyticsRoutes(router)
+registerCommentRoutes(router)
+registerSubscriptionRoutes(router)
+registerReportRoutes(router)
+registerAdminRoutes(router)
 
 export async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
   try {

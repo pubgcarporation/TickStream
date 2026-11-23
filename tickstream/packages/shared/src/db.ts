@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import pg from 'pg'
 import { env } from './env'
@@ -31,8 +31,12 @@ export async function queryOne<T extends pg.QueryResultRow = pg.QueryResultRow>(
 }
 
 export async function migrate(): Promise<void> {
-  const file = fileURLToPath(new URL('../../database/migrations/001_init.sql', import.meta.url))
-  await getPool().query(readFileSync(file, 'utf8'))
+  const dir = fileURLToPath(new URL('../../database/migrations/', import.meta.url))
+  const files = readdirSync(dir)
+    .filter((name) => name.endsWith('.sql'))
+    .sort()
+  // Migrations are idempotent (create ... if not exists) and applied in file-name order.
+  for (const name of files) await getPool().query(readFileSync(`${dir}${name}`, 'utf8'))
 }
 
 export async function closeDb(): Promise<void> {

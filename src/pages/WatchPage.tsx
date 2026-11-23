@@ -1,14 +1,18 @@
-import { Link2 } from 'lucide-react'
+import { Flag, Link2 } from 'lucide-react'
 import { useState } from 'react'
 import { useAccount } from 'wagmi'
 import { toast } from 'sonner'
 import { CATEGORIES, DEFAULT_CHUNK_SECONDS } from '@shared/constants'
 import type { VideoSummary } from '@shared/types'
+import { CommentsSection } from '@/components/community/CommentsSection'
+import { FollowButton } from '@/components/community/FollowButton'
+import { ReportSheet } from '@/components/community/ReportSheet'
 import { CostMeter } from '@/components/player/CostMeter'
 import { PlayerSurface } from '@/components/player/PlayerSurface'
 import { StartPanel } from '@/components/player/StartPanel'
 import { usePaidPlayback } from '@/components/player/usePaidPlayback'
 import { Button, EmptyState, Skeleton } from '@/components/ui/primitives'
+import { RelatedVideos } from '@/components/video/RelatedVideos'
 import { DepositSheet } from '@/components/wallet/DepositSheet'
 import { useApi } from '@/hooks/useApi'
 import { useShareLink } from '@/hooks/useShareLink'
@@ -25,6 +29,7 @@ export function WatchPage({ videoId }: { videoId: string }) {
   const [capChoice, setCapChoice] = useState(DEFAULT_CAP)
   const [chunkSeconds, setChunkSeconds] = useState<number>(DEFAULT_CHUNK_SECONDS)
   const [depositOpen, setDepositOpen] = useState(false)
+  const [reportOpen, setReportOpen] = useState(false)
   const shareUrl = useShareLink(`/watch/${videoId}`)
 
   const video = data?.video
@@ -91,12 +96,19 @@ export function WatchPage({ videoId }: { videoId: string }) {
             <span>{category}</span>
             <span aria-hidden>·</span>
             <span className="tabular-nums">{video.views} views</span>
-            <Button variant="ghost" onClick={() => void copyLink()} disabled={!shareUrl} className="ml-auto min-h-10 px-3">
-              <Link2 className="size-4" aria-hidden /> Copy link
-            </Button>
+            <div className="ml-auto flex flex-wrap items-center gap-2">
+              <FollowButton username={video.creator.username} creatorAddress={video.creator.address} />
+              <Button variant="ghost" onClick={() => void copyLink()} disabled={!shareUrl} className="min-h-10 px-3">
+                <Link2 className="size-4" aria-hidden /> Copy link
+              </Button>
+              <Button variant="ghost" onClick={() => setReportOpen(true)} className="min-h-10 px-3" aria-label="Report video">
+                <Flag className="size-4" aria-hidden />
+              </Button>
+            </div>
           </div>
           {video.description && <p className="mt-4 max-w-2xl text-pretty text-[var(--muted)]">{video.description}</p>}
         </div>
+        <CommentsSection videoId={video.id} />
       </div>
 
       <aside className="space-y-4 lg:sticky lg:top-24" aria-label="Payment">
@@ -124,8 +136,10 @@ export function WatchPage({ videoId }: { videoId: string }) {
             onRaiseCap={(cap) => start(Math.floor(view.position), cap)}
           />
         )}
+        <RelatedVideos videoId={video.id} />
       </aside>
       <DepositSheet open={depositOpen} onClose={() => setDepositOpen(false)} />
+      <ReportSheet target={reportOpen ? { kind: 'video', id: video.id } : null} onClose={() => setReportOpen(false)} />
     </div>
   )
 }

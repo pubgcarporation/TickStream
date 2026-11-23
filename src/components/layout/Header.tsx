@@ -15,6 +15,7 @@ const NAV = [
   { to: '/studio', label: 'Studio' },
   { to: '/wallet', label: 'Wallet' },
 ]
+const ADMIN_ITEM = { to: '/admin', label: 'Admin' }
 
 function AccountArea() {
   const { user, signIn, signingIn } = useAuth()
@@ -60,7 +61,9 @@ function AccountArea() {
 
 export function Header() {
   const { path } = useLocation()
+  const { isAdmin } = useAuth()
   const [open, setOpen] = useState(false)
+  const items = isAdmin ? [...NAV, ADMIN_ITEM] : NAV
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[#0d1b2f]/80 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-6 px-4 sm:px-6">
@@ -68,7 +71,7 @@ export function Header() {
           <Wordmark />
         </Link>
         <nav className="hidden items-center gap-1 md:flex" aria-label="Main">
-          {NAV.map((item) => (
+          {items.map((item) => (
             <Link
               key={item.to}
               to={item.to}
@@ -95,7 +98,7 @@ export function Header() {
       </div>
       {open && (
         <nav className="border-t border-[var(--border)] px-4 py-2 md:hidden" aria-label="Mobile">
-          {NAV.map((item) => (
+          {items.map((item) => (
             <Link
               key={item.to}
               to={item.to}

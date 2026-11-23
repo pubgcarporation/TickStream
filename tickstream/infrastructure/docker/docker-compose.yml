@@ -28,6 +28,52 @@ services:
       timeout: 3s
       retries: 20
 
+  # Application services. Start with: docker compose --profile app up -d --build
+  api:
+    profiles: ["app"]
+    build:
+      context: ../../..
+      dockerfile: tickstream/infrastructure/docker/api.Dockerfile
+    restart: unless-stopped
+    environment: &app-env
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/tickstream
+      REDIS_URL: redis://redis:6379
+      SESSION_SECRET: ${SESSION_SECRET:-}
+      GATEWAY_API_URL: ${GATEWAY_API_URL:-}
+      STORAGE_DRIVER: ${STORAGE_DRIVER:-local}
+      ADMIN_ADDRESSES: ${ADMIN_ADDRESSES:-}
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:-}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
+      R2_BUCKET: ${R2_BUCKET:-}
+    ports: ["3001:3001"]
+    volumes: ["tickstream-data:/app/tickstream/.data"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+  media-worker:
+    profiles: ["app"]
+    build:
+      context: ../../..
+      dockerfile: tickstream/infrastructure/docker/media-worker.Dockerfile
+    restart: unless-stopped
+    environment: *app-env
+    volumes: ["tickstream-data:/app/tickstream/.data"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+  settlement-worker:
+    profiles: ["app"]
+    build:
+      context: ../../..
+      dockerfile: tickstream/infrastructure/docker/settlement-worker.Dockerfile
+    restart: unless-stopped
+    environment: *app-env
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
 volumes:
   tickstream-pgdata:
   tickstream-redisdata:
+  tickstream-data:

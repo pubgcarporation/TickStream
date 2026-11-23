@@ -6,6 +6,7 @@ import { api, getToken, onTokenChange, setToken } from '@/lib/api'
 
 interface AuthState {
   user: UserProfile | null
+  isAdmin: boolean
   /** True once we know whether a stored token is still valid. */
   ready: boolean
   signingIn: boolean
@@ -26,20 +27,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { disconnect } = useDisconnect()
   const { signMessageAsync } = useSignMessage()
   const [user, setUser] = useState<UserProfile | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [ready, setReady] = useState(false)
   const [signingIn, setSigningIn] = useState(false)
 
   const refresh = useCallback(async () => {
     if (!getToken()) {
       setUser(null)
+      setIsAdmin(false)
       setReady(true)
       return
     }
     try {
-      const result = await api<{ user: UserProfile }>('auth/me')
+      const result = await api<{ user: UserProfile; isAdmin: boolean }>('auth/me')
       setUser(result.user)
+      setIsAdmin(result.isAdmin)
     } catch {
       setUser(null)
+      setIsAdmin(false)
     } finally {
       setReady(true)
     }
@@ -65,12 +70,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { message } = await api<{ message: string }>('auth/nonce', { method: 'POST', body: { address } })
       const signature = await signMessageAsync({ message })
-      const result = await api<{ token: string; user: UserProfile }>('auth/verify', {
+      const result = await api<{ token: string; user: UserProfile; isAdmin: boolean }>('auth/verify', {
         method: 'POST',
         body: { address, signature },
       })
       setToken(result.token)
       setUser(result.user)
+      setIsAdmin(result.isAdmin)
       return true
     } catch (error) {
       if (!isRejection(error)) toast.error(error instanceof Error ? error.message : 'Could not sign in')
@@ -91,8 +97,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [disconnect])
 
   const value = useMemo(
-    () => ({ user, ready, signingIn, signIn, signOut, refresh }),
-    [user, ready, signingIn, signIn, signOut, refresh],
+    () => ({ user, isAdmin, ready, signingIn, signIn, signOut, refresh }),
+    [user, isAdmin, ready, signingIn, signIn, signOut, refresh],
   )
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

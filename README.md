@@ -10,6 +10,9 @@ price per second, upload a video, and get paid as viewers watch.
 - Add money to a spending balance from your wallet and move unused money back.
 - Creators upload videos, set prices, and see earnings and payments in a studio.
 - Videos are encrypted, delivered only after payment, and limited to one active viewing session per wallet.
+- Comments, following, related videos, and a way to report videos and comments.
+- Creators get analytics (paying viewers, watch time, completion), can edit their videos, and can withdraw earnings to their wallet.
+- An admin console for reports, takedowns, payments and users.
 
 ## Tech stack
 
@@ -42,6 +45,7 @@ Names only. See `tickstream/docs/deployment.md` for details.
 - `GATEWAY_API_URL`: Circle Gateway API base URL
 - `STORAGE_DRIVER`: `local` or `r2`
 - `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`: needed for `r2`
+- `ADMIN_ADDRESSES`: wallet addresses allowed into the admin console (comma-separated)
 - `FFMPEG_PATH`, `FFPROBE_PATH`, `MAX_UPLOAD_BYTES`: optional overrides
 
 ## Project layout

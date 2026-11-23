@@ -1,5 +1,6 @@
 import { RequireAuth } from '@/components/creator/RequireAuth'
 import { StudioNav } from '@/components/creator/StudioNav'
+import { StudioAnalytics } from './studio/StudioAnalytics'
 import { StudioEarnings } from './studio/StudioEarnings'
 import { StudioOverview } from './studio/StudioOverview'
 import { StudioSettings } from './studio/StudioSettings'
@@ -13,6 +14,7 @@ export function StudioPage({ section }: { section: string }) {
       <RequireAuth title="Sign in to open your studio" body="Connect your wallet and sign in. Payments from viewers go straight to that wallet's address.">
         {section === 'videos' && <StudioVideos />}
         {section === 'upload' && <StudioUpload />}
+        {section === 'analytics' && <StudioAnalytics />}
         {section === 'earnings' && <StudioEarnings />}
         {section === 'settings' && <StudioSettings />}
         {section === '' && <StudioOverview />}

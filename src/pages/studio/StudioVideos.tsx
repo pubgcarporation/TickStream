@@ -1,9 +1,9 @@
-import { Check, Loader2, Pencil, Trash2, X } from 'lucide-react'
+import { Check, Loader2, Pencil, SlidersHorizontal, Trash2, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import type { VideoSummary } from '@shared/types'
-import { MAX_PRICE_PER_SECOND, MIN_PRICE_PER_SECOND } from '@shared/constants'
-import { Button, EmptyState, Skeleton, inputClass } from '@/components/ui/primitives'
+import { CATEGORIES, MAX_PRICE_PER_SECOND, MIN_PRICE_PER_SECOND } from '@shared/constants'
+import { Button, Chip, EmptyState, Sheet, Skeleton, inputClass } from '@/components/ui/primitives'
 import { useApi } from '@/hooks/useApi'
 import { api, thumbnailUrl } from '@/lib/api'
 import { formatDuration, formatMicro, timeAgo } from '@/lib/format'
@@ -17,11 +17,52 @@ const STATUS: Record<string, { label: string; className: string }> = {
   failed: { label: 'Failed', className: 'bg-[var(--danger)]/15 text-[var(--danger)]' },
 }
 
+function DetailsSheet({ video, open, onClose, onSaved }: { video: VideoSummary; open: boolean; onClose: () => void; onSaved: () => void }) {
+  const [title, setTitle] = useState(video.title)
+  const [description, setDescription] = useState(video.description)
+  const [category, setCategory] = useState(video.category)
+  const [saving, setSaving] = useState(false)
+
+  const save = async () => {
+    setSaving(true)
+    try {
+      await api(`videos/${video.id}`, { method: 'PATCH', body: { title, description, category } })
+      toast.success('Details saved')
+      onSaved()
+      onClose()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not save')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Sheet open={open} onClose={onClose} title="Video details">
+      <div className="space-y-4">
+        <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} aria-label="Title" className={inputClass} />
+        <textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={2000} rows={4} aria-label="Description" className={inputClass} />
+        <div className="flex flex-wrap gap-2">
+          {CATEGORIES.map((item) => (
+            <Chip key={item.slug} active={category === item.slug} onClick={() => setCategory(item.slug)}>
+              {item.label}
+            </Chip>
+          ))}
+        </div>
+        <Button full loading={saving} disabled={title.trim().length < 2} onClick={() => void save()}>
+          Save details
+        </Button>
+      </div>
+    </Sheet>
+  )
+}
+
 function VideoRow({ video, onChanged }: { video: VideoSummary; onChanged: () => void }) {
   const [editing, setEditing] = useState(false)
   const [price, setPrice] = useState(formatMicro(video.priceMicro))
   const [saving, setSaving] = useState(false)
   const [broken, setBroken] = useState(false)
+  const [detailsOpen, setDetailsOpen] = useState(false)
   const status = STATUS[video.status] ?? STATUS.uploading
 
   const save = async () => {
@@ -110,12 +151,16 @@ function VideoRow({ video, onChanged }: { video: VideoSummary; onChanged: () => 
             <Button variant="ghost" onClick={() => setEditing(true)} aria-label="Edit price" className="px-3">
               <Pencil className="size-4" />
             </Button>
+            <Button variant="ghost" onClick={() => setDetailsOpen(true)} aria-label="Edit title and description" className="px-3">
+              <SlidersHorizontal className="size-4" />
+            </Button>
             <Button variant="ghost" onClick={() => void remove()} aria-label="Remove video" className="px-3">
               <Trash2 className="size-4" />
             </Button>
           </>
         )}
       </div>
+      {detailsOpen && <DetailsSheet video={video} open={detailsOpen} onClose={() => setDetailsOpen(false)} onSaved={onChanged} />}
     </li>
   )
 }

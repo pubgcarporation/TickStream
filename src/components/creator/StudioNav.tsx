@@ -5,6 +5,7 @@ const TABS = [
   { to: '/studio', label: 'Overview' },
   { to: '/studio/videos', label: 'Videos' },
   { to: '/studio/upload', label: 'Upload' },
+  { to: '/studio/analytics', label: 'Analytics' },
   { to: '/studio/earnings', label: 'Earnings' },
   { to: '/studio/settings', label: 'Settings' },
 ]

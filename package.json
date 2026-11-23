@@ -68,5 +68,8 @@
     "typescript": "~7.0.2",
     "vite": "6.4.6",
     "vite-plugin-node-polyfills": "^0.22.0"
-  }
+  },
+  "trustedDependencies": [
+    "ffmpeg-static"
+  ]
 }

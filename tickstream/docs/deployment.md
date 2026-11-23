@@ -23,7 +23,14 @@ Names only. Put values in `.env`.
 | `GATEWAY_API_URL` | API, settlement worker | Circle Gateway API base URL. Testnet: the testnet host. |
 | `STORAGE_DRIVER` | API, media worker | `local` or `r2`. |
 | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` | API, media worker | Needed when `STORAGE_DRIVER=r2`. |
+| `ADMIN_ADDRESSES` | API | Comma-separated wallet addresses allowed into the admin console. |
 | `FFMPEG_PATH`, `FFPROBE_PATH` | media worker | Optional. Defaults to the bundled binaries. |
+
+## Containers
+
+`bun run stack:up` starts only Postgres and Redis. To run everything in containers, export the variables above
+and run `docker compose -f tickstream/infrastructure/docker/docker-compose.yml --profile app up -d --build`.
+The API listens on port 3001. Serve the web client from the same origin or proxy `/api` to it.
 
 ## Production notes
 

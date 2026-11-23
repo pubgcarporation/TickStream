@@ -32,5 +32,9 @@ export const env = {
     secretAccessKey: optional('R2_SECRET_ACCESS_KEY'),
     bucket: optional('R2_BUCKET'),
   },
+  adminAddresses: (optional('ADMIN_ADDRESSES') ?? '')
+    .split(',')
+    .map((value) => value.trim().toLowerCase())
+    .filter(Boolean),
   maxUploadBytes: Number(optional('MAX_UPLOAD_BYTES') ?? String(1024 * 1024 * 1024)),
 } as const

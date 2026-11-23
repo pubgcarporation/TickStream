@@ -41,6 +41,26 @@ export function registerVideoRoutes(router: Router): void {
     sendJson(ctx.res, 200, { videos })
   })
 
+  router.get('/categories', 'none', async (ctx) => {
+    const rows = await query<{ category: string; count: number }>(
+      `select category, count(*)::int as count from videos where status = 'ready' group by category`,
+    )
+    sendJson(ctx.res, 200, { counts: Object.fromEntries(rows.map((row) => [row.category, row.count])) })
+  })
+
+  router.get('/videos/:id/related', 'none', async (ctx) => {
+    const row = await getVideoRow(uuid(ctx.params.id ?? ''))
+    if (!row || row.status === 'removed') throw new HttpError(404, 'Video not found', 'not_found')
+    const sameCategory = await listVideos({ status: 'ready', category: row.category, exclude: row.id, sort: 'trending', limit: 6, offset: 0 })
+    const fill =
+      sameCategory.length < 6
+        ? await listVideos({ status: 'ready', exclude: row.id, sort: 'trending', limit: 12, offset: 0 })
+        : []
+    const seen = new Set(sameCategory.map((video) => video.id))
+    const videos = [...sameCategory, ...fill.filter((video) => !seen.has(video.id))].slice(0, 6)
+    sendJson(ctx.res, 200, { videos })
+  })
+
   router.get('/me/videos', 'required', async (ctx) => {
     const addr = requireUser(ctx)
     const videos = await listVideos({ creator: addr, sort: 'new', limit: 100, offset: 0 })

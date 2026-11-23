@@ -1,6 +1,9 @@
+import { useEffect } from 'react'
 import { AppShell } from '@/components/layout/AppShell'
 import { EmptyState } from '@/components/ui/primitives'
-import { Link, useLocation } from '@/lib/router'
+import { Link, navigate, useLocation } from '@/lib/router'
+import { AdminPage } from '@/pages/AdminPage'
+import { CategoriesPage } from '@/pages/CategoriesPage'
 import { ExplorePage } from '@/pages/ExplorePage'
 import { HomePage } from '@/pages/HomePage'
 import { LibraryPage } from '@/pages/LibraryPage'
@@ -11,13 +14,26 @@ import { WatchPage } from '@/pages/WatchPage'
 import { AuthProvider } from '@/providers/AuthProvider'
 import { SpendingWalletProvider } from '@/providers/SpendingWalletProvider'
 
+function Redirect({ to }: { to: string }) {
+  useEffect(() => {
+    navigate(to, { replace: true })
+  }, [to])
+  return null
+}
+
 function Routes() {
-  const { path } = useLocation()
+  const { path, search } = useLocation()
   const segments = path.split('/').filter(Boolean)
   const [first, second] = segments
 
   if (!first) return <HomePage />
   if (first === 'explore') return <ExplorePage />
+  if (first === 'trending') return <Redirect to="/explore?sort=trending" />
+  if (first === 'search') return <Redirect to={`/explore?q=${encodeURIComponent(search.get('q') ?? '')}`} />
+  if (first === 'categories') {
+    return second ? <Redirect to={`/explore?category=${encodeURIComponent(second)}`} /> : <CategoriesPage />
+  }
+  if (first === 'admin') return <AdminPage section={second ?? ''} />
   if (first === 'watch' && second) return <WatchPage key={second} videoId={second} />
   if (first === 'studio') return <StudioPage section={second ?? ''} />
   if (first === 'library') return <LibraryPage />

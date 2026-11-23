@@ -13,6 +13,13 @@
 | Extracting segments | Segments are AES-128 encrypted. The key is only served to a paying session. |
 | Screen recording | Cannot be prevented. A moving label with the viewer's wallet and session id makes leaks traceable. |
 
+## Community safety
+
+- Comments and reports require a signed-in wallet and are rate limited. A wallet can report an item once.
+- Creators can remove comments on their videos. Administrators review reports and can take videos down or restore them.
+- Administrator access is a list of wallet addresses in server configuration, never something a browser can claim.
+- Withdrawals are signed by the creator's own wallet. The server only forwards intents for the signed-in address.
+
 ## Known limits
 
 - A paying viewer's player receives the decryption key, so a determined person can extract it. Licensed DRM would

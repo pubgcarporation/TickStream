@@ -1,38 +1,22 @@
 import { ExternalLink } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useAccount } from 'wagmi'
 import type { EarningsSummary, PaymentRecord } from '@shared/types'
-import { EmptyState, Panel, Skeleton } from '@/components/ui/primitives'
+import { Button, EmptyState, Panel, Skeleton } from '@/components/ui/primitives'
+import { WithdrawEarningsSheet } from '@/components/wallet/WithdrawEarningsSheet'
+import { useGatewayBalanceOf } from '@/hooks/useGatewayBalanceOf'
 import { StatCard } from '@/components/creator/EarningsChart'
 import { useApi } from '@/hooks/useApi'
 import { addressLink } from '@/lib/arc'
 import { formatDuration, formatMicro } from '@/lib/format'
-import { createGatewayClient } from '@/lib/spending-wallet'
 import { PaymentList } from './StudioOverview'
-
-function useCreatorGatewayBalance(address: string | undefined): bigint | null {
-  const [balance, setBalance] = useState<bigint | null>(null)
-  useEffect(() => {
-    if (!address) return
-    let cancelled = false
-    createGatewayClient(address)
-      .getBalances(address as `0x${string}`)
-      .then((result) => {
-        if (!cancelled) setBalance(result.gateway.total)
-      })
-      .catch(() => undefined)
-    return () => {
-      cancelled = true
-    }
-  }, [address])
-  return balance
-}
 
 export function StudioEarnings() {
   const { address } = useAccount()
   const earnings = useApi<{ summary: EarningsSummary }>('creator/earnings')
   const payments = useApi<{ payments: PaymentRecord[] }>('creator/payments')
-  const gatewayBalance = useCreatorGatewayBalance(address)
+  const { balance: gatewayBalance, reload: reloadBalance } = useGatewayBalanceOf(address)
+  const [withdrawOpen, setWithdrawOpen] = useState(false)
   const summary = earnings.data?.summary
 
   if (earnings.loading && !summary) return <Skeleton className="h-96" />
@@ -51,14 +35,17 @@ export function StudioEarnings() {
         <div>
           <h2 className="display text-xl font-semibold">Your payout balance</h2>
           <p className="mt-1 max-w-xl text-pretty text-sm text-[var(--muted)]">
-            Viewer payments are credited to your wallet address in Circle Gateway. This is the amount Gateway currently holds for you.
+            Viewer payments are credited to your wallet address in Circle Gateway. This is the amount available to withdraw.
           </p>
         </div>
         <div className="text-right">
           <p className="display text-3xl font-bold tabular-nums">
-            {gatewayBalance === null ? '...' : formatMicro(gatewayBalance)}
+            {gatewayBalance === null ? '...' : formatMicro(gatewayBalance.available)}
             <span className="ml-1.5 text-sm font-medium text-[var(--subtle)]">USDC</span>
           </p>
+          <Button onClick={() => setWithdrawOpen(true)} disabled={!gatewayBalance || gatewayBalance.available === 0n} className="mt-3 min-h-10">
+            Withdraw
+          </Button>
           {address && (
             <a href={addressLink(address)} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-[var(--accent)]">
               Your address on the explorer <ExternalLink className="size-3" aria-hidden />
@@ -66,6 +53,13 @@ export function StudioEarnings() {
           )}
         </div>
       </Panel>
+
+      <WithdrawEarningsSheet
+        open={withdrawOpen}
+        onClose={() => setWithdrawOpen(false)}
+        available={gatewayBalance?.available ?? 0n}
+        onDone={reloadBalance}
+      />
 
       <Panel>
         <h2 className="display mb-3 text-xl font-semibold">By video</h2>
