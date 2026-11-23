@@ -13,7 +13,7 @@ export function ProfilePage({ username }: { username: string }) {
   return (
     <div className="space-y-8">
       <div className="flex items-center gap-5">
-        <div className="display flex size-20 items-center justify-center rounded-3xl bg-[var(--accent)] text-3xl font-bold text-[var(--accent-ink)]" aria-hidden>
+        <div className="display flex size-20 items-center justify-center rounded-2xl bg-[var(--accent)] text-3xl font-bold text-[var(--accent-ink)]" aria-hidden>
           {(user.displayName ?? user.username).slice(0, 1).toUpperCase()}
         </div>
         <div className="min-w-0 flex-1">

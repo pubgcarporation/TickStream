@@ -1,150 +1,124 @@
-import { motion } from 'framer-motion'
-import { Search, Wallet } from 'lucide-react'
+import { TokenUSDC } from '@web3icons/react'
+import { Menu, Search, UserCircle } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { clsx } from 'clsx'
-import { Link, navigate, useLocation } from '@/lib/router'
-import { formatMicro, shortAddress } from '@/lib/format'
+import { Avatar } from '@/components/ui/Avatar'
+import { WalletConnect } from '@/components/wallet/WalletConnect'
+import { Button } from '@/components/ui/primitives'
+import { formatMicro } from '@/lib/format'
+import { useActivePlayback } from '@/lib/playback-store'
+import { Link, navigate } from '@/lib/router'
 import { useAuth } from '@/providers/AuthProvider'
 import { useSpendingWallet } from '@/providers/SpendingWalletProvider'
-import { Button } from '@/components/ui/primitives'
-import { WalletConnect } from '@/components/wallet/WalletConnect'
 import { Wordmark } from './Brand'
+import { useSidebar } from './Sidebar'
 
-const NAV = [
-  { to: '/explore', label: 'Explore' },
-  { to: '/library', label: 'Library' },
-  { to: '/studio', label: 'Studio' },
-  { to: '/wallet', label: 'Wallet' },
-]
-const ADMIN_ITEM = { to: '/admin', label: 'Admin' }
+/** The live rate while a video plays, otherwise the spending balance. Both are real values. */
+function RatePill() {
+  const { user } = useAuth()
+  const { balance } = useSpendingWallet()
+  const playing = useActivePlayback()
+  if (!user) return null
+  const text = playing ? `$${formatMicro(playing.priceMicro)} / sec` : balance ? `$${formatMicro(balance.available)}` : '...'
+  return (
+    <Link
+      to="/wallet"
+      title={playing ? 'Price per second of the video you are watching' : 'Spending balance'}
+      className="hidden min-h-10 items-center gap-2 rounded-full border border-[var(--border)] bg-[#181818] px-3 text-sm font-semibold tabular-nums transition-colors hover:bg-[#272727] md:flex"
+    >
+      <TokenUSDC variant="branded" size={22} aria-hidden />
+      {text}
+    </Link>
+  )
+}
 
 function AccountArea() {
   const { user, signIn, signingIn } = useAuth()
-  const { balance } = useSpendingWallet()
   return (
     <WalletConnect>
-      {({ isConnected, show, address }) => {
+      {({ isConnected, show }) => {
         if (!isConnected) {
           return (
-            <Button onClick={show} className="min-h-10">
-              <Wallet className="size-4" aria-hidden /> Sign in
+            <button
+              onClick={show}
+              className="flex min-h-10 items-center gap-2 rounded-full border border-[var(--border)] px-4 text-sm font-semibold text-[var(--accent)] transition-colors hover:bg-[var(--accent)]/10"
+            >
+              <UserCircle className="size-5" aria-hidden /> Sign in
+            </button>
+          )
+        }
+        if (!user) {
+          return (
+            <Button onClick={() => void signIn()} loading={signingIn} className="min-h-10 rounded-full">
+              Sign in
             </Button>
           )
         }
         return (
-          <div className="flex items-center gap-2">
-            {user && balance && (
-              <Link
-                to="/wallet"
-                className="glass-inner hidden min-h-10 items-center gap-2 rounded-2xl px-3.5 text-sm font-semibold tabular-nums sm:flex"
-                title="Spending balance"
-              >
-                <span className="size-1.5 rounded-full bg-[var(--success)]" aria-hidden />
-                {formatMicro(balance.available)} <span className="text-xs font-medium text-[var(--subtle)]">USDC</span>
-              </Link>
-            )}
-            {!user && (
-              <Button onClick={() => void signIn()} loading={signingIn} className="min-h-10">
-                Sign in
-              </Button>
-            )}
-            <button
-              onClick={show}
-              className="glass-inner mono min-h-10 rounded-2xl px-3.5 text-xs text-[var(--muted)] hover:text-[var(--ink)]"
-              aria-label="Account"
-            >
-              {address ? shortAddress(address) : 'Account'}
-            </button>
-          </div>
+          <button onClick={show} aria-label="Account" className="rounded-full transition-opacity hover:opacity-85">
+            <Avatar name={user.displayName ?? user.username} size={36} accent />
+          </button>
         )
       }}
     </WalletConnect>
   )
 }
 
-/** Searches titles and creators. Press "/" anywhere to jump here. */
-function SearchBox() {
+export function Header() {
+  const { toggle } = useSidebar()
+  const [draft, setDraft] = useState('')
   const input = useRef<HTMLInputElement | null>(null)
-  const { search } = useLocation()
-  const [value, setValue] = useState(search.get('q') ?? '')
 
+  // "/" jumps to search, like most video sites.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null
-      const typing = target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.isContentEditable
-      if (event.key === '/' && !typing && !event.metaKey && !event.ctrlKey) {
-        event.preventDefault()
-        input.current?.focus()
-      }
+      if (event.key !== '/' || target?.closest('input, textarea, [contenteditable]')) return
+      event.preventDefault()
+      input.current?.focus()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
   return (
-    <form
-      role="search"
-      className="relative hidden w-full max-w-xs md:block lg:max-w-sm"
-      onSubmit={(event) => {
-        event.preventDefault()
-        const q = value.trim()
-        navigate(q ? `/explore?q=${encodeURIComponent(q)}` : '/explore')
-        input.current?.blur()
-      }}
-    >
-      <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[var(--subtle)]" aria-hidden />
-      <input
-        ref={input}
-        value={value}
-        onChange={(event) => setValue(event.target.value)}
-        placeholder="Search videos and creators"
-        aria-label="Search videos and creators"
-        className="glass-inner h-10 w-full rounded-2xl pl-10 pr-9 text-sm outline-none placeholder:text-[var(--subtle)] focus:border-[var(--accent)]"
-      />
-      <kbd className="mono pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-md border border-[var(--border)] px-1.5 text-[10px] text-[var(--subtle)] lg:block">/</kbd>
-    </form>
-  )
-}
-
-export function Header() {
-  const { path } = useLocation()
-  const { isAdmin } = useAuth()
-  const items = isAdmin ? [...NAV, ADMIN_ITEM] : NAV
-  return (
-    <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[#0d1b2f]/75 backdrop-blur-xl">
-      <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6 lg:gap-6">
-        <Link to="/" aria-label="TickStream home" className="shrink-0">
+    <header className="fixed inset-x-0 top-0 z-40 flex h-14 items-center gap-2 bg-[var(--bg)] px-3 sm:gap-4 sm:px-4">
+      <div className="flex items-center gap-1 sm:gap-3">
+        <button onClick={toggle} aria-label="Toggle menu" className="flex size-11 items-center justify-center rounded-full hover:bg-white/10">
+          <Menu className="size-6" />
+        </button>
+        <Link to="/" aria-label="TickStream home">
           <Wordmark />
         </Link>
-        <nav className="hidden items-center gap-1 lg:flex" aria-label="Main">
-          {items.map((item) => {
-            const active = path.startsWith(item.to)
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                aria-current={active ? 'page' : undefined}
-                className={clsx(
-                  'relative rounded-xl px-3.5 py-2 text-sm font-medium transition-colors',
-                  active ? 'text-[var(--ink)]' : 'text-[var(--muted)] hover:text-[var(--ink)]',
-                )}
-              >
-                {active && (
-                  <motion.span
-                    layoutId="nav-pill"
-                    className="absolute inset-0 -z-10 rounded-xl bg-white/10"
-                    transition={{ type: 'spring', stiffness: 420, damping: 34 }}
-                  />
-                )}
-                {item.label}
-              </Link>
-            )
-          })}
-        </nav>
-        <div className="ml-auto flex flex-1 items-center justify-end gap-3">
-          <SearchBox />
-          <AccountArea />
-        </div>
+      </div>
+
+      <form
+        role="search"
+        onSubmit={(event) => {
+          event.preventDefault()
+          const q = draft.trim()
+          navigate(q ? `/explore?q=${encodeURIComponent(q)}` : '/explore')
+        }}
+        className="mx-auto hidden h-10 w-full max-w-[600px] flex-1 items-center sm:flex"
+      >
+        <input
+          ref={input}
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          placeholder="Search videos..."
+          aria-label="Search videos"
+          className="h-full min-w-0 flex-1 rounded-l-full border border-[#303030] bg-[#121212] px-5 text-sm outline-none placeholder:text-[var(--subtle)] focus:border-[var(--accent)]"
+        />
+        <button type="submit" aria-label="Search" className="flex h-full w-16 items-center justify-center rounded-r-full border border-l-0 border-[#303030] bg-[#222] hover:bg-[#2f2f2f]">
+          <Search className="size-5" />
+        </button>
+      </form>
+
+      <div className="ml-auto flex items-center gap-2 sm:ml-0 sm:gap-3">
+        <Link to="/explore" aria-label="Search" className="flex size-11 items-center justify-center rounded-full hover:bg-white/10 sm:hidden">
+          <Search className="size-5" />
+        </Link>
+        <RatePill />
+        <AccountArea />
       </div>
     </header>
   )

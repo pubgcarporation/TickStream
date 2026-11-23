@@ -1,17 +1,22 @@
-export function BrandMark({ size = 28 }: { size?: number }) {
+export function BrandMark({ size = 30 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" fill="none" aria-hidden>
-      <rect x="1" y="1" width="30" height="30" rx="9" fill="#acc6e9" />
-      <path d="M8 21h4v-5h3V11h3v10h3v-7h3" stroke="#0d1b2f" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M6 4.6c0-1.5 1.6-2.4 2.9-1.6l18.4 10.6c1.3.8 1.3 2.6 0 3.4L8.9 28.6C7.6 29.4 6 28.5 6 27z"
+        fill="var(--accent)"
+      />
+      <path d="M12.4 11.2v9.6l8.3-4.8z" fill="#0f0f0f" />
     </svg>
   )
 }
 
 export function Wordmark() {
   return (
-    <span className="flex items-center gap-2.5">
+    <span className="flex items-center gap-2">
       <BrandMark />
-      <span className="display text-lg font-bold tracking-tight">TickStream</span>
+      <span className="display text-xl font-bold tracking-tight">
+        Tick<span className="text-[var(--accent)]">Stream</span>
+      </span>
     </span>
   )
 }

@@ -12,7 +12,7 @@ export function PriceCalculator({ video }: { video: VideoSummary }) {
   const presets = [30, 60, 300, full].filter((value, index, all) => value <= full && all.indexOf(value) === index)
 
   return (
-    <div className="glass rise rounded-3xl p-6">
+    <div className="glass rise rounded-2xl p-6">
       <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--subtle)]">What your time costs</p>
       <p className="display mt-4 text-6xl font-bold leading-none tabular-nums">
         <span className="mr-1 text-3xl font-medium text-[var(--subtle)]">$</span>

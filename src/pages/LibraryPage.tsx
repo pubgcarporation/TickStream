@@ -1,11 +1,10 @@
-import { useState } from 'react'
 import type { CreatorSummary, VideoSummary } from '@shared/types'
 import { RequireAuth } from '@/components/creator/RequireAuth'
 import { Chip, EmptyState, Skeleton } from '@/components/ui/primitives'
 import { VideoGrid } from '@/components/video/VideoGrid'
 import { useApi } from '@/hooks/useApi'
 import { formatDuration, formatMicro, timeAgo } from '@/lib/format'
-import { Link } from '@/lib/router'
+import { Link, navigate, useLocation } from '@/lib/router'
 
 interface HistoryItem {
   id: string
@@ -43,7 +42,7 @@ function History() {
       </p>
       <ul className="space-y-3">
         {data.history.map((item) => (
-          <li key={item.id} className="glass flex items-center gap-4 rounded-3xl p-4">
+          <li key={item.id} className="glass flex items-center gap-4 rounded-2xl p-4">
             <div className="min-w-0 flex-1">
               <Link to={`/watch/${item.videoId}`} className="block truncate font-semibold hover:underline">
                 {item.title}
@@ -111,7 +110,9 @@ function Following() {
 }
 
 export function LibraryPage() {
-  const [tab, setTab] = useState<'history' | 'following'>('history')
+  const { search } = useLocation()
+  const tab: 'history' | 'following' = search.get('tab') === 'following' ? 'following' : 'history'
+  const setTab = (next: 'history' | 'following') => navigate(`/library?tab=${next}`, { replace: true })
   return (
     <div className="space-y-6">
       <h1 className="display text-4xl font-bold">Library</h1>

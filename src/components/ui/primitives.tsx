@@ -24,7 +24,7 @@ export function Button({ variant = 'primary', loading, full, className, children
       {...rest}
       disabled={disabled || loading}
       className={clsx(
-        'inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-semibold transition-all',
+        'inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold transition-all',
         'active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40',
         VARIANTS[variant],
         full && 'w-full',
@@ -38,7 +38,7 @@ export function Button({ variant = 'primary', loading, full, className, children
 }
 
 export function Panel({ className, children }: { className?: string; children: ReactNode }) {
-  return <section className={clsx('glass rise rounded-3xl p-5', className)}>{children}</section>
+  return <section className={clsx('glass rise rounded-2xl p-5', className)}>{children}</section>
 }
 
 export function Chip({
@@ -59,10 +59,8 @@ export function Chip({
       disabled={disabled}
       aria-pressed={active}
       className={clsx(
-        'min-h-9 rounded-full px-3.5 text-xs font-semibold transition-colors disabled:opacity-40',
-        active
-          ? 'bg-[var(--accent)] text-[var(--accent-ink)]'
-          : 'glass-inner text-[var(--muted)] hover:text-[var(--ink)]',
+        'min-h-9 whitespace-nowrap rounded-lg px-3.5 text-sm font-medium transition-colors disabled:opacity-40',
+        active ? 'bg-[#f1f1f1] text-[#0f0f0f]' : 'bg-[#272727] text-[var(--ink)] hover:bg-[#3a3a3a]',
       )}
     >
       {children}
@@ -76,7 +74,7 @@ export function Skeleton({ className }: { className?: string }) {
 
 export function EmptyState({ title, body, action }: { title: string; body?: string; action?: ReactNode }) {
   return (
-    <div className="glass-inner flex flex-col items-center gap-2 rounded-3xl px-6 py-12 text-center">
+    <div className="glass-inner flex flex-col items-center gap-2 rounded-2xl px-6 py-12 text-center">
       <h3 className="display text-xl font-semibold">{title}</h3>
       {body && <p className="max-w-sm text-pretty text-sm text-[var(--muted)]">{body}</p>}
       {action && <div className="mt-3">{action}</div>}
@@ -118,8 +116,8 @@ export function Sheet({
         >
           <div className="absolute inset-0 bg-black/55 backdrop-blur-sm" />
           <motion.section
-            className="glass relative w-full max-w-md rounded-t-3xl p-5 sm:rounded-3xl"
-            style={{ background: 'rgba(18, 45, 69, 0.92)' }}
+            className="glass relative w-full max-w-md rounded-t-3xl p-5 sm:rounded-2xl"
+            style={{ background: '#212121' }}
             initial={{ y: 40, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 40, opacity: 0 }}

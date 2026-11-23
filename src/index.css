@@ -3,23 +3,23 @@
 @tailwind utilities;
 
 :root {
-  --bg: #0d1b2f;
-  --bg-gradient: linear-gradient(180deg, #0d1b2f 0%, #0d1b2f 58%, #122d45 100%);
-  --surface: rgba(255, 255, 255, 0.07);
-  --surface-strong: rgba(255, 255, 255, 0.11);
-  --surface-muted: #1f2f44;
-  --ink: #f9faf3;
-  --ink-2: #e3ecf9;
-  --muted: #cbd5e1;
-  --subtle: #94a3b8;
-  --border: rgba(255, 255, 255, 0.12);
-  --border-strong: rgba(203, 219, 242, 0.55);
-  --accent: #acc6e9;
-  --accent-hover: #cbdbf2;
-  --accent-ink: #0d1b2f;
-  --success: #8dd89f;
-  --danger: #e86d7a;
-  --warn: #f0c674;
+  --bg: #0f0f0f;
+  --bg-gradient: none;
+  --surface: #181818;
+  --surface-strong: #232323;
+  --surface-muted: #272727;
+  --ink: #f1f1f1;
+  --ink-2: #e2e2e2;
+  --muted: #aaaaaa;
+  --subtle: #818181;
+  --border: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(255, 255, 255, 0.4);
+  --accent: #3ddc57;
+  --accent-hover: #67e97c;
+  --accent-ink: #04130a;
+  --success: #3ddc57;
+  --danger: #ff6b6b;
+  --warn: #f5c451;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -45,20 +45,8 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* One quiet pool of light behind the page. Static, never animated. */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(70% 45% at 50% -8%, rgba(172, 198, 233, 0.13), transparent 70%),
-    radial-gradient(40% 30% at 100% 100%, rgba(141, 216, 159, 0.04), transparent 70%);
-}
-
 ::selection {
-  background: rgba(172, 198, 233, 0.32);
+  background: rgba(61, 220, 87, 0.3);
   color: var(--ink);
 }
 
@@ -73,17 +61,12 @@ body::before {
 
 /* Surfaces: depth comes from a faint top highlight and a soft shadow, not from heavier borders. */
 .glass {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.085) 0%, rgba(255, 255, 255, 0.055) 100%);
+  background: var(--surface);
   border: 1px solid var(--border);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 12px 32px -16px rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(24px) saturate(160%);
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
 }
 
 .glass-inner {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.06);
   border: 1px solid var(--border);
   transition:
     background-color 0.2s var(--ease-out),

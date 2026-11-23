@@ -26,7 +26,7 @@ export function AdminPayments() {
   if (loading && !data) return <Skeleton className="h-48" />
   if (!data || data.payments.length === 0) return <EmptyState title="No payments yet" />
   return (
-    <div className="glass overflow-x-auto rounded-3xl p-2">
+    <div className="glass overflow-x-auto rounded-2xl p-2">
       <table className="w-full min-w-[640px] text-sm tabular-nums">
         <thead>
           <tr className="text-left text-xs uppercase tracking-[0.06em] text-[var(--subtle)]">
@@ -62,7 +62,7 @@ export function AdminUsers() {
   if (loading && !data) return <Skeleton className="h-48" />
   if (!data || data.users.length === 0) return <EmptyState title="No users yet" />
   return (
-    <div className="glass overflow-x-auto rounded-3xl p-2">
+    <div className="glass overflow-x-auto rounded-2xl p-2">
       <table className="w-full min-w-[520px] text-sm tabular-nums">
         <thead>
           <tr className="text-left text-xs uppercase tracking-[0.06em] text-[var(--subtle)]">

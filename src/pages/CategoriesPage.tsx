@@ -12,7 +12,7 @@ export function CategoriesPage() {
           <li key={category.slug}>
             <Link
               to={`/explore?category=${category.slug}`}
-              className="glass flex min-h-28 flex-col justify-between rounded-3xl p-5 transition-colors hover:bg-white/10"
+              className="glass flex min-h-28 flex-col justify-between rounded-2xl p-5 transition-colors hover:bg-white/10"
             >
               <span className="display text-2xl font-semibold">{category.label}</span>
               <span className="text-sm tabular-nums text-[var(--muted)]">

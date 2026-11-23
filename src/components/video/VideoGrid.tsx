@@ -2,22 +2,29 @@ import type { VideoSummary } from '@shared/types'
 import { Skeleton } from '@/components/ui/primitives'
 import { VideoCard } from './VideoCard'
 
+const GRID = 'grid grid-cols-[repeat(auto-fill,minmax(270px,1fr))] gap-x-4 gap-y-9'
+
 export function VideoGrid({ videos, loading }: { videos: VideoSummary[] | null; loading?: boolean }) {
   if (loading || !videos) {
     return (
-      <div className="grid grid-cols-1 gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className={GRID}>
         {Array.from({ length: 8 }, (_, index) => (
           <div key={index}>
-            <Skeleton className="aspect-video" />
-            <Skeleton className="mt-3 h-4 w-3/4" />
-            <Skeleton className="mt-2 h-3 w-1/2" />
+            <Skeleton className="aspect-video !rounded-xl" />
+            <div className="mt-3 flex gap-3">
+              <Skeleton className="size-9 shrink-0 !rounded-full" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-11/12" />
+                <Skeleton className="h-3 w-1/2" />
+              </div>
+            </div>
           </div>
         ))}
       </div>
     )
   }
   return (
-    <div className="grid grid-cols-1 gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className={GRID}>
       {videos.map((video, index) => (
         <VideoCard key={video.id} video={video} index={index} />
       ))}

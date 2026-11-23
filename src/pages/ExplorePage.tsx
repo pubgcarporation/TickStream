@@ -1,8 +1,8 @@
 import { Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { CATEGORIES } from '@shared/constants'
 import type { VideoSummary } from '@shared/types'
 import { Button, Chip, EmptyState, inputClass } from '@/components/ui/primitives'
+import { CategoryChips } from '@/components/video/CategoryChips'
 import { VideoGrid } from '@/components/video/VideoGrid'
 import { useApi } from '@/hooks/useApi'
 import { api } from '@/lib/api'
@@ -84,18 +84,11 @@ export function ExplorePage() {
         </form>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filters">
+      <CategoryChips value={category} onChange={(slug) => update({ category: slug })} />
+
+      <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Sort">
         {SORTS.map((item) => (
           <Chip key={item.value} active={sort === item.value} onClick={() => update({ sort: item.value })}>
-            {item.label}
-          </Chip>
-        ))}
-        <span className="mx-2 h-5 w-px bg-[var(--border)]" aria-hidden />
-        <Chip active={category === ''} onClick={() => update({ category: '' })}>
-          All
-        </Chip>
-        {CATEGORIES.map((item) => (
-          <Chip key={item.slug} active={category === item.slug} onClick={() => update({ category: item.slug })}>
             {item.label}
           </Chip>
         ))}

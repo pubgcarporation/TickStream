@@ -20,7 +20,7 @@ createRoot(document.getElementById('root')!).render(
         theme="dark"
         toastOptions={{
           style: {
-            background: 'rgba(18, 45, 69, 0.96)',
+            background: '#212121',
             border: '1px solid rgba(255, 255, 255, 0.12)',
             color: '#f9faf3',
             borderRadius: '16px',

@@ -42,3 +42,8 @@ export function ratePerMinute(priceMicro: number): string {
 export function ratePerHour(priceMicro: number): string {
   return formatMicro(priceMicro * 3600)
 }
+
+/** 1.2K, 3.4M: short counts for card meta lines. */
+export function compactNumber(value: number): string {
+  return new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(value)
+}

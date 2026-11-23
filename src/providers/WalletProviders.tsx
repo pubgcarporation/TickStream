@@ -19,7 +19,7 @@ export function WalletProviders({ children }: { children: ReactNode }) {
         appId={PRIVY_APP_ID}
         config={{
           loginMethods: ['email', 'google', 'wallet'],
-          appearance: { theme: 'dark', accentColor: '#acc6e9', showWalletLoginFirst: false },
+          appearance: { theme: 'dark', accentColor: '#3ddc57', showWalletLoginFirst: false },
           embeddedWallets: { ethereum: { createOnLogin: 'users-without-wallets' } },
           defaultChain: arcTestnet,
           supportedChains: [arcTestnet, mainnet],

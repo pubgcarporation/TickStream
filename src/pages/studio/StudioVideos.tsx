@@ -120,7 +120,7 @@ function VideoRow({ video, onChanged }: { video: VideoSummary; onChanged: () => 
   }
 
   return (
-    <li className="glass flex flex-col gap-4 rounded-3xl p-4 sm:flex-row sm:items-center">
+    <li className="glass flex flex-col gap-4 rounded-2xl p-4 sm:flex-row sm:items-center">
       <div className="glass-inner aspect-video w-full shrink-0 overflow-hidden rounded-2xl sm:w-44">
         {video.status === 'ready' && !broken ? (
           <img src={thumbnailUrl(video.id)} alt="" className="size-full object-cover" onError={() => setBroken(true)} />
