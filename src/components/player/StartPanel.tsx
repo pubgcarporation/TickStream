@@ -34,10 +34,10 @@ export function StartPanel({ priceMicro, durationSeconds, previewSeconds, resume
   const capOk = capMicro >= chunkCost && BigInt(capMicro) <= available
 
   return (
-    <Panel className="space-y-5">
+    <Panel className="space-y-4 border-b-0">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--subtle)]">Price</p>
-        <p className="display mt-2 text-4xl font-bold tabular-nums">
+        <p className="text-xs font-medium text-[var(--subtle)]">Price</p>
+        <p className="mt-1 text-3xl font-semibold tabular-nums">
           ${formatMicro(priceMicro)}
           <span className="ml-1 text-lg font-medium text-[var(--subtle)]">/ second</span>
         </p>
@@ -50,14 +50,14 @@ export function StartPanel({ priceMicro, durationSeconds, previewSeconds, resume
           </p>
         ) : null}
         {previewSeconds > 0 && (
-          <p className="mt-2 inline-block rounded-full bg-[var(--success)]/15 px-3 py-1 text-xs font-semibold text-[var(--success)]">
+          <p className="mt-2 text-xs font-semibold text-[var(--success)]">
             First {previewSeconds} seconds are free
           </p>
         )}
       </div>
 
       <div>
-        <p className="mb-2 text-xs font-semibold text-[var(--muted)]">Spending cap for this session</p>
+        <p className="mb-1.5 text-xs font-medium text-[var(--muted)]">Spending cap for this session</p>
         <div className="flex flex-wrap gap-2" role="group" aria-label="Spending cap">
           {CAP_CHOICES.map((cap) => (
             <Chip key={cap} active={capMicro === cap} disabled={!affordable.includes(cap)} onClick={() => onCap(cap)}>
@@ -68,7 +68,7 @@ export function StartPanel({ priceMicro, durationSeconds, previewSeconds, resume
       </div>
 
       <div>
-        <p className="mb-2 text-xs font-semibold text-[var(--muted)]">Pay every</p>
+        <p className="mb-1.5 text-xs font-medium text-[var(--muted)]">Pay every</p>
         <div className="flex flex-wrap gap-2" role="group" aria-label="Payment interval">
           {CHUNK_SECONDS_OPTIONS.map((seconds) => (
             <Chip key={seconds} active={chunkSeconds === seconds} onClick={() => onChunk(seconds)}>
@@ -81,7 +81,7 @@ export function StartPanel({ priceMicro, durationSeconds, previewSeconds, resume
         </p>
       </div>
 
-      {message && <p className="text-pretty rounded-2xl bg-white/5 p-3 text-sm text-[var(--muted)]">{message}</p>}
+      {message && <p className="text-pretty text-sm text-[var(--warn)]">{message}</p>}
       {balanceError && <p className="text-xs text-[var(--danger)]">Could not read your spending balance: {balanceError}</p>}
 
       <WalletConnect>

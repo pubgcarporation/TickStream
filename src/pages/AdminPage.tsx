@@ -25,15 +25,15 @@ function Console({ section }: { section: string }) {
     )
   }
   return (
-    <div className="space-y-6">
-      <nav className="flex gap-1 overflow-x-auto" aria-label="Admin sections">
+    <div className="space-y-5">
+      <nav className="flex gap-1 overflow-x-auto border-b border-[var(--border)]" aria-label="Admin sections">
         {TABS.map((tab) => (
           <Link
             key={tab.section}
             to={tab.section ? `/admin/${tab.section}` : '/admin'}
             className={clsx(
-              'whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-medium transition-colors',
-              section === tab.section ? 'bg-white/10 text-[var(--ink)]' : 'text-[var(--muted)] hover:text-[var(--ink)]',
+              '-mb-px whitespace-nowrap border-b-2 px-3.5 py-2.5 text-sm font-medium transition-colors',
+              section === tab.section ? 'border-[var(--accent)] text-[var(--ink)]' : 'border-transparent text-[var(--muted)] hover:text-[var(--ink)]',
             )}
           >
             {tab.label}
@@ -50,8 +50,8 @@ function Console({ section }: { section: string }) {
 
 export function AdminPage({ section }: { section: string }) {
   return (
-    <div className="space-y-6">
-      <h1 className="display text-4xl font-bold">Admin</h1>
+    <div className="space-y-4">
+      <h1 className="text-2xl font-bold">Admin</h1>
       <RequireAuth title="Sign in to continue" body="Sign in with an administrator account.">
         <Console section={section} />
       </RequireAuth>

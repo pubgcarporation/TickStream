@@ -4,15 +4,15 @@ import { formatMicro } from '@/lib/format'
 
 export function StatCard({ label, value, unit, hint, trend }: { label: string; value: string; unit?: string; hint?: string; trend?: number[] }) {
   return (
-    <div className="glass rise rounded-2xl p-5">
-      <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--subtle)]">{label}</p>
-      <p className="display mt-3 text-3xl font-bold tabular-nums">
+    <div className="rise">
+      <p className="text-xs font-medium text-[var(--subtle)]">{label}</p>
+      <p className="mt-1 text-2xl font-semibold tabular-nums">
         {value}
         {unit && <span className="ml-1.5 text-sm font-medium text-[var(--subtle)]">{unit}</span>}
       </p>
       {hint && <p className="mt-1 text-xs text-[var(--muted)]">{hint}</p>}
       {trend && (
-        <div className="mt-3">
+        <div className="mt-2">
           <Sparkline data={trend} label={`${label}, last 14 days`} />
         </div>
       )}
@@ -39,7 +39,7 @@ export function EarningsChart({ daily }: { daily: EarningsSummary['daily'] }) {
               className="w-full rounded-t-md bg-[var(--accent)]/70 transition-colors group-hover:bg-[var(--accent)]"
               style={{ height: `${Math.max(2, (day.earnedMicro / max) * 100)}%` }}
             />
-            <span className="pointer-events-none absolute -top-8 left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded-lg bg-black/80 px-2 py-1 text-[10px] tabular-nums group-hover:block">
+            <span className="pointer-events-none absolute -top-8 left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded bg-black/80 px-2 py-1 text-[10px] tabular-nums group-hover:block">
               {day.day.slice(5)}: {formatMicro(day.earnedMicro)}
             </span>
           </div>

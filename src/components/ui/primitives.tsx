@@ -13,7 +13,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const VARIANTS: Record<Variant, string> = {
   primary: 'bg-[var(--accent)] text-[var(--accent-ink)] hover:bg-[var(--accent-hover)]',
-  secondary: 'glass-inner text-[var(--ink)] hover:bg-white/10',
+  secondary: 'border border-[var(--border)] text-[var(--ink)] hover:bg-white/10',
   ghost: 'text-[var(--muted)] hover:text-[var(--ink)] hover:bg-white/5',
   danger: 'bg-[var(--danger)]/15 text-[var(--danger)] hover:bg-[var(--danger)]/25',
 }
@@ -24,7 +24,7 @@ export function Button({ variant = 'primary', loading, full, className, children
       {...rest}
       disabled={disabled || loading}
       className={clsx(
-        'inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold transition-all',
+        'inline-flex min-h-10 items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold transition-all',
         'active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40',
         VARIANTS[variant],
         full && 'w-full',
@@ -38,7 +38,7 @@ export function Button({ variant = 'primary', loading, full, className, children
 }
 
 export function Panel({ className, children }: { className?: string; children: ReactNode }) {
-  return <section className={clsx('glass rise rounded-2xl p-5', className)}>{children}</section>
+  return <section className={clsx('rise border-b border-[var(--border)] pb-6 last:border-b-0 last:pb-0', className)}>{children}</section>
 }
 
 export function Chip({
@@ -76,8 +76,8 @@ export function Skeleton({ className }: { className?: string }) {
 
 export function EmptyState({ title, body, action }: { title: string; body?: string; action?: ReactNode }) {
   return (
-    <div className="glass-inner flex flex-col items-center gap-2 rounded-2xl px-6 py-12 text-center">
-      <h3 className="display text-xl font-semibold">{title}</h3>
+    <div className="flex flex-col items-center gap-1.5 px-6 py-16 text-center">
+      <h3 className="text-lg font-semibold">{title}</h3>
       {body && <p className="max-w-sm text-pretty text-sm text-[var(--muted)]">{body}</p>}
       {action && <div className="mt-3">{action}</div>}
     </div>
@@ -118,7 +118,7 @@ export function Sheet({
         >
           <div className="absolute inset-0 bg-black/55 backdrop-blur-sm" />
           <motion.section
-            className="glass relative w-full max-w-md rounded-t-3xl p-5 sm:rounded-2xl"
+            className="relative w-full max-w-md rounded-t-2xl border border-[var(--border)] p-5 sm:rounded-xl"
             style={{ background: '#212121' }}
             initial={{ y: 40, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -128,7 +128,7 @@ export function Sheet({
           >
             <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-white/20 sm:hidden" aria-hidden />
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="display text-xl font-semibold">{title}</h2>
+              <h2 className="text-lg font-semibold">{title}</h2>
               <button
                 onClick={onClose}
                 aria-label="Close"
@@ -146,4 +146,4 @@ export function Sheet({
 }
 
 export const inputClass =
-  'glass-inner w-full rounded-2xl px-4 py-3 text-sm text-[var(--ink)] outline-none placeholder:text-[var(--subtle)] focus:border-[var(--accent)]'
+  'w-full rounded-lg border border-[#303030] bg-[#121212] px-3.5 py-2.5 text-sm text-[var(--ink)] outline-none placeholder:text-[var(--subtle)] focus:border-[var(--accent)]'

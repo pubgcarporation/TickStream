@@ -10,7 +10,7 @@ export function PaymentList({ payments }: { payments: PaymentRecord[] }) {
   return (
     <ul className="divide-y divide-[var(--border)]">
       {payments.map((payment) => (
-        <li key={payment.id} className="flex items-center gap-3 py-3 text-sm">
+        <li key={payment.id} className="flex items-center gap-3 py-2.5 text-sm">
           <div className="min-w-0 flex-1">
             <p className="truncate font-medium">{payment.videoTitle}</p>
             <p className="mono text-xs text-[var(--subtle)]">
@@ -18,12 +18,8 @@ export function PaymentList({ payments }: { payments: PaymentRecord[] }) {
             </p>
           </div>
           <span
-            className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-              payment.status === 'settled'
-                ? 'bg-[var(--success)]/15 text-[var(--success)]'
-                : payment.status === 'failed'
-                  ? 'bg-[var(--danger)]/15 text-[var(--danger)]'
-                  : 'bg-white/10 text-[var(--muted)]'
+            className={`text-xs font-medium ${
+              payment.status === 'settled' ? 'text-[var(--success)]' : payment.status === 'failed' ? 'text-[var(--danger)]' : 'text-[var(--muted)]'
             }`}
           >
             {payment.status === 'pending' ? 'Batching' : payment.status === 'settled' ? 'Settled' : 'Failed'}
@@ -44,20 +40,20 @@ export function StudioOverview() {
   if (!summary) return <EmptyState title="Could not load your studio" body={earnings.error?.message} />
 
   return (
-    <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="space-y-5">
+      <div className="grid gap-x-8 gap-y-5 border-b border-[var(--border)] pb-6 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Total earned" value={formatMicro(summary.totalMicro)} unit="USDC" trend={summary.daily.map((day) => day.earnedMicro)} />
         <StatCard label="Last 24 hours" value={formatMicro(summary.last24hMicro)} unit="USDC" />
         <StatCard label="Time watched" value={formatDuration(summary.secondsSold)} hint="Seconds viewers paid for" trend={summary.daily.map((day) => day.secondsSold)} />
         <StatCard label="Still batching" value={formatMicro(summary.pendingMicro)} unit="USDC" hint="Accepted, waiting for onchain settlement" />
       </div>
       <Panel>
-        <h2 className="display mb-5 text-xl font-semibold">Earnings, last 14 days</h2>
+        <h2 className="mb-4 text-base font-semibold">Earnings, last 14 days</h2>
         <EarningsChart daily={summary.daily} />
       </Panel>
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Panel>
-          <h2 className="display mb-3 text-xl font-semibold">Top videos</h2>
+      <div className="grid gap-x-10 gap-y-6 lg:grid-cols-2">
+        <Panel className="border-b-0 pb-0">
+          <h2 className="mb-1 text-base font-semibold">Top videos</h2>
           {summary.perVideo.length === 0 ? (
             <p className="py-6 text-center text-sm text-[var(--muted)]">
               Nothing uploaded yet. <Link to="/studio/upload" className="font-semibold text-[var(--accent)]">Upload your first video</Link>.
@@ -65,7 +61,7 @@ export function StudioOverview() {
           ) : (
             <ul className="divide-y divide-[var(--border)]">
               {summary.perVideo.slice(0, 5).map((video) => (
-                <li key={video.videoId} className="flex items-center gap-3 py-3 text-sm">
+                <li key={video.videoId} className="flex items-center gap-3 py-2.5 text-sm">
                   <Link to={`/watch/${video.videoId}`} className="min-w-0 flex-1 truncate font-medium hover:underline">
                     {video.title}
                   </Link>
@@ -76,8 +72,8 @@ export function StudioOverview() {
             </ul>
           )}
         </Panel>
-        <Panel>
-          <h2 className="display mb-3 text-xl font-semibold">Recent payments</h2>
+        <Panel className="border-b-0 pb-0">
+          <h2 className="mb-1 text-base font-semibold">Recent payments</h2>
           <PaymentList payments={(payments.data?.payments ?? []).slice(0, 6)} />
         </Panel>
       </div>

@@ -51,6 +51,7 @@ export function CommentsSection({ videoId }: { videoId: string }) {
       const result = await api<{ comment: CommentItem }>(`videos/${videoId}/comments`, { method: 'POST', body: { body } })
       setComments((current) => [result.comment, ...current])
       setDraft('')
+      toast.success('Comment posted')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Could not post your comment')
     } finally {
@@ -62,6 +63,7 @@ export function CommentsSection({ videoId }: { videoId: string }) {
     try {
       await api(`comments/${id}`, { method: 'DELETE' })
       setComments((current) => current.filter((comment) => comment.id !== id))
+      toast.success('Comment removed')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Could not remove the comment')
     }
@@ -69,7 +71,7 @@ export function CommentsSection({ videoId }: { videoId: string }) {
 
   return (
     <section aria-labelledby="comments-title" className="space-y-5">
-      <h2 id="comments-title" className="display text-xl font-semibold">
+      <h2 id="comments-title" className="text-base font-semibold">
         Comments
       </h2>
       {user ? (

@@ -28,7 +28,7 @@ const STEPS = [
 function SectionHeader({ id, title, to }: { id: string; title: string; to?: string }) {
   return (
     <div className="flex items-end justify-between">
-      <h2 id={id} className="text-xl font-bold">
+      <h2 id={id} className="text-lg font-semibold">
         {title}
       </h2>
       {to && (
@@ -55,7 +55,7 @@ export function HomePage() {
   const empty = trending.data !== null && trending.data.videos.length === 0
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       <CategoryChips value={category} onChange={setCategory} />
 
       {category ? (
@@ -99,15 +99,14 @@ export function HomePage() {
         </>
       )}
 
-      <section aria-label="How it works" className="grid gap-4 pt-4 md:grid-cols-3">
-        {STEPS.map((step, index) => (
-          <div key={step.title} className="rise rounded-2xl bg-[#181818] p-5" style={{ ['--i' as string]: index }}>
-            <div className="flex items-center justify-between">
-              <step.icon className="size-5 text-[var(--accent)]" aria-hidden />
-              <span className="mono text-xs tabular-nums text-[var(--subtle)]">0{index + 1}</span>
+      <section aria-label="How it works" className="grid gap-x-10 gap-y-5 border-t border-[var(--border)] pt-6 md:grid-cols-3">
+        {STEPS.map((step) => (
+          <div key={step.title} className="flex gap-3">
+            <step.icon className="mt-0.5 size-5 shrink-0 text-[var(--accent)]" aria-hidden />
+            <div>
+              <h3 className="text-sm font-semibold">{step.title}</h3>
+              <p className="mt-1 text-pretty text-sm text-[var(--muted)]">{step.body}</p>
             </div>
-            <h3 className="mt-4 text-base font-semibold">{step.title}</h3>
-            <p className="mt-1 text-pretty text-sm text-[var(--muted)]">{step.body}</p>
           </div>
         ))}
       </section>

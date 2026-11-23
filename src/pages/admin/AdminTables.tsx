@@ -26,29 +26,29 @@ export function AdminPayments() {
   if (loading && !data) return <Skeleton className="h-48" />
   if (!data || data.payments.length === 0) return <EmptyState title="No payments yet" />
   return (
-    <div className="glass overflow-x-auto rounded-2xl p-2">
+    <div className="overflow-x-auto">
       <table className="w-full min-w-[640px] text-sm tabular-nums">
         <thead>
-          <tr className="text-left text-xs uppercase tracking-[0.06em] text-[var(--subtle)]">
-            <th className="p-3 font-semibold">Video</th>
-            <th className="p-3 font-semibold">Payer</th>
-            <th className="p-3 font-semibold">Creator</th>
-            <th className="p-3 text-right font-semibold">Seconds</th>
-            <th className="p-3 text-right font-semibold">Amount</th>
-            <th className="p-3 font-semibold">Status</th>
-            <th className="p-3 font-semibold">When</th>
+          <tr className="text-left text-xs text-[var(--subtle)]">
+            <th className="py-2 pr-4 font-medium">Video</th>
+            <th className="py-2 pr-4 font-medium">Payer</th>
+            <th className="py-2 pr-4 font-medium">Creator</th>
+            <th className="py-2 pr-4 text-right font-medium">Seconds</th>
+            <th className="py-2 pr-4 text-right font-medium">Amount</th>
+            <th className="py-2 pr-4 font-medium">Status</th>
+            <th className="py-2 pr-4 font-medium">When</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-[var(--border)]">
           {data.payments.map((payment) => (
             <tr key={payment.id}>
-              <td className="max-w-[12rem] truncate p-3 font-medium">{payment.videoTitle}</td>
-              <td className="mono p-3 text-xs">{shortAddress(payment.payer)}</td>
-              <td className="mono p-3 text-xs">{shortAddress(payment.creator)}</td>
-              <td className="p-3 text-right">{payment.seconds}</td>
-              <td className="p-3 text-right font-semibold">{formatMicro(payment.amountMicro)}</td>
-              <td className="p-3">{payment.status}</td>
-              <td className="p-3 text-[var(--subtle)]">{timeAgo(payment.createdAt)}</td>
+              <td className="max-w-[12rem] truncate py-2.5 pr-4 font-medium">{payment.videoTitle}</td>
+              <td className="mono py-2.5 pr-4 text-xs">{shortAddress(payment.payer)}</td>
+              <td className="mono py-2.5 pr-4 text-xs">{shortAddress(payment.creator)}</td>
+              <td className="py-2.5 pr-4 text-right">{payment.seconds}</td>
+              <td className="py-2 pr-4 text-right font-medium">{formatMicro(payment.amountMicro)}</td>
+              <td className="py-2.5 pr-4">{payment.status}</td>
+              <td className="py-2.5 text-[var(--subtle)]">{timeAgo(payment.createdAt)}</td>
             </tr>
           ))}
         </tbody>
@@ -62,25 +62,25 @@ export function AdminUsers() {
   if (loading && !data) return <Skeleton className="h-48" />
   if (!data || data.users.length === 0) return <EmptyState title="No users yet" />
   return (
-    <div className="glass overflow-x-auto rounded-2xl p-2">
+    <div className="overflow-x-auto">
       <table className="w-full min-w-[520px] text-sm tabular-nums">
         <thead>
-          <tr className="text-left text-xs uppercase tracking-[0.06em] text-[var(--subtle)]">
-            <th className="p-3 font-semibold">User</th>
-            <th className="p-3 font-semibold">Address</th>
-            <th className="p-3 text-right font-semibold">Videos</th>
-            <th className="p-3 text-right font-semibold">Earned</th>
-            <th className="p-3 font-semibold">Joined</th>
+          <tr className="text-left text-xs text-[var(--subtle)]">
+            <th className="py-2 pr-4 font-medium">User</th>
+            <th className="py-2 pr-4 font-medium">Address</th>
+            <th className="py-2 pr-4 text-right font-medium">Videos</th>
+            <th className="py-2 pr-4 text-right font-medium">Earned</th>
+            <th className="py-2 pr-4 font-medium">Joined</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-[var(--border)]">
           {data.users.map((user) => (
             <tr key={user.address}>
-              <td className="p-3 font-medium">{user.username}</td>
-              <td className="mono p-3 text-xs">{shortAddress(user.address)}</td>
-              <td className="p-3 text-right">{user.videos}</td>
-              <td className="p-3 text-right font-semibold">{formatMicro(user.earnedMicro)}</td>
-              <td className="p-3 text-[var(--subtle)]">{timeAgo(user.createdAt)}</td>
+              <td className="py-2.5 pr-4 font-medium">{user.username}</td>
+              <td className="mono py-2.5 pr-4 text-xs">{shortAddress(user.address)}</td>
+              <td className="py-2.5 pr-4 text-right">{user.videos}</td>
+              <td className="py-2 pr-4 text-right font-medium">{formatMicro(user.earnedMicro)}</td>
+              <td className="py-2.5 text-[var(--subtle)]">{timeAgo(user.createdAt)}</td>
             </tr>
           ))}
         </tbody>

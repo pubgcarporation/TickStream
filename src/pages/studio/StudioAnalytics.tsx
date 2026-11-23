@@ -10,11 +10,11 @@ const BUCKETS = ['Under 25%', '25 to 50%', '50 to 75%', '75% or more']
 function Bars({ values, labels }: { values: number[]; labels: string[] }) {
   const max = Math.max(1, ...values)
   return (
-    <ul className="space-y-3">
+    <ul className="space-y-2.5">
       {values.map((value, index) => (
         <li key={labels[index]} className="grid grid-cols-[6.5rem_1fr_2.5rem] items-center gap-3 text-sm">
           <span className="text-[var(--muted)]">{labels[index]}</span>
-          <div className="h-2.5 overflow-hidden rounded-full bg-white/10">
+          <div className="h-2 overflow-hidden rounded-full bg-white/10">
             <div className="h-full rounded-full bg-[var(--accent)]" style={{ width: `${(value / max) * 100}%`, transition: 'width 0.4s' }} />
           </div>
           <span className="text-right tabular-nums">{value}</span>
@@ -40,23 +40,23 @@ export function StudioAnalytics() {
   const maxDaily = Math.max(1, ...analytics.dailyViewers.map((day) => day.viewers))
 
   return (
-    <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-3">
+    <div className="space-y-5">
+      <div className="grid gap-x-8 gap-y-5 border-b border-[var(--border)] pb-6 sm:grid-cols-3">
         <StatCard label="Paying viewers" value={String(totalViewers)} hint="Counted per video" />
         <StatCard label="Paid sessions" value={String(totalSessions)} />
         <StatCard label="Videos" value={String(analytics.videos.length)} />
       </div>
 
       <Panel>
-        <h2 className="display mb-5 text-xl font-semibold">Paying viewers per day</h2>
+        <h2 className="mb-4 text-base font-semibold">Paying viewers per day</h2>
         {analytics.dailyViewers.every((day) => day.viewers === 0) ? (
           <p className="py-8 text-center text-sm text-[var(--muted)]">No paid sessions in the last 14 days.</p>
         ) : (
           <div className="flex h-36 items-end gap-1.5" role="img" aria-label="Paying viewers per day">
             {analytics.dailyViewers.map((day) => (
               <div key={day.day} className="group relative flex h-full flex-1 items-end">
-                <div className="w-full rounded-t-md bg-[var(--accent)]/70 group-hover:bg-[var(--accent)]" style={{ height: `${Math.max(2, (day.viewers / maxDaily) * 100)}%` }} />
-                <span className="pointer-events-none absolute -top-8 left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded-lg bg-black/80 px-2 py-1 text-[10px] tabular-nums group-hover:block">
+                <div className="w-full rounded-t bg-[var(--accent)]/70 group-hover:bg-[var(--accent)]" style={{ height: `${Math.max(2, (day.viewers / maxDaily) * 100)}%` }} />
+                <span className="pointer-events-none absolute -top-8 left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded bg-black/80 px-2 py-1 text-[10px] tabular-nums group-hover:block">
                   {day.day.slice(5)}: {day.viewers}
                 </span>
               </div>
@@ -65,9 +65,9 @@ export function StudioAnalytics() {
         )}
       </Panel>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
-        <Panel>
-          <h2 className="display mb-3 text-xl font-semibold">Videos</h2>
+      <div className="grid gap-x-10 gap-y-6 lg:grid-cols-[1fr_1.2fr]">
+        <Panel className="border-b-0 pb-0">
+          <h2 className="mb-2 text-base font-semibold">Videos</h2>
           <ul className="space-y-1" role="listbox" aria-label="Choose a video">
             {analytics.videos.map((item) => (
               <li key={item.videoId}>
@@ -75,7 +75,7 @@ export function StudioAnalytics() {
                   role="option"
                   aria-selected={item.videoId === video.videoId}
                   onClick={() => setSelected(item.videoId)}
-                  className={`flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left text-sm transition-colors ${
+                  className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-colors ${
                     item.videoId === video.videoId ? 'bg-white/10' : 'hover:bg-white/5'
                   }`}
                 >
@@ -87,28 +87,28 @@ export function StudioAnalytics() {
           </ul>
         </Panel>
 
-        <Panel className="space-y-6">
-          <h2 className="display truncate text-xl font-semibold">{video.title}</h2>
+        <Panel className="space-y-5 border-b-0 pb-0">
+          <h2 className="truncate text-base font-semibold">{video.title}</h2>
           <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
             <div>
               <p className="text-[var(--subtle)]">Views</p>
-              <p className="display mt-1 text-2xl font-bold tabular-nums">{video.views}</p>
+              <p className="mt-0.5 text-xl font-semibold tabular-nums">{video.views}</p>
             </div>
             <div>
               <p className="text-[var(--subtle)]">Avg watched</p>
-              <p className="display mt-1 text-2xl font-bold tabular-nums">{formatDuration(video.avgWatchSeconds)}</p>
+              <p className="mt-0.5 text-xl font-semibold tabular-nums">{formatDuration(video.avgWatchSeconds)}</p>
             </div>
             <div>
               <p className="text-[var(--subtle)]">Avg completion</p>
-              <p className="display mt-1 text-2xl font-bold tabular-nums">{video.avgCompletionPercent}%</p>
+              <p className="mt-0.5 text-xl font-semibold tabular-nums">{video.avgCompletionPercent}%</p>
             </div>
             <div>
               <p className="text-[var(--subtle)]">Earned</p>
-              <p className="display mt-1 text-2xl font-bold tabular-nums">{formatMicro(video.earnedMicro)}</p>
+              <p className="mt-0.5 text-xl font-semibold tabular-nums">{formatMicro(video.earnedMicro)}</p>
             </div>
           </div>
           <div>
-            <h3 className="mb-3 text-sm font-semibold text-[var(--muted)]">How much of the video each session paid for</h3>
+            <h3 className="mb-2 text-sm font-medium text-[var(--muted)]">How much of the video each session paid for</h3>
             {video.sessions === 0 ? (
               <p className="text-sm text-[var(--muted)]">No paid sessions yet.</p>
             ) : (

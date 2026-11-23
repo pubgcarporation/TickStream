@@ -18,7 +18,7 @@ export function HowItWorksSheet({ open, onClose }: { open: boolean; onClose: () 
     <Sheet open={open} onClose={onClose} title="Pay per second with USDC">
       <div className="max-h-[70dvh] space-y-4 overflow-y-auto">
         {loading && !data ? <Skeleton className="h-56" /> : sample ? <PriceCalculator video={sample} /> : null}
-        <ul className="space-y-3">
+        <ul className="space-y-3 border-t border-[var(--border)] pt-4">
           {STEPS.map((step) => (
             <li key={step.title} className="flex gap-3">
               <step.icon className="mt-0.5 size-5 shrink-0 text-[var(--accent)]" aria-hidden />

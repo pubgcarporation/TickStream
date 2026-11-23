@@ -11,10 +11,10 @@ import { Link } from '@/lib/router'
 import { AmountError, parseUsdc } from '@/onchain-money'
 
 const STATUS: Record<string, { label: string; className: string }> = {
-  ready: { label: 'Live', className: 'bg-[var(--success)]/15 text-[var(--success)]' },
-  processing: { label: 'Encoding', className: 'bg-white/10 text-[var(--muted)]' },
-  uploading: { label: 'Waiting for file', className: 'bg-white/10 text-[var(--muted)]' },
-  failed: { label: 'Failed', className: 'bg-[var(--danger)]/15 text-[var(--danger)]' },
+  ready: { label: 'Live', className: 'text-[var(--success)]' },
+  processing: { label: 'Encoding', className: 'text-[var(--muted)]' },
+  uploading: { label: 'Waiting for file', className: 'text-[var(--muted)]' },
+  failed: { label: 'Failed', className: 'text-[var(--danger)]' },
 }
 
 function DetailsSheet({ video, open, onClose, onSaved }: { video: VideoSummary; open: boolean; onClose: () => void; onSaved: () => void }) {
@@ -101,6 +101,7 @@ function VideoRow({ video, onChanged }: { video: VideoSummary; onChanged: () => 
     try {
       await api(`videos/${video.id}`, { method: 'PATCH', body: { priceMicro: micro } })
       setEditing(false)
+      toast.success('Price updated')
       onChanged()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Could not save')
@@ -113,6 +114,7 @@ function VideoRow({ video, onChanged }: { video: VideoSummary; onChanged: () => 
     if (!window.confirm(`Remove "${video.title}"? Viewers will no longer be able to watch it.`)) return
     try {
       await api(`videos/${video.id}`, { method: 'DELETE' })
+      toast.success('Video removed')
       onChanged()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Could not remove')
@@ -120,8 +122,8 @@ function VideoRow({ video, onChanged }: { video: VideoSummary; onChanged: () => 
   }
 
   return (
-    <li className="glass flex flex-col gap-4 rounded-2xl p-4 sm:flex-row sm:items-center">
-      <div className="glass-inner aspect-video w-full shrink-0 overflow-hidden rounded-2xl sm:w-44">
+    <li className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center">
+      <div className="aspect-video w-full shrink-0 overflow-hidden rounded-lg bg-[#272727] sm:w-40">
         {video.status === 'ready' && !broken ? (
           <img src={thumbnailUrl(video.id)} alt="" className="size-full object-cover" onError={() => setBroken(true)} />
         ) : (
@@ -139,7 +141,7 @@ function VideoRow({ video, onChanged }: { video: VideoSummary; onChanged: () => 
           ) : (
             <span className="truncate font-semibold">{video.title}</span>
           )}
-          <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${status.className}`}>{status.label}</span>
+          <span className={`text-xs font-medium ${status.className}`}>{status.label}</span>
         </div>
         <p className="mt-1 text-xs tabular-nums text-[var(--subtle)]">
           {formatDuration(video.durationSeconds)} · {video.views} views · {timeAgo(video.createdAt)}
@@ -200,7 +202,7 @@ export function StudioVideos() {
         title="No videos yet"
         body="Upload a video, set a price per second, and viewers pay you as they watch."
         action={
-          <Link to="/studio/upload" className="inline-flex min-h-11 items-center rounded-2xl bg-[var(--accent)] px-5 text-sm font-semibold text-[var(--accent-ink)]">
+          <Link to="/studio/upload" className="inline-flex min-h-10 items-center rounded-full bg-[var(--accent)] px-4 text-sm font-semibold text-[var(--accent-ink)]">
             Upload a video
           </Link>
         }
@@ -208,7 +210,7 @@ export function StudioVideos() {
     )
   }
   return (
-    <ul className="space-y-3">
+    <ul className="divide-y divide-[var(--border)]">
       {data.videos.map((video) => (
         <VideoRow key={video.id} video={video} onChanged={reload} />
       ))}

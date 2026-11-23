@@ -23,8 +23,8 @@ export function StudioEarnings() {
   if (!summary) return <EmptyState title="Could not load earnings" body={earnings.error?.message} />
 
   return (
-    <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="space-y-5">
+      <div className="grid gap-x-8 gap-y-5 border-b border-[var(--border)] pb-6 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Total earned" value={formatMicro(summary.totalMicro)} unit="USDC" />
         <StatCard label="Settled onchain" value={formatMicro(summary.settledMicro)} unit="USDC" />
         <StatCard label="Batching" value={formatMicro(summary.pendingMicro)} unit="USDC" hint="Accepted, settling in the next batch" />
@@ -33,13 +33,13 @@ export function StudioEarnings() {
 
       <Panel className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="display text-xl font-semibold">Your payout balance</h2>
+          <h2 className="text-base font-semibold">Your payout balance</h2>
           <p className="mt-1 max-w-xl text-pretty text-sm text-[var(--muted)]">
             Viewer payments are credited to your wallet address in Circle Gateway. This is the amount available to withdraw.
           </p>
         </div>
         <div className="text-right">
-          <p className="display text-3xl font-bold tabular-nums">
+          <p className="text-3xl font-semibold tabular-nums">
             {gatewayBalance === null ? '...' : formatMicro(gatewayBalance.available)}
             <span className="ml-1.5 text-sm font-medium text-[var(--subtle)]">USDC</span>
           </p>
@@ -62,27 +62,27 @@ export function StudioEarnings() {
       />
 
       <Panel>
-        <h2 className="display mb-3 text-xl font-semibold">By video</h2>
+        <h2 className="mb-2 text-base font-semibold">By video</h2>
         {summary.perVideo.length === 0 ? (
           <p className="py-6 text-center text-sm text-[var(--muted)]">No videos yet.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[480px] text-sm">
               <thead>
-                <tr className="text-left text-xs uppercase tracking-[0.06em] text-[var(--subtle)]">
-                  <th className="pb-3 font-semibold">Video</th>
-                  <th className="pb-3 text-right font-semibold">Views</th>
-                  <th className="pb-3 text-right font-semibold">Time sold</th>
-                  <th className="pb-3 text-right font-semibold">Earned</th>
+                <tr className="text-left text-xs text-[var(--subtle)]">
+                  <th className="pb-2 font-medium">Video</th>
+                  <th className="pb-2 text-right font-medium">Views</th>
+                  <th className="pb-2 text-right font-medium">Time sold</th>
+                  <th className="pb-2 text-right font-medium">Earned</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border)] tabular-nums">
                 {summary.perVideo.map((video) => (
                   <tr key={video.videoId}>
-                    <td className="max-w-[16rem] truncate py-3 font-medium">{video.title}</td>
-                    <td className="py-3 text-right text-[var(--muted)]">{video.views}</td>
-                    <td className="py-3 text-right text-[var(--muted)]">{formatDuration(video.secondsSold)}</td>
-                    <td className="py-3 text-right font-semibold">{formatMicro(video.earnedMicro)}</td>
+                    <td className="max-w-[16rem] truncate py-2.5 font-medium">{video.title}</td>
+                    <td className="py-2.5 text-right text-[var(--muted)]">{video.views}</td>
+                    <td className="py-2.5 text-right text-[var(--muted)]">{formatDuration(video.secondsSold)}</td>
+                    <td className="py-2.5 text-right font-semibold">{formatMicro(video.earnedMicro)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -92,7 +92,7 @@ export function StudioEarnings() {
       </Panel>
 
       <Panel>
-        <h2 className="display mb-3 text-xl font-semibold">Recent payments</h2>
+        <h2 className="mb-1 text-base font-semibold">Recent payments</h2>
         <PaymentList payments={payments.data?.payments ?? []} />
       </Panel>
     </div>

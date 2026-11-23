@@ -10,7 +10,7 @@ interface AmountInputProps {
 
 export function AmountInput({ value, onChange, balanceLabel, onMax, chips, disabled }: AmountInputProps) {
   return (
-    <div className="glass-inner rounded-2xl p-4">
+    <div className="border-b border-[#303030] pb-3 focus-within:border-[var(--accent)]">
       <div className="flex items-baseline gap-2">
         <input
           inputMode="decimal"
@@ -22,7 +22,7 @@ export function AmountInput({ value, onChange, balanceLabel, onMax, chips, disab
           }}
           placeholder="0.00"
           aria-label="Amount in USDC"
-          className="display w-full bg-transparent text-4xl font-bold tabular-nums outline-none placeholder:text-white/20"
+          className="w-full bg-transparent text-3xl font-semibold tabular-nums outline-none placeholder:text-white/20"
         />
         <span className="text-sm font-medium text-[var(--subtle)]">USDC</span>
       </div>
@@ -34,7 +34,7 @@ export function AmountInput({ value, onChange, balanceLabel, onMax, chips, disab
               type="button"
               disabled={disabled}
               onClick={() => onChange(chip)}
-              className="min-h-9 rounded-full bg-white/10 px-3 text-xs font-semibold tabular-nums text-[var(--muted)] hover:bg-white/15 hover:text-[var(--ink)] disabled:opacity-40"
+              className="min-h-8 rounded-full border border-[var(--border)] px-3 text-xs font-semibold tabular-nums text-[var(--muted)] hover:bg-white/10 hover:text-[var(--ink)] disabled:opacity-40"
             >
               {chip}
             </button>

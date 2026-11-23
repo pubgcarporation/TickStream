@@ -9,14 +9,14 @@ export function RelatedVideos({ videoId }: { videoId: string }) {
   if (!data || data.videos.length === 0) return null
   return (
     <section aria-labelledby="related-title" className="space-y-3">
-      <h2 id="related-title" className="display text-lg font-semibold">
+      <h2 id="related-title" className="text-base font-semibold">
         Up next
       </h2>
-      <ul className="space-y-3">
+      <ul className="space-y-2.5">
         {data.videos.map((video) => (
           <li key={video.id}>
             <Link to={`/watch/${video.id}`} className="group flex gap-3">
-              <div className="glass-inner aspect-video w-36 shrink-0 overflow-hidden rounded-xl">
+              <div className="aspect-video w-40 shrink-0 overflow-hidden rounded-lg bg-[#272727]">
                 <img src={thumbnailUrl(video.id)} alt="" loading="lazy" className="size-full object-cover transition-transform duration-500 group-hover:scale-105" />
               </div>
               <div className="min-w-0">

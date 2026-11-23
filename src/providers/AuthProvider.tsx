@@ -81,6 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(result.token)
       setUser(result.user)
       setIsAdmin(result.isAdmin)
+      toast.success('Signed in')
       return true
     } catch (error) {
       if (!isRejection(error)) toast.error(error instanceof Error ? error.message : 'Could not sign in')
@@ -110,6 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     setToken(null)
     disconnect()
+    toast('Signed out')
   }, [disconnect])
 
   const value = useMemo(

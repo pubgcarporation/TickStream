@@ -90,8 +90,8 @@ export function WatchPage({ videoId }: { videoId: string }) {
   }
 
   return (
-    <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_400px]">
-      <div className="space-y-5">
+    <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="space-y-4">
         <PlayerSurface
           videoId={video.id}
           videoRef={playback.videoRef}
@@ -102,11 +102,11 @@ export function WatchPage({ videoId }: { videoId: string }) {
           onToggle={playback.togglePlay}
           onSeek={(second) => void playback.seek(second)}
         />
-        <div className="space-y-4">
-          <h1 className="text-balance text-xl font-bold leading-snug sm:text-2xl">{video.title}</h1>
+        <div className="space-y-3">
+          <h1 className="text-balance text-lg font-semibold leading-snug sm:text-xl">{video.title}</h1>
           <div className="flex flex-wrap items-center gap-3">
             <Link to={`/profile/${video.creator.username}`} aria-label={`${video.creator.displayName ?? video.creator.username}'s profile`}>
-              <Avatar name={video.creator.displayName ?? video.creator.username} size={44} />
+              <Avatar name={video.creator.displayName ?? video.creator.username} size={40} />
             </Link>
             <div className="min-w-0">
               <Link to={`/profile/${video.creator.username}`} className="block truncate font-semibold hover:underline">
@@ -119,17 +119,17 @@ export function WatchPage({ videoId }: { videoId: string }) {
               <Link2 className="size-4" aria-hidden /> Copy link
             </Button>
           </div>
-          <div className="rounded-xl bg-[#181818] p-4 text-sm">
+          <div className="text-sm">
             <p className="font-semibold tabular-nums">
               {compactNumber(video.views)} views · {timeAgo(video.createdAt)}
             </p>
-            {video.description && <p className="mt-2 max-w-3xl whitespace-pre-wrap text-pretty text-[var(--ink-2)]">{video.description}</p>}
+            {video.description && <p className="mt-1.5 max-w-3xl whitespace-pre-wrap text-pretty text-[var(--ink-2)]">{video.description}</p>}
           </div>
         </div>
         <CommentsSection videoId={video.id} />
       </div>
 
-      <aside className="space-y-4 xl:sticky xl:top-20" aria-label="Payment">
+      <aside className="space-y-5 xl:sticky xl:top-20" aria-label="Payment">
         {idle ? (
           <StartPanel
             priceMicro={video.priceMicro}

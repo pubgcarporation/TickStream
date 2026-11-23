@@ -22,7 +22,9 @@ export function FollowButton({ username, creatorAddress }: { username: string; c
     }
     setBusy(true)
     try {
-      await api(`creators/${encodeURIComponent(username)}/follow`, { method: data?.following ? 'DELETE' : 'PUT' })
+      const wasFollowing = data?.following ?? false
+      await api(`creators/${encodeURIComponent(username)}/follow`, { method: wasFollowing ? 'DELETE' : 'PUT' })
+      toast.success(wasFollowing ? `Unfollowed ${username}` : `Following ${username}`)
       reload()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Could not update')

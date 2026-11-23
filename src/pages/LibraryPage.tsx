@@ -27,7 +27,7 @@ function History() {
         title="Nothing watched yet"
         body="Videos you pay to watch show up here with exactly what each one cost."
         action={
-          <Link to="/explore" className="inline-flex min-h-11 items-center rounded-2xl bg-[var(--accent)] px-5 text-sm font-semibold text-[var(--accent-ink)]">
+          <Link to="/explore" className="inline-flex min-h-10 items-center rounded-full bg-[var(--accent)] px-4 text-sm font-semibold text-[var(--accent-ink)]">
             Find something to watch
           </Link>
         }
@@ -36,13 +36,13 @@ function History() {
   }
   const total = data.history.reduce((sum, item) => sum + item.spentMicro, 0)
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       <p className="text-sm tabular-nums text-[var(--muted)]">
         {data.history.length} recent sessions, {formatMicro(total)} USDC in total.
       </p>
-      <ul className="space-y-3">
+      <ul className="divide-y divide-[var(--border)]">
         {data.history.map((item) => (
-          <li key={item.id} className="glass flex items-center gap-4 rounded-2xl p-4">
+          <li key={item.id} className="flex items-center gap-4 py-3">
             <div className="min-w-0 flex-1">
               <Link to={`/watch/${item.videoId}`} className="block truncate font-semibold hover:underline">
                 {item.title}
@@ -52,7 +52,7 @@ function History() {
               </p>
             </div>
             {item.durationSeconds && item.positionSecond >= 10 && item.positionSecond < item.durationSeconds - 10 && (
-              <Link to={`/watch/${item.videoId}`} className="hidden rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold hover:bg-white/15 sm:inline-block">
+              <Link to={`/watch/${item.videoId}`} className="hidden text-xs font-semibold text-[var(--accent)] hover:underline sm:inline-block">
                 Resume at {formatDuration(item.positionSecond)}
               </Link>
             )}
@@ -76,7 +76,7 @@ function Following() {
         title="You are not following anyone"
         body="Follow creators from a video or profile page to see their new videos here."
         action={
-          <Link to="/explore" className="inline-flex min-h-11 items-center rounded-2xl bg-[var(--accent)] px-5 text-sm font-semibold text-[var(--accent-ink)]">
+          <Link to="/explore" className="inline-flex min-h-10 items-center rounded-full bg-[var(--accent)] px-4 text-sm font-semibold text-[var(--accent-ink)]">
             Explore creators
           </Link>
         }
@@ -84,19 +84,19 @@ function Following() {
     )
   }
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <ul className="flex flex-wrap gap-2" aria-label="Creators you follow">
         {creators.data.creators.map((creator) => (
           <li key={creator.address}>
-            <Link to={`/profile/${creator.username}`} className="glass-inner inline-flex min-h-10 items-center gap-2 rounded-full px-4 text-sm font-medium hover:text-[var(--accent)]">
+            <Link to={`/profile/${creator.username}`} className="inline-flex min-h-9 items-center gap-2 rounded-full border border-[var(--border)] px-3.5 text-sm font-medium hover:bg-white/10">
               {creator.displayName ?? creator.username}
               <span className="text-xs tabular-nums text-[var(--subtle)]">{creator.videos} videos</span>
             </Link>
           </li>
         ))}
       </ul>
-      <section aria-labelledby="latest" className="space-y-4">
-        <h2 id="latest" className="display text-xl font-semibold">
+      <section aria-labelledby="latest" className="space-y-3">
+        <h2 id="latest" className="text-lg font-semibold">
           Latest from creators you follow
         </h2>
         {feed.data && feed.data.videos.length === 0 ? (
@@ -114,10 +114,10 @@ export function LibraryPage() {
   const tab: 'history' | 'following' = search.get('tab') === 'following' ? 'following' : 'history'
   const setTab = (next: 'history' | 'following') => navigate(`/library?tab=${next}`, { replace: true })
   return (
-    <div className="space-y-6">
-      <h1 className="display text-4xl font-bold">Library</h1>
+    <div className="space-y-4">
+      <h1 className="text-2xl font-bold">Library</h1>
       <RequireAuth title="Sign in to see your library" body="Your watch history and the creators you follow are tied to your wallet.">
-        <div className="space-y-6">
+        <div className="space-y-4">
           <div className="flex gap-2" role="tablist" aria-label="Library sections">
             <Chip active={tab === 'history'} onClick={() => setTab('history')}>
               History

@@ -32,7 +32,7 @@ function AccountSheet({ open, onClose, address }: { open: boolean; onClose: () =
   return (
     <Sheet open={open} onClose={onClose} title="Your account">
       <div className="space-y-4">
-        <div className="glass-inner rounded-2xl p-4">
+        <div>
           <p className="text-xs text-[var(--subtle)]">Wallet address</p>
           <p className="mono mt-1 break-all text-sm">{address}</p>
         </div>

@@ -62,9 +62,9 @@ export function ExplorePage() {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-        <h1 className="display text-4xl font-bold">Explore</h1>
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <h1 className="text-2xl font-bold">Explore</h1>
         <form
           onSubmit={(event) => {
             event.preventDefault()
@@ -73,13 +73,13 @@ export function ExplorePage() {
           className="relative w-full lg:max-w-sm"
           role="search"
         >
-          <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[var(--subtle)]" aria-hidden />
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[var(--subtle)]" aria-hidden />
           <input
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             placeholder="Search titles and creators"
             aria-label="Search videos"
-            className={`${inputClass} pl-11`}
+            className={`${inputClass} rounded-full pl-10`}
           />
         </form>
       </div>

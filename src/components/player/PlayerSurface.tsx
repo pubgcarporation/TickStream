@@ -54,7 +54,7 @@ export function PlayerSurface({ videoId, videoRef, view, viewer, durationSeconds
       tabIndex={0}
       onKeyDown={onKeyDown}
       aria-label="Video player. Space plays or pauses, arrow keys skip ten seconds."
-      className="group relative aspect-video overflow-hidden rounded-2xl bg-black shadow-[0_24px_60px_-24px_rgba(0,0,0,0.7)] ring-1 ring-white/10 focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+      className="group relative aspect-video overflow-hidden rounded-xl bg-black focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
     >
       <video
         ref={videoRef}

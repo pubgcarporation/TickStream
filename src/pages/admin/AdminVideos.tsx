@@ -22,7 +22,7 @@ export function AdminVideos() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <form
         onSubmit={(event) => {
           event.preventDefault()
@@ -30,16 +30,16 @@ export function AdminVideos() {
         }}
         role="search"
       >
-        <input value={q} onChange={(event) => setQ(event.target.value)} placeholder="Search videos and creators" aria-label="Search videos" className={`${inputClass} max-w-sm`} />
+        <input value={q} onChange={(event) => setQ(event.target.value)} placeholder="Search videos and creators" aria-label="Search videos" className={`${inputClass} max-w-sm rounded-full`} />
       </form>
       {loading && !data ? (
         <Skeleton className="h-48" />
       ) : !data || data.videos.length === 0 ? (
         <EmptyState title="No videos found" />
       ) : (
-        <ul className="space-y-2">
+        <ul className="divide-y divide-[var(--border)]">
           {data.videos.map((video) => (
-            <li key={video.id} className="glass flex items-center gap-4 rounded-2xl px-4 py-3 text-sm">
+            <li key={video.id} className="flex items-center gap-4 py-2.5 text-sm">
               <div className="min-w-0 flex-1">
                 <Link to={`/watch/${video.id}`} className="block truncate font-semibold hover:underline">
                   {video.title}
@@ -48,7 +48,7 @@ export function AdminVideos() {
                   {video.creator.username} · ${formatMicro(video.priceMicro)}/s · {video.views} views · {timeAgo(video.createdAt)}
                 </p>
               </div>
-              <span className="rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-[var(--muted)]">{video.status}</span>
+              <span className="text-xs font-medium text-[var(--muted)]">{video.status}</span>
               {video.status === 'removed' ? (
                 <Button variant="secondary" onClick={() => void setStatus(video.id, 'ready')} className="min-h-9 px-3">
                   Restore

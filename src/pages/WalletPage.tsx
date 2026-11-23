@@ -1,11 +1,11 @@
-import { Copy, ExternalLink, Eye, EyeOff, KeyRound } from 'lucide-react'
+import { Copy, ExternalLink, Eye, EyeOff } from 'lucide-react'
 import { useState } from 'react'
 import { erc20Abi } from 'viem'
 import { useAccount, useReadContract } from 'wagmi'
 import { toast } from 'sonner'
 import { RequireAuth } from '@/components/creator/RequireAuth'
 import { AnimatedAmount } from '@/components/ui/AnimatedAmount'
-import { Button, Panel } from '@/components/ui/primitives'
+import { Button } from '@/components/ui/primitives'
 import { DepositSheet } from '@/components/wallet/DepositSheet'
 import { WithdrawSheet } from '@/components/wallet/WithdrawSheet'
 import { addressLink, ARC } from '@/lib/arc'
@@ -35,53 +35,45 @@ function WalletContent() {
   }
 
   return (
-    <div className="mx-auto max-w-xl space-y-5">
-      <Panel>
-        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--subtle)]">Spending balance</p>
-        <p className="display mt-3 text-6xl font-bold tabular-nums">
+    <div className="max-w-xl divide-y divide-[var(--border)]">
+      <section className="pb-6">
+        <p className="text-xs font-medium text-[var(--subtle)]">Spending balance</p>
+        <p className="mt-1 text-5xl font-semibold tabular-nums">
           {balance ? <AnimatedAmount micro={Number(balance.available)} /> : loading ? '...' : '0.00'}
-          <span className="ml-2 text-xl font-medium text-[var(--subtle)]">USDC</span>
+          <span className="ml-2 text-lg font-medium text-[var(--subtle)]">USDC</span>
         </p>
-        <p className="mt-2 text-sm text-[var(--muted)]">
-          What videos are paid from. It lives in Circle Gateway on {ARC.name}, so payments cost you no network fees.
-        </p>
+        <p className="mt-2 text-sm text-[var(--muted)]">Videos are paid from this. It sits in Circle Gateway on {ARC.name}, so payments cost no network fees.</p>
         {error && <p className="mt-2 text-sm text-[var(--danger)]">Could not read the balance: {error}</p>}
-        <div className="mt-5 flex flex-wrap gap-3">
-          <Button onClick={() => setDeposit(true)} className="flex-1">
-            Add money
-          </Button>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Button onClick={() => setDeposit(true)}>Add money</Button>
           <Button variant="secondary" onClick={() => setWithdraw(true)} disabled={!balance || balance.available === 0n}>
             Move back to wallet
           </Button>
         </div>
-      </Panel>
+      </section>
 
-      <Panel className="space-y-3">
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-[var(--muted)]">Your wallet</span>
+      <section className="py-5">
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-[var(--muted)]">Your wallet</span>
           <span className="font-semibold tabular-nums">
-            {walletBalance !== undefined ? formatMicro(walletBalance) : '...'} <span className="text-xs text-[var(--subtle)]">USDC</span>
+            {walletBalance !== undefined ? formatMicro(walletBalance) : '...'} <span className="text-xs font-normal text-[var(--subtle)]">USDC</span>
           </span>
         </div>
-        <p className="text-xs text-[var(--subtle)]">
-          Need test USDC to add?{' '}
+        <p className="mt-1 text-xs text-[var(--subtle)]">
+          Need test USDC?{' '}
           <a href="https://faucet.circle.com" target="_blank" rel="noopener noreferrer" className="font-semibold text-[var(--accent)]">
-            Get some from the Circle faucet
+            Circle faucet
           </a>
-          .
         </p>
-      </Panel>
+      </section>
 
-      <Panel className="space-y-4">
-        <div className="flex items-center gap-2">
-          <KeyRound className="size-4 text-[var(--accent)]" aria-hidden />
-          <h2 className="display text-lg font-semibold">Your spending address</h2>
-        </div>
-        <p className="text-pretty text-sm text-[var(--muted)]">
-          A small signing key stored in this browser. It signs each payment so playback never stops for a pop-up. Keep only what you plan to spend here.
+      <section className="pt-5">
+        <h2 className="text-sm font-semibold">Spending address</h2>
+        <p className="mt-1 text-pretty text-sm text-[var(--muted)]">
+          A small signing key kept in this browser. It signs each payment so playback never stops for a pop-up. Keep only what you plan to spend here.
         </p>
         {spender && (
-          <div className="glass-inner flex items-center gap-2 rounded-2xl px-4 py-3">
+          <div className="mt-3 flex items-center gap-1">
             <span className="mono min-w-0 flex-1 truncate text-xs" title={spender}>
               {shortAddress(spender)}
             </span>
@@ -94,22 +86,22 @@ function WalletContent() {
           </div>
         )}
         {address && (
-          <div>
-            <Button variant="ghost" onClick={() => setRevealed((value) => !value)} className="min-h-10 px-3">
+          <div className="mt-1">
+            <Button variant="ghost" onClick={() => setRevealed((value) => !value)} className="-ml-3 min-h-9 px-3">
               {revealed ? <EyeOff className="size-4" aria-hidden /> : <Eye className="size-4" aria-hidden />}
               {revealed ? 'Hide recovery key' : 'Show recovery key'}
             </Button>
             {revealed && (
-              <div className="mt-2 space-y-2">
-                <p className="mono break-all rounded-2xl bg-black/30 p-3 text-xs">{loadSpendingKey(address)}</p>
-                <p className="text-xs text-[var(--warn)]">
-                  Anyone with this key can spend the balance above. Never share it. Clearing your browser data removes it, so move money back before you do.
+              <>
+                <p className="mono mt-1 break-all text-xs">{loadSpendingKey(address)}</p>
+                <p className="mt-2 text-xs text-[var(--warn)]">
+                  Anyone with this key can spend the balance above. Never share it. Clearing browser data removes it, so move money back first.
                 </p>
-              </div>
+              </>
             )}
           </div>
         )}
-      </Panel>
+      </section>
 
       <DepositSheet open={deposit} onClose={() => setDeposit(false)} />
       <WithdrawSheet open={withdraw} onClose={() => setWithdraw(false)} />
@@ -119,8 +111,8 @@ function WalletContent() {
 
 export function WalletPage() {
   return (
-    <div className="space-y-6">
-      <h1 className="display text-4xl font-bold">Wallet</h1>
+    <div className="space-y-4">
+      <h1 className="text-2xl font-bold">Wallet</h1>
       <RequireAuth title="Sign in to see your wallet" body="Sign in to add money and see your spending balance.">
         <WalletContent />
       </RequireAuth>

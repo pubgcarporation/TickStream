@@ -29,16 +29,16 @@ export function CostMeter({ view, priceMicro, onToggle, onEnd, onAddFunds, onRes
   const live = view.phase === 'playing' && !view.paused
 
   return (
-    <Panel className="space-y-5">
+    <Panel className="space-y-4 border-b-0">
       <div>
         <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--subtle)]">Cost so far</span>
+          <span className="text-xs font-medium text-[var(--subtle)]">Cost so far</span>
           <span className="flex items-center gap-1.5 text-xs text-[var(--subtle)]">
             <span className={`size-1.5 rounded-full ${live ? 'bg-[var(--success)]' : 'bg-[var(--subtle)]'}`} aria-hidden />
             {live ? 'Metering' : view.phase === 'playing' ? 'Paused, not charging' : 'Stopped'}
           </span>
         </div>
-        <p className="display mt-2 text-5xl font-bold tabular-nums">
+        <p className="mt-1 text-4xl font-semibold tabular-nums">
           <AnimatedAmount micro={cost} />
           <span className="ml-2 text-lg font-medium text-[var(--subtle)]">USDC</span>
         </p>
@@ -49,16 +49,16 @@ export function CostMeter({ view, priceMicro, onToggle, onEnd, onAddFunds, onRes
 
       <TimelineStrip view={view} />
 
-      <dl className="glass-inner divide-y divide-[var(--border)] rounded-2xl text-sm">
-        <div className="flex justify-between px-4 py-3">
+      <dl className="divide-y divide-[var(--border)] border-y border-[var(--border)] text-sm">
+        <div className="flex justify-between py-2.5">
           <dt className="text-[var(--muted)]">Paid ahead</dt>
           <dd className="tabular-nums">{formatMicro(prepaid)}</dd>
         </div>
-        <div className="flex justify-between px-4 py-3">
+        <div className="flex justify-between py-2.5">
           <dt className="text-[var(--muted)]">Paid in total</dt>
           <dd className="tabular-nums">{formatMicro(session.spentMicro)}</dd>
         </div>
-        <div className="px-4 py-3">
+        <div className="py-2.5">
           <div className="flex justify-between">
             <dt className="text-[var(--muted)]">Your cap</dt>
             <dd className="tabular-nums">{formatMicro(session.capMicro)}</dd>
@@ -70,7 +70,7 @@ export function CostMeter({ view, priceMicro, onToggle, onEnd, onAddFunds, onRes
       </dl>
 
       {view.phase === 'needs-funds' && (
-        <div className="space-y-3 rounded-2xl bg-[var(--warn)]/10 p-4 text-sm">
+        <div className="space-y-3 text-sm">
           <p className="text-pretty text-[var(--warn)]">{view.message}</p>
           <div className="flex gap-2">
             <Button onClick={onAddFunds} className="flex-1">
@@ -83,7 +83,7 @@ export function CostMeter({ view, priceMicro, onToggle, onEnd, onAddFunds, onRes
         </div>
       )}
       {view.phase === 'capped' && (
-        <div className="space-y-3 rounded-2xl bg-[var(--warn)]/10 p-4 text-sm">
+        <div className="space-y-3 text-sm">
           <p className="text-pretty text-[var(--warn)]">{view.message}</p>
           <div className="flex flex-wrap gap-2">
             {CAP_STEPS.filter((step) => step > session.capMicro && (availableMicro === null || BigInt(step) <= availableMicro)).map((step) => (
@@ -96,7 +96,7 @@ export function CostMeter({ view, priceMicro, onToggle, onEnd, onAddFunds, onRes
       )}
       {(view.phase === 'ended' || view.phase === 'error') && view.message && (
         <div className="space-y-3">
-          <p className={`text-pretty rounded-2xl p-4 text-sm ${view.phase === 'error' ? 'bg-[var(--danger)]/10 text-[var(--danger)]' : 'bg-white/5 text-[var(--muted)]'}`}>
+          <p className={`text-pretty text-sm ${view.phase === 'error' ? 'text-[var(--danger)]' : 'text-[var(--muted)]'}`}>
             {view.message}
           </p>
           <Button full onClick={onEnd}>

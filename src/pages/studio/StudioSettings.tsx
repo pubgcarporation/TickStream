@@ -25,22 +25,22 @@ export function StudioSettings() {
   }
 
   return (
-    <Panel className="max-w-xl space-y-5">
+    <Panel className="max-w-xl space-y-4">
       <div>
-        <label htmlFor="username" className="mb-2 block text-sm font-semibold">
+        <label htmlFor="username" className="mb-1.5 block text-sm font-medium">
           Username
         </label>
         <input id="username" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase())} maxLength={24} className={`${inputClass} mono`} />
-        <p className="mt-2 text-xs text-[var(--subtle)]">3 to 24 characters: letters, numbers and underscores.</p>
+        <p className="mt-1.5 text-xs text-[var(--subtle)]">3 to 24 characters: letters, numbers and underscores.</p>
       </div>
       <div>
-        <label htmlFor="display" className="mb-2 block text-sm font-semibold">
+        <label htmlFor="display" className="mb-1.5 block text-sm font-medium">
           Display name
         </label>
         <input id="display" value={displayName} onChange={(e) => setDisplayName(e.target.value)} maxLength={60} className={inputClass} />
       </div>
       <div>
-        <label htmlFor="bio" className="mb-2 block text-sm font-semibold">
+        <label htmlFor="bio" className="mb-1.5 block text-sm font-medium">
           About
         </label>
         <textarea id="bio" value={bio} onChange={(e) => setBio(e.target.value)} maxLength={280} rows={3} className={inputClass} />

@@ -68,22 +68,22 @@ export function StudioUpload() {
   }
 
   return (
-    <div className="grid items-start gap-6 lg:grid-cols-[1fr_340px]">
-      <Panel className="space-y-5">
+    <div className="grid items-start gap-x-10 gap-y-6 lg:grid-cols-[1fr_320px]">
+      <Panel className="space-y-4 border-b-0 pb-0">
         <div>
-          <label htmlFor="title" className="mb-2 block text-sm font-semibold">
+          <label htmlFor="title" className="mb-1.5 block text-sm font-medium">
             Title
           </label>
           <input id="title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} className={inputClass} placeholder="Give it a clear name" disabled={busy} />
         </div>
         <div>
-          <label htmlFor="description" className="mb-2 block text-sm font-semibold">
+          <label htmlFor="description" className="mb-1.5 block text-sm font-medium">
             Description
           </label>
           <textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={2000} rows={4} className={inputClass} placeholder="What will viewers get for their seconds?" disabled={busy} />
         </div>
         <div>
-          <p className="mb-2 text-sm font-semibold">Category</p>
+          <p className="mb-1.5 text-sm font-medium">Category</p>
           <div className="flex flex-wrap gap-2">
             {CATEGORIES.map((item) => (
               <Chip key={item.slug} active={category === item.slug} onClick={() => setCategory(item.slug)} disabled={busy}>
@@ -93,7 +93,7 @@ export function StudioUpload() {
           </div>
         </div>
         <div>
-          <p className="mb-2 text-sm font-semibold">Video file</p>
+          <p className="mb-1.5 text-sm font-medium">Video file</p>
           <input ref={fileInput} type="file" accept="video/*" className="sr-only" id="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} disabled={busy} />
           <button
             type="button"
@@ -111,8 +111,8 @@ export function StudioUpload() {
               else toast.error('Drop a video file')
             }}
             disabled={busy}
-            className={`glass-inner flex min-h-32 w-full flex-col items-center justify-center gap-2 rounded-2xl border-dashed px-4 py-6 text-center text-sm transition-colors ${
-              dragging ? 'border-[var(--accent)] bg-white/10 text-[var(--ink)]' : 'text-[var(--muted)] hover:text-[var(--ink)]'
+            className={`flex min-h-28 w-full flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed px-4 py-5 text-center text-sm transition-colors ${
+              dragging ? 'border-[var(--accent)] bg-white/5 text-[var(--ink)]' : 'border-[#3a3a3a] text-[var(--muted)] hover:text-[var(--ink)]'
             }`}
           >
             {file ? (
@@ -129,7 +129,7 @@ export function StudioUpload() {
               </>
             )}
           </button>
-          {fileError && <p className="mt-2 text-sm text-[var(--danger)]">{fileError}</p>}
+          {fileError && <p className="mt-1.5 text-sm text-[var(--danger)]">{fileError}</p>}
         </div>
         {progress !== null && (
           <div>
@@ -144,9 +144,9 @@ export function StudioUpload() {
         </Button>
       </Panel>
 
-      <Panel className="space-y-4">
+      <Panel className="space-y-4 border-b-0 pb-0">
         <div>
-          <label htmlFor="price" className="mb-2 block text-sm font-semibold">
+          <label htmlFor="price" className="mb-1.5 block text-sm font-medium">
             Price per second (USDC)
           </label>
           <input
@@ -161,13 +161,13 @@ export function StudioUpload() {
             className={`${inputClass} mono tabular-nums`}
           />
           {priceMicro === null && (
-            <p className="mt-2 text-sm text-[var(--danger)]">
+            <p className="mt-1.5 text-sm text-[var(--danger)]">
               Enter between {formatMicro(MIN_PRICE_PER_SECOND)} and {formatMicro(MAX_PRICE_PER_SECOND)} USDC per second.
             </p>
           )}
         </div>
         <div>
-          <label htmlFor="preview" className="mb-2 flex items-center justify-between text-sm font-semibold">
+          <label htmlFor="preview" className="mb-1.5 flex items-center justify-between text-sm font-medium">
             Free preview
             <span className="tabular-nums text-[var(--muted)]">{previewSeconds === 0 ? 'Off' : `${previewSeconds}s`}</span>
           </label>
@@ -185,16 +185,16 @@ export function StudioUpload() {
           <p className="mt-1 text-xs text-[var(--subtle)]">The first seconds anyone can watch before paying anything.</p>
         </div>
         {priceMicro !== null && (
-          <dl className="glass-inner divide-y divide-[var(--border)] rounded-2xl text-sm tabular-nums">
-            <div className="flex justify-between px-4 py-3">
+          <dl className="divide-y divide-[var(--border)] border-y border-[var(--border)] text-sm tabular-nums">
+            <div className="flex justify-between py-2.5">
               <dt className="text-[var(--muted)]">One minute</dt>
               <dd>{ratePerMinute(priceMicro)} USDC</dd>
             </div>
-            <div className="flex justify-between px-4 py-3">
+            <div className="flex justify-between py-2.5">
               <dt className="text-[var(--muted)]">One hour</dt>
               <dd>{ratePerHour(priceMicro)} USDC</dd>
             </div>
-            <div className="flex justify-between px-4 py-3">
+            <div className="flex justify-between py-2.5">
               <dt className="text-[var(--muted)]">A viewer who watches 10 minutes</dt>
               <dd>{formatMicro(priceMicro * 600)} USDC</dd>
             </div>
