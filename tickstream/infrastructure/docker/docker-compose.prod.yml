@@ -1,0 +1,124 @@
+# Production stack for a single VPS: the API, both workers, Postgres, Redis and the video files.
+# The website is hosted separately (for example on Vercel) and calls this API over HTTPS.
+# Only the proxy container is published (ports 80 and 443). Postgres, Redis and the API stay private.
+#
+#   cp .env.example .env     # then fill it in
+#   docker compose -f docker-compose.prod.yml up -d --build
+
+name: tickstream
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+x-app-env: &app-env
+  DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/tickstream
+  REDIS_URL: redis://redis:6379
+  SESSION_SECRET: ${SESSION_SECRET:?Set SESSION_SECRET in .env}
+  GATEWAY_API_URL: ${GATEWAY_API_URL:?Set GATEWAY_API_URL in .env}
+  STORAGE_DRIVER: local
+  ADMIN_ADDRESSES: ${ADMIN_ADDRESSES:-}
+  TRUST_PROXY: "1"
+  CORS_ORIGINS: ${CORS_ORIGINS:?Set CORS_ORIGINS in .env}
+
+services:
+  # Gives the app user (uid 1000) write access to the shared video folder.
+  init-data:
+    image: busybox:1.37
+    command: ["chown", "-R", "1000:1000", "/data"]
+    volumes: ["data:/data"]
+    restart: "no"
+
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: tickstream
+    volumes: ["pgdata:/var/lib/postgresql"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d tickstream"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    logging: *logging
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes: ["redisdata:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build:
+      context: ../../..
+      dockerfile: tickstream/infrastructure/docker/api.Dockerfile
+    restart: unless-stopped
+    logging: *logging
+    environment: *app-env
+    volumes: ["data:/app/tickstream/.data"]
+    depends_on:
+      init-data: { condition: service_completed_successfully }
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "bun", "-e", "fetch('http://127.0.0.1:3001/health/ready').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  media-worker:
+    build:
+      context: ../../..
+      dockerfile: tickstream/infrastructure/docker/media-worker.Dockerfile
+    restart: unless-stopped
+    logging: *logging
+    environment: *app-env
+    volumes: ["data:/app/tickstream/.data"]
+    depends_on:
+      init-data: { condition: service_completed_successfully }
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  settlement-worker:
+    build:
+      context: ../../..
+      dockerfile: tickstream/infrastructure/docker/settlement-worker.Dockerfile
+    restart: unless-stopped
+    logging: *logging
+    environment: *app-env
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  # HTTPS in front of the API. The website itself is hosted elsewhere (for example Vercel).
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      API_ADDRESS: ${API_DOMAIN:-:80}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      api: { condition: service_healthy }
+
+volumes:
+  pgdata:
+  redisdata:
+  data:
+  caddy-data:
+  caddy-config:

@@ -1,6 +1,6 @@
 import type { SessionInfo } from '@shared/types'
 import type { BatchEvmScheme } from '@circle-fin/x402-batching/client'
-import { api, ApiError, apiRaw, parseError } from '@/lib/api'
+import { api, ApiError, apiRaw, apiUrl, parseError } from '@/lib/api'
 
 type Requirements = Parameters<BatchEvmScheme['createPaymentPayload']>[1]
 
@@ -48,7 +48,7 @@ export function isFundsError(error: unknown): boolean {
 export function endSessionKeepalive(sessionId: string, token: string | null, second?: number): void {
   if (!token) return
   // One request ends the session and saves the position, so the two can never arrive out of order.
-  void fetch(`/api/sessions/${sessionId}`, {
+  void fetch(apiUrl(`sessions/${sessionId}`), {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ second: Math.max(0, Math.floor(second ?? 0)) }),

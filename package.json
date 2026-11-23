@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "build": "vite build",
     "stack": "bun run ./tickstream/infrastructure/scripts/dev.ts",
     "stack:up": "docker compose -f tickstream/infrastructure/docker/docker-compose.yml up -d --wait",
     "api": "bun run ./tickstream/apps/api/src/server.ts",

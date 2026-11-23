@@ -1,4 +1,8 @@
-const API_BASE = '/api'
+/**
+ * Where the API lives. Empty means the same site under /api (the dev server and the single-server setup forward it).
+ * Set VITE_API_URL to the API's full address (for example https://api.example.com) when the site is hosted elsewhere.
+ */
+const API_BASE = (import.meta.env.VITE_API_URL ?? '').trim().replace(/\/+$/, '') || '/api'
 const TOKEN_KEY = 'tickstream:token'
 
 export class ApiError extends Error {

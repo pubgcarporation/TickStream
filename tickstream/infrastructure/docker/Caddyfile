@@ -1,0 +1,13 @@
+# API_ADDRESS is the API's domain (automatic HTTPS) or ":80" for plain HTTP on the server's IP address.
+# Browser access rules (CORS) are handled by the API itself, using CORS_ORIGINS.
+{$API_ADDRESS::80} {
+	encode zstd gzip
+
+	reverse_proxy api:3001 {
+		flush_interval -1
+	}
+
+	header {
+		X-Content-Type-Options nosniff
+	}
+}

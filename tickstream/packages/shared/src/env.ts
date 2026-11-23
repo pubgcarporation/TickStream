@@ -37,5 +37,10 @@ export const env = {
     .map((value) => value.trim().toLowerCase())
     .filter(Boolean),
   trustProxy: optional('TRUST_PROXY') === '1',
+  /** Website origins allowed to call the API from a browser, such as https://tickstream.vercel.app. Empty means none. */
+  corsOrigins: (optional('CORS_ORIGINS') ?? '')
+    .split(',')
+    .map((value) => value.trim().replace(/\/+$/, ''))
+    .filter(Boolean),
   maxUploadBytes: Number(optional('MAX_UPLOAD_BYTES') ?? String(1024 * 1024 * 1024)),
 } as const

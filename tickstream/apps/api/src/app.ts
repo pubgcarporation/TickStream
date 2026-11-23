@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
+import { env } from '@shared/env'
 import { getPool } from '@shared/db'
 import { getRedis } from '@shared/redis'
 import { clientIp, HttpError, Router, sendJson, type Ctx } from './http'
@@ -47,7 +48,35 @@ registerCommentRoutes(router)
 registerSubscriptionRoutes(router)
 registerAdminRoutes(router)
 
+const CORS_HEADERS = 'Authorization, Content-Type, PAYMENT-SIGNATURE'
+const CORS_METHODS = 'GET, POST, PUT, PATCH, DELETE, OPTIONS'
+
+/**
+ * Lets the website call the API from another origin. Only origins listed in CORS_ORIGINS are allowed.
+ * Returns true when the request was a preflight and is already answered.
+ */
+function applyCors(req: IncomingMessage, res: ServerResponse): boolean {
+  const origin = req.headers.origin
+  if (!origin) return false
+  if (!env.corsOrigins.includes(origin)) {
+    // Not an allowed website: answer a preflight without CORS headers so the browser blocks the real request.
+    if (req.method !== 'OPTIONS') return false
+    res.writeHead(204).end()
+    return true
+  }
+  res.setHeader('Access-Control-Allow-Origin', origin)
+  res.setHeader('Vary', 'Origin')
+  res.setHeader('Access-Control-Expose-Headers', 'PAYMENT-REQUIRED, PAYMENT-RESPONSE')
+  if (req.method !== 'OPTIONS') return false
+  res.setHeader('Access-Control-Allow-Methods', CORS_METHODS)
+  res.setHeader('Access-Control-Allow-Headers', CORS_HEADERS)
+  res.setHeader('Access-Control-Max-Age', '86400')
+  res.writeHead(204).end()
+  return true
+}
+
 export async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  if (applyCors(req, res)) return
   const startedAt = Date.now()
   res.on('finish', () => {
     const path = (req.url ?? '/').split('?')[0] ?? '/'
