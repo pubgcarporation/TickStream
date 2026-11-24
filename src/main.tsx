@@ -16,7 +16,9 @@ createRoot(document.getElementById('root')!).render(
     <WalletProviders>
       <App />
       <Toaster
-        position="bottom-center"
+        position="top-center"
+        offset={{ top: 64 }}
+        mobileOffset={{ top: 64 }}
         theme="dark"
         duration={3500}
         visibleToasts={3}
