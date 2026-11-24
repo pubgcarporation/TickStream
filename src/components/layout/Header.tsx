@@ -24,7 +24,7 @@ function RatePill() {
     <Link
       to="/wallet"
       title={playing ? 'Price per second of the video you are watching' : 'Spending balance'}
-      className="flex min-h-10 items-center gap-1.5 rounded-full border border-[var(--border)] bg-[#181818] px-2.5 text-xs font-semibold tabular-nums transition-colors hover:bg-[#272727] md:gap-2 md:px-3 md:text-sm"
+      className="flex min-h-10 items-center gap-1.5 rounded-full px-2.5 text-xs font-semibold tabular-nums transition-colors hover:bg-white/10 md:gap-2 md:px-3 md:text-sm"
     >
       <TokenUSDC variant="branded" size={20} aria-hidden />
       {text}
