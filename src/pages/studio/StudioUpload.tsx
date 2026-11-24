@@ -1,5 +1,5 @@
 import { FileVideo, UploadCloud } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { CATEGORIES, DEFAULT_PRICE_PER_SECOND, MAX_PREVIEW_SECONDS, MAX_PRICE_PER_SECOND, MIN_PRICE_PER_SECOND } from '@shared/constants'
 import { Button, Chip, Panel, inputClass } from '@/components/ui/primitives'
@@ -33,6 +33,28 @@ export function StudioUpload() {
   const [dragging, setDragging] = useState(false)
   // If the upload fails after the video was created, retrying reuses it instead of leaving an empty draft behind.
   const draftId = useRef<string | null>(null)
+
+  // Leaving mid-upload would lose the file, so the browser asks first.
+  useEffect(() => {
+    if (!busy) return
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault()
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [busy])
+
+  /** Takes a chosen or dropped file. A blank title is filled from the file name so it can be changed, not retyped. */
+  const pick = (chosen: File | null) => {
+    if (!chosen) return
+    if (!chosen.type.startsWith('video/')) {
+      toast.error('Choose a video file')
+      return
+    }
+    setFile(chosen)
+    if (title.trim() === '') {
+      const name = chosen.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim()
+      setTitle(name.slice(0, 120))
+    }
+  }
 
   const priceMicro = priceToMicro(price)
   const fileError = file && file.size > MAX_BYTES ? 'That file is over 1 GB.' : null
@@ -68,33 +90,36 @@ export function StudioUpload() {
   }
 
   return (
-    <div className="grid items-start gap-x-10 gap-y-6 lg:grid-cols-[1fr_320px]">
-      <Panel className="space-y-4">
+    <div className="grid items-start gap-2.5 lg:grid-cols-[1fr_320px]">
+      <Panel className="space-y-3 !p-3.5">
         <div>
-          <label htmlFor="title" className="mb-1.5 block text-sm font-medium">
+          <label htmlFor="title" className="mb-1 block text-sm font-medium">
             Title
           </label>
           <input id="title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} className={inputClass} placeholder="Give it a clear name" disabled={busy} />
         </div>
         <div>
-          <label htmlFor="description" className="mb-1.5 block text-sm font-medium">
+          <label htmlFor="description" className="mb-1 block text-sm font-medium">
             Description
           </label>
-          <textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={2000} rows={4} className={inputClass} placeholder="What will viewers get for their seconds?" disabled={busy} />
+          <textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={2000} rows={3} className={inputClass} placeholder="What will viewers get for their seconds?" disabled={busy} />
         </div>
         <div>
-          <p className="mb-1.5 text-sm font-medium">Category</p>
-          <div className="flex flex-wrap gap-2">
+          <p className="mb-1 text-sm font-medium">Category</p>
+          <div className="flex flex-wrap gap-1.5">
             {CATEGORIES.map((item) => (
-              <Chip key={item.slug} active={category === item.slug} onClick={() => setCategory(item.slug)} disabled={busy}>
+              <Chip key={item.slug} size="sm" active={category === item.slug} onClick={() => setCategory(item.slug)} disabled={busy}>
                 {item.label}
               </Chip>
             ))}
           </div>
         </div>
         <div>
-          <p className="mb-1.5 text-sm font-medium">Video file</p>
-          <input ref={fileInput} type="file" accept="video/*" className="sr-only" id="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} disabled={busy} />
+          <p className="mb-1 text-sm font-medium">Video file</p>
+          <input ref={fileInput} type="file" accept="video/*" className="sr-only" id="file" onChange={(e) => {
+              pick(e.target.files?.[0] ?? null)
+              e.target.value = ''
+            }} disabled={busy} />
           <button
             type="button"
             onClick={() => fileInput.current?.click()}
@@ -106,12 +131,10 @@ export function StudioUpload() {
             onDrop={(event) => {
               event.preventDefault()
               setDragging(false)
-              const dropped = event.dataTransfer.files[0]
-              if (dropped && dropped.type.startsWith('video/')) setFile(dropped)
-              else toast.error('Drop a video file')
+              pick(event.dataTransfer.files[0] ?? null)
             }}
             disabled={busy}
-            className={`flex min-h-28 w-full flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed px-4 py-5 text-center text-sm transition-colors ${
+            className={`flex min-h-24 w-full flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed px-4 py-3 text-center text-sm transition-colors ${
               dragging ? 'border-[var(--accent)] bg-white/5 text-[var(--ink)]' : 'border-[#3a3a3a] text-[var(--muted)] hover:text-[var(--ink)]'
             }`}
           >
@@ -136,7 +159,7 @@ export function StudioUpload() {
             <div className="h-2 overflow-hidden rounded-full bg-white/10" role="progressbar" aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100} aria-label="Upload progress">
               <div className="h-full rounded-full bg-[var(--accent)]" style={{ width: `${progress * 100}%`, transition: 'width 0.2s' }} />
             </div>
-            <p className="mt-2 text-xs tabular-nums text-[var(--muted)]">Uploading {Math.round(progress * 100)}%</p>
+            <p className="mt-1 text-xs tabular-nums text-[var(--muted)]">Uploading {Math.round(progress * 100)}%</p>
           </div>
         )}
         <Button full loading={busy} disabled={!valid} onClick={() => void submit()}>
@@ -144,9 +167,9 @@ export function StudioUpload() {
         </Button>
       </Panel>
 
-      <Panel className="space-y-4">
+      <Panel className="space-y-3 !p-3.5">
         <div>
-          <label htmlFor="price" className="mb-1.5 block text-sm font-medium">
+          <label htmlFor="price" className="mb-1 block text-sm font-medium">
             Price per second (USDC)
           </label>
           <input
@@ -167,7 +190,7 @@ export function StudioUpload() {
           )}
         </div>
         <div>
-          <label htmlFor="preview" className="mb-1.5 flex items-center justify-between text-sm font-medium">
+          <label htmlFor="preview" className="mb-1 flex items-center justify-between text-sm font-medium">
             Free preview
             <span className="tabular-nums text-[var(--muted)]">{previewSeconds === 0 ? 'Off' : `${previewSeconds}s`}</span>
           </label>
@@ -186,15 +209,15 @@ export function StudioUpload() {
         </div>
         {priceMicro !== null && (
           <dl className="divide-y divide-[var(--border)] border-y border-[var(--border)] text-sm tabular-nums">
-            <div className="flex justify-between py-2.5">
+            <div className="flex justify-between py-1.5">
               <dt className="text-[var(--muted)]">One minute</dt>
               <dd>{ratePerMinute(priceMicro)} USDC</dd>
             </div>
-            <div className="flex justify-between py-2.5">
+            <div className="flex justify-between py-1.5">
               <dt className="text-[var(--muted)]">One hour</dt>
               <dd>{ratePerHour(priceMicro)} USDC</dd>
             </div>
-            <div className="flex justify-between py-2.5">
+            <div className="flex justify-between py-1.5">
               <dt className="text-[var(--muted)]">A viewer who watches 10 minutes</dt>
               <dd>{formatMicro(priceMicro * 600)} USDC</dd>
             </div>

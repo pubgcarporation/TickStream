@@ -12,15 +12,15 @@ const STATUS = {
 
 /** Payments as dense rows: logo, what it was for, who paid, status, amount. */
 export function PaymentRows({ payments, empty = 'No payments yet.' }: { payments: PaymentRecord[]; empty?: string }) {
-  if (payments.length === 0) return <p className="px-3.5 py-8 text-center text-[13px] text-[var(--muted)]">{empty}</p>
+  if (payments.length === 0) return <p className="px-3.5 py-5 text-center text-[13px] text-[var(--muted)]">{empty}</p>
   return (
     <ul className="divide-y divide-[var(--border)]">
       {payments.map((payment) => {
         const status = STATUS[payment.status]
         const tip = payment.kind === 'tip'
         return (
-          <li key={payment.id} className="flex items-center gap-3 px-3.5 py-2 text-[13px]">
-            <UsdcMark incoming size={32} badge={tip ? <HandCoins className="size-3" strokeWidth={3} aria-hidden /> : <Timer className="size-3" strokeWidth={3} aria-hidden />} />
+          <li key={payment.id} className="flex items-center gap-3 px-3.5 py-1.5 text-[13px]">
+            <UsdcMark incoming size={28} badge={tip ? <HandCoins className="size-3" strokeWidth={3} aria-hidden /> : <Timer className="size-3" strokeWidth={3} aria-hidden />} />
             <div className="min-w-0 flex-1">
               <p className="flex items-center gap-1.5 truncate font-medium">
                 <span className="truncate">{payment.videoTitle}</span>

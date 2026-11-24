@@ -89,5 +89,5 @@ Admins are the wallet addresses listed in `ADMIN_ADDRESSES`. All routes return 4
 
 | Endpoint | What it does |
 | - | - |
-| `GET /creator/stats?days=7\|28\|90` | Everything the Studio screens show for the last N days (UTC), counted from real payments and viewing sessions, with the same numbers for the N days before. Also per-video numbers, top paying wallets and settlement status. |
-| `GET /creator/payments?limit=&offset=` | The creator's payments, newest first, up to 100 at a time. `more` tells whether older ones exist. |
+| `GET /creator/stats?days=N` or `?from=YYYY-MM-DD&to=YYYY-MM-DD` | Everything the Studio screens show for the last N days (1 to 365) or for an exact range of at most 366 days (UTC, both days included), counted from real payments and viewing sessions, with the same numbers for the period of the same length right before it. Also per-video numbers, top paying wallets and settlement status. |
+| `GET /creator/payments?limit=&offset=&from=&to=&filter=` | The creator's payments, newest first, up to 100 at a time. `from` and `to` (YYYY-MM-DD, UTC, both included) limit the period. `filter` is `all`, `watch`, `tip`, `pending` or `failed`. `more` tells whether older ones exist. |

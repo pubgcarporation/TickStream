@@ -60,17 +60,17 @@ export function ProfilePicture() {
 
   return (
     <div className="flex items-center gap-4">
-      <Avatar name={name} size={72} accent username={user.username} version={user.avatarVersion} />
+      <Avatar name={name} size={56} accent username={user.username} version={user.avatarVersion} />
       <div className="min-w-0">
         <p className="text-sm font-medium">Profile picture</p>
         <p className="mt-0.5 text-xs text-[var(--subtle)]">Shown next to your videos and comments. It is cropped to a square.</p>
-        <div className="mt-2 flex flex-wrap gap-2">
+        <div className="mt-1.5 flex flex-wrap gap-2">
           <input ref={input} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(event) => void choose(event.target.files?.[0])} aria-label="Choose a profile picture" />
-          <Button variant="secondary" shape="rect" loading={busy} onClick={() => input.current?.click()} className="min-h-10">
+          <Button variant="secondary" shape="rect" loading={busy} onClick={() => input.current?.click()} className="min-h-9">
             <Camera className="size-4" aria-hidden /> {user.avatarVersion ? 'Change' : 'Upload'}
           </Button>
           {user.avatarVersion && (
-            <Button variant="ghost" shape="rect" disabled={busy} onClick={() => void remove()} className="min-h-10">
+            <Button variant="ghost" shape="rect" disabled={busy} onClick={() => void remove()} className="min-h-9">
               <Trash2 className="size-4" aria-hidden /> Remove
             </Button>
           )}

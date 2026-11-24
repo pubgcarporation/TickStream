@@ -288,6 +288,23 @@ run('TickStream API', () => {
     expect(stats.supporters[0]?.totalMicro).toBe(5200)
   })
 
+  test('a custom range and a payment filter narrow what is counted', async () => {
+    const day = (offset: number) => new Date(Date.now() - offset * 86_400_000).toISOString().slice(0, 10)
+    const { stats } = await client.api<{ stats: import('@shared/types').StudioStats }>(`creator/stats?from=${day(6)}&to=${day(0)}`)
+    expect(stats.days).toBe(7)
+    expect(stats.series).toHaveLength(7)
+    expect(stats.previousTo).toBe(day(7))
+    const older = await client.api<{ stats: import('@shared/types').StudioStats }>(`creator/stats?from=${day(60)}&to=${day(50)}`)
+    expect(older.stats.days).toBe(11)
+    expect(older.stats.series).toHaveLength(11)
+    await expect(client.api(`creator/stats?from=${day(0)}&to=${day(6)}`)).rejects.toMatchObject({ status: 400 })
+    await expect(client.api('creator/stats?from=nope&to=2026-01-01')).rejects.toMatchObject({ status: 400 })
+    const tips = await client.api<{ payments: Array<{ kind: string }> }>('creator/payments?limit=100&filter=tip')
+    expect(tips.payments.length).toBeGreaterThan(0)
+    expect(tips.payments.every((payment) => payment.kind === 'tip')).toBe(true)
+    await expect(client.api('creator/payments?filter=constructor')).rejects.toMatchObject({ status: 400 })
+  })
+
   test('payments are listed a page at a time', async () => {
     const first = await client.api<{ payments: unknown[]; more: boolean }>('creator/payments?limit=2')
     expect(first.payments).toHaveLength(2)

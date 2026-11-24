@@ -12,7 +12,7 @@ price per second, upload a video, and get paid as viewers watch.
 - Videos are encrypted, delivered only after payment, and limited to one active viewing session per wallet.
 - Creators can offer a free preview, and viewers can resume where they left off.
 - Comments, following, and related videos.
-- Creators get analytics (paying viewers, watch time, completion), can edit their videos, and can withdraw earnings to their wallet.
+- Creators get analytics (paying viewers, watch time, completion) for today, the last 7 to 365 days, this or last month, or any date range they pick, can edit their videos, and can withdraw earnings to their wallet.
 - An admin console for takedowns, payments and users.
 
 ## Tech stack

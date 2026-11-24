@@ -4,8 +4,9 @@ import { toast } from 'sonner'
 import type { VideoSummary } from '@shared/types'
 import { CATEGORIES, MAX_PREVIEW_SECONDS, MAX_PRICE_PER_SECOND, MIN_PRICE_PER_SECOND } from '@shared/constants'
 import { usdc } from '@/components/studio/bits'
-import { Block } from '@/components/studio/Block'
-import { useStudioRange, useStudioStats } from '@/components/studio/useStudioStats'
+import { Block, BlockEmpty } from '@/components/studio/Block'
+import { rangeLabel } from '@/components/studio/bits'
+import { useStudioStats } from '@/components/studio/useStudioStats'
 import { Button, Chip, EmptyState, ErrorState, Sheet, Skeleton, inputClass } from '@/components/ui/primitives'
 import { useApi } from '@/hooks/useApi'
 import { api } from '@/lib/api'
@@ -27,6 +28,15 @@ const FILTERS: Array<{ key: Filter; label: string; test: (v: VideoSummary) => bo
   { key: 'ready', label: 'Live', test: (v) => v.status === 'ready' },
   { key: 'working', label: 'Encoding', test: (v) => v.status === 'processing' || v.status === 'uploading' },
   { key: 'failed', label: 'Failed', test: (v) => v.status === 'failed' },
+]
+
+type Sort = 'newest' | 'earned' | 'views' | 'price' | 'title'
+const SORTS: Array<{ key: Sort; label: string }> = [
+  { key: 'newest', label: 'Newest' },
+  { key: 'earned', label: 'Most earned' },
+  { key: 'views', label: 'Most views' },
+  { key: 'price', label: 'Highest price' },
+  { key: 'title', label: 'Title A to Z' },
 ]
 
 function DetailsSheet({ video, open, onClose, onSaved }: { video: VideoSummary; open: boolean; onClose: () => void; onSaved: () => void }) {
@@ -52,7 +62,7 @@ function DetailsSheet({ video, open, onClose, onSaved }: { video: VideoSummary; 
 
   return (
     <Sheet open={open} onClose={onClose} title="Video details">
-      <div className="space-y-4">
+      <div className="space-y-3">
         <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} aria-label="Title" className={inputClass} />
         <textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={2000} rows={4} aria-label="Description" className={inputClass} />
         <div className="flex flex-wrap gap-2">
@@ -133,9 +143,9 @@ function VideoRow({ video, earnedMicro, onChanged }: { video: VideoSummary; earn
   }
 
   return (
-    <li className="grid items-center gap-x-3 gap-y-2 px-3.5 py-2.5 text-[13px] sm:grid-cols-[minmax(0,1fr)_92px_80px_64px_88px_112px]">
+    <li className="grid items-center gap-x-3 gap-y-1.5 px-3.5 py-1.5 text-[13px] sm:grid-cols-[minmax(0,1fr)_92px_80px_64px_88px_112px]">
       <div className="flex min-w-0 items-center gap-3">
-        <div className="relative w-20 shrink-0 sm:w-24">
+        <div className="relative w-16 shrink-0 sm:w-20">
           {video.status === 'ready' ? (
             <VideoThumb videoId={video.id} className="w-full" />
           ) : (
@@ -174,6 +184,11 @@ function VideoRow({ video, earnedMicro, onChanged }: { video: VideoSummary; earn
               aria-label="Price per second in USDC"
               className={`${inputClass} mono !h-8 !w-24 !px-2 !py-1 text-[13px]`}
               inputMode="decimal"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void save()
+                else if (e.key === 'Escape') setEditing(false)
+              }}
+              autoFocus
             />
             <button type="button" onClick={() => void save()} disabled={saving} aria-label="Save price" className="flex size-8 items-center justify-center rounded-full hover:bg-white/10">
               {saving ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4 text-[var(--success)]" />}
@@ -183,7 +198,10 @@ function VideoRow({ video, earnedMicro, onChanged }: { video: VideoSummary; earn
             </button>
           </>
         ) : (
-          <button type="button" onClick={() => setEditing(true)} aria-label="Edit price" className="group mono -ml-1.5 inline-flex items-center gap-1 rounded px-1.5 py-1 hover:bg-white/10">
+          <button type="button" onClick={() => {
+              setPrice(formatMicro(video.priceMicro))
+              setEditing(true)
+            }} aria-label="Edit price" className="group mono -ml-1.5 inline-flex items-center gap-1 rounded px-1.5 py-1 hover:bg-white/10">
             ${formatMicro(video.priceMicro)}/s <Pencil className="size-3 text-[var(--subtle)] opacity-0 group-hover:opacity-100 max-sm:opacity-100" aria-hidden />
           </button>
         )}
@@ -213,9 +231,9 @@ function VideoRow({ video, earnedMicro, onChanged }: { video: VideoSummary; earn
 
 export function StudioVideos() {
   const { data, loading, error, reload } = useApi<{ videos: VideoSummary[] }>('me/videos')
-  const [days] = useStudioRange()
-  const stats = useStudioStats(days)
+  const stats = useStudioStats()
   const [filter, setFilter] = useState<Filter>('all')
+  const [sort, setSort] = useState<Sort>('newest')
   const [search, setSearch] = useState('')
   const processing = data?.videos.some((video) => video.status === 'processing' || video.status === 'uploading') ?? false
 
@@ -230,8 +248,17 @@ export function StudioVideos() {
   const shown = useMemo(() => {
     const test = FILTERS.find((item) => item.key === filter)?.test ?? (() => true)
     const term = search.trim().toLowerCase()
-    return (data?.videos ?? []).filter((video) => test(video) && (!term || video.title.toLowerCase().includes(term)))
-  }, [data, filter, search])
+    const list = (data?.videos ?? []).filter((video) => test(video) && (!term || video.title.toLowerCase().includes(term)))
+    const byNewest = (a: VideoSummary, b: VideoSummary) => Date.parse(b.createdAt) - Date.parse(a.createdAt)
+    const order: Record<Sort, (a: VideoSummary, b: VideoSummary) => number> = {
+      newest: byNewest,
+      earned: (a, b) => (earned.get(b.id) ?? 0) - (earned.get(a.id) ?? 0) || byNewest(a, b),
+      views: (a, b) => b.views - a.views || byNewest(a, b),
+      price: (a, b) => b.priceMicro - a.priceMicro || byNewest(a, b),
+      title: (a, b) => a.title.localeCompare(b.title),
+    }
+    return [...list].sort(order[sort])
+  }, [data, filter, search, sort, earned])
 
   if (loading && !data) return <Skeleton className="h-64" />
   if (error && !data) return <ErrorState title="Could not load your videos" message={error.message} onRetry={reload} />
@@ -251,34 +278,41 @@ export function StudioVideos() {
   }
   const counts = (test: (v: VideoSummary) => boolean) => data.videos.filter(test).length
   return (
-    <Block
-      title={`Videos (${data.videos.length})`}
-      action={
-        <label className="relative block">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-[var(--subtle)]" aria-hidden />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search your videos" aria-label="Search your videos" className={`${inputClass} !h-8 !w-44 !rounded-full !py-1 !pl-8 !pr-3 text-xs sm:!w-56`} />
-        </label>
-      }
-    >
-      <div className="flex flex-wrap gap-1.5 border-b border-[var(--border)] px-3.5 py-2" role="group" aria-label="Filter videos">
-        {FILTERS.map((item) => (
-          <Chip key={item.key} size="sm" active={filter === item.key} onClick={() => setFilter(item.key)}>
-            {item.label} <span className="tabular-nums opacity-60">{counts(item.test)}</span>
-          </Chip>
-        ))}
+    <Block title={`Videos (${data.videos.length})`} action={<span className="text-[var(--subtle)]">Earned: {stats.stats ? rangeLabel(stats.stats.from, stats.stats.to) : '...'}</span>}>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-[var(--border)] px-3.5 py-1.5">
+        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter videos">
+          {FILTERS.map((item) => (
+            <Chip key={item.key} size="sm" active={filter === item.key} onClick={() => setFilter(item.key)}>
+              {item.label} <span className="tabular-nums opacity-60">{counts(item.test)}</span>
+            </Chip>
+          ))}
+        </div>
+        <div className="ml-auto flex min-w-0 flex-wrap items-center gap-2">
+          <label className="relative block">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-[var(--subtle)]" aria-hidden />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search your videos" aria-label="Search your videos" className={`${inputClass} !h-8 !w-40 !rounded-full !py-1 !pl-8 !pr-3 text-xs sm:!w-48`} />
+          </label>
+          <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} aria-label="Sort videos" className={`${inputClass} !h-8 !w-auto !rounded-full !py-1 !pl-3 !pr-7 text-xs`}>
+            {SORTS.map((item) => (
+              <option key={item.key} value={item.key}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
-      <div className="hidden grid-cols-[minmax(0,1fr)_92px_80px_64px_88px_112px] gap-x-3 border-b border-[var(--border)] px-3.5 py-1.5 text-[11px] font-medium text-[var(--subtle)] sm:grid">
+      <div className="hidden grid-cols-[minmax(0,1fr)_92px_80px_64px_88px_112px] gap-x-3 border-b border-[var(--border)] px-3.5 py-1 text-[11px] font-medium text-[var(--subtle)] sm:grid">
         <span>Video</span>
         <span>Status</span>
         <span>Price</span>
         <span className="text-right">Views</span>
-        <span className="text-right" title="Earned in the period chosen on Overview">
+        <span className="text-right" title="Earned in the timeframe you chose at the top right">
           Earned
         </span>
         <span />
       </div>
       {shown.length === 0 ? (
-        <p className="px-3.5 py-8 text-center text-[13px] text-[var(--muted)]">No videos match.</p>
+        <BlockEmpty>No videos match.</BlockEmpty>
       ) : (
         <ul className="divide-y divide-[var(--border)]">
           {shown.map((video) => (

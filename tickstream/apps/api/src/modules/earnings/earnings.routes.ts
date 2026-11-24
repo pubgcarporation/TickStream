@@ -126,7 +126,7 @@ export function registerEarningsRoutes(router: Router): void {
       failed: "p.status = 'failed'",
     }
     const filterName = ctx.url.searchParams.get('filter') ?? 'all'
-    const filterSql = Object.hasOwn(filters, filterName) ? filters[filterName] : undefined
+    const filterSql = Object.prototype.hasOwnProperty.call(filters, filterName) ? filters[filterName] : undefined
     if (!filterSql) throw new HttpError(400, 'filter must be all, watch, tip, pending or failed', 'invalid_request')
     // One extra row tells the page whether there is more to load.
     const rows = await query<PaymentRow>(

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
+import { useCallback, useState, useSyncExternalStore } from 'react'
 import type { StudioStats } from '@shared/types'
 import { useApi } from '@/hooks/useApi'
 import { safeStorage } from '@/lib/safe-storage'
@@ -40,7 +40,7 @@ export const msToDay = (ms: number) => new Date(ms).toISOString().slice(0, 10)
 export const todayUtc = () => msToDay(Date.now())
 export const spanDays = (from: string, to: string) => Math.round((dayToMs(to) - dayToMs(from)) / DAY_MS) + 1
 
-export function isValidRange(from: unknown, to: unknown): from is string {
+export function isValidRange(from: unknown, to: unknown): boolean {
   if (typeof from !== 'string' || typeof to !== 'string' || !DATE.test(from) || !DATE.test(to)) return false
   if (Number.isNaN(dayToMs(from)) || Number.isNaN(dayToMs(to))) return false
   return from <= to && to <= todayUtc() && spanDays(from, to) <= MAX_RANGE_DAYS
@@ -128,9 +128,7 @@ export function useStudioStats() {
   const query = useApi<{ stats: StudioStats }>(`creator/stats?${timeframeQuery(frame)}`)
   const fresh = query.data?.stats ?? null
   const [kept, setKept] = useState<StudioStats | null>(null)
-  useEffect(() => {
-    if (fresh) setKept(fresh)
-  }, [fresh])
+  if (fresh && fresh !== kept) setKept(fresh)
   const stats = fresh ?? (query.loading ? kept : null)
   return { stats, loading: query.loading, refreshing: query.loading && fresh === null && stats !== null, error: query.error, reload: query.reload }
 }
