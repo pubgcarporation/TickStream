@@ -26,6 +26,19 @@ export function Delta({ current, previous, className = '' }: { current: number; 
   )
 }
 
+/** "Oct 28" for a YYYY-MM-DD day (UTC), with the year when asked. */
+export function dayLabel(day: string, withYear = false): string {
+  const date = new Date(`${day}T00:00:00Z`)
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', ...(withYear ? { year: 'numeric' } : {}), timeZone: 'UTC' })
+}
+
+/** "Oct 28 to Nov 24, 2026", or a single day when both ends are the same. */
+export function rangeLabel(from: string, to: string): string {
+  if (from === to) return dayLabel(from, true)
+  const sameYear = from.slice(0, 4) === to.slice(0, 4)
+  return `${dayLabel(from, !sameYear)} \u2013 ${dayLabel(to, true)}`
+}
+
 export const usdc = (micro: number) => formatMicro(micro)
 export const watchTime = (seconds: number) => (seconds < 60 ? `${Math.round(seconds)}s` : formatDuration(seconds))
 

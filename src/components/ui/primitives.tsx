@@ -66,9 +66,9 @@ export interface TabItem {
 }
 
 /** Underlined page sections. The line slides to the active tab. `id` keeps two tab rows from sharing one line. */
-export function Tabs({ id, label, items, className }: { id: string; label: string; items: TabItem[]; className?: string }) {
+export function Tabs({ id, label, items, className, dense }: { id: string; label: string; items: TabItem[]; className?: string; dense?: boolean }) {
   return (
-    <nav className={clsx('-mx-4 flex gap-1 overflow-x-auto border-b border-[var(--border)] px-2 [scrollbar-width:none] sm:mx-0 sm:px-0', className)} aria-label={label}>
+    <nav className={clsx('flex gap-1 overflow-x-auto [scrollbar-width:none]', dense ? 'self-stretch' : '-mx-4 border-b border-[var(--border)] px-2 sm:mx-0 sm:px-0', className)} aria-label={label}>
       <LayoutGroup id={id}>
         {items.map((tab) => (
           <Link
@@ -76,7 +76,8 @@ export function Tabs({ id, label, items, className }: { id: string; label: strin
             to={tab.to}
             aria-current={tab.active ? 'page' : undefined}
             className={clsx(
-              'relative min-h-11 whitespace-nowrap px-3.5 py-2.5 text-sm font-medium transition-colors',
+              'relative whitespace-nowrap font-medium transition-colors',
+              dense ? 'flex min-h-9 items-center px-3 text-[13px]' : 'min-h-11 px-3.5 py-2.5 text-sm',
               tab.active ? 'text-[var(--ink)]' : 'text-[var(--muted)] hover:text-[var(--ink)]',
             )}
           >

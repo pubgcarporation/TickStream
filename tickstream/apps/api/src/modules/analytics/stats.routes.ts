@@ -1,6 +1,6 @@
 import { query } from '@shared/db'
 import type { StudioDay, StudioStats, StudioSupporter, StudioTotals, StudioVideoStats, VideoStatus } from '@shared/types'
-import { requireUser, sendJson, type Router } from '../../http'
+import { HttpError, requireUser, sendJson, type Router } from '../../http'
 import { int } from '../../middleware/request-validation'
 
 interface DayRow {
@@ -65,80 +65,116 @@ interface SupporterRow {
   tips: number
 }
 
-const RANGES = [7, 28, 90]
+const DAY_MS = 86_400_000
+const DATE = /^\d{4}-\d{2}-\d{2}$/
+const MAX_DAYS = 366
+
+const toMs = (day: string) => Date.parse(`${day}T00:00:00Z`)
+const toDay = (ms: number) => new Date(ms).toISOString().slice(0, 10)
+
+/** A YYYY-MM-DD query value that is a real calendar day. */
+function dayParam(value: string, field: string): string {
+  if (!DATE.test(value) || toDay(toMs(value)) !== value) {
+    throw new HttpError(400, `${field} must be a day like 2026-01-31`, 'invalid_request')
+  }
+  return value
+}
 
 /**
  * One request that backs every Studio screen. Everything is counted from real payments and viewing sessions of this
- * creator's videos. A period is the last N days (UTC, today included) and is compared with the N days before it.
+ * creator's videos. A period is either the last N days (`days`, UTC, today included) or an exact range (`from` and
+ * `to`, both included). It is compared with the period of the same length right before it.
  */
 export function registerStudioStatsRoutes(router: Router): void {
   router.get('/creator/stats', 'required', async (ctx) => {
     const addr = requireUser(ctx)
-    const requested = int(ctx.url.searchParams.get('days') ?? '28', 'days', 1, 365)
-    const days = RANGES.includes(requested) ? requested : 28
+    const params = ctx.url.searchParams
 
-    // Period bounds, computed once by the database so every query below agrees on them.
-    const [bounds] = await query<{ cur: string; prev: string; from: string; to: string }>(
-      `select (date_trunc('day', now()) - (($1::int - 1) * interval '1 day'))::text as cur,
-              (date_trunc('day', now()) - ((2 * $1::int - 1) * interval '1 day'))::text as prev,
-              to_char(date_trunc('day', now()) - (($1::int - 1) * interval '1 day'), 'YYYY-MM-DD') as "from",
-              to_char(date_trunc('day', now()), 'YYYY-MM-DD') as "to"`,
-      [days],
+    // Today comes from the database, so the period and the rows it counts always agree on where a day starts.
+    const [clock] = await query<{ today: string }>(`select to_char(date_trunc('day', now()), 'YYYY-MM-DD') as today`)
+    const today = clock?.today ?? toDay(Date.now())
+
+    let fromDay: string
+    let toDayStr: string
+    if (params.has('from') || params.has('to')) {
+      toDayStr = dayParam(params.get('to') ?? today, 'to')
+      fromDay = dayParam(params.get('from') ?? toDayStr, 'from')
+      if (toMs(toDayStr) > toMs(today)) toDayStr = today
+      if (toMs(fromDay) > toMs(toDayStr)) throw new HttpError(400, 'from must not be after to', 'invalid_request')
+      if ((toMs(toDayStr) - toMs(fromDay)) / DAY_MS + 1 > MAX_DAYS) {
+        throw new HttpError(400, `A period can cover at most ${MAX_DAYS} days`, 'invalid_request')
+      }
+    } else {
+      const requested = int(params.get('days') ?? '28', 'days', 1, 365)
+      toDayStr = today
+      fromDay = toDay(toMs(today) - (requested - 1) * DAY_MS)
+    }
+    const days = (toMs(toDayStr) - toMs(fromDay)) / DAY_MS + 1
+    const previousFrom = toDay(toMs(fromDay) - days * DAY_MS)
+    const previousTo = toDay(toMs(fromDay) - DAY_MS)
+
+    // Period bounds, computed once by the database so every query below agrees on them. `end` is the first
+    // moment after the last day, so a range can stop before today.
+    const [bounds] = await query<{ cur: string; prev: string; end: string }>(
+      `select ($1::date)::timestamptz::text as cur, ($2::date)::timestamptz::text as prev,
+              (($3::date) + interval '1 day')::timestamptz::text as "end"`,
+      [fromDay, previousFrom, toDayStr],
     )
     const cur = bounds?.cur ?? ''
     const prev = bounds?.prev ?? ''
+    const end = bounds?.end ?? ''
 
     const [dayRows, payTotals, sessionTotals, videoRows, videoSessions, supporterRows] = await Promise.all([
       query<DayRow>(
         `select to_char(d.day, 'YYYY-MM-DD') as day,
            coalesce(p.watch, 0) as watch, coalesce(p.tips, 0) as tips, coalesce(p.seconds, 0) as seconds,
            coalesce(s.starts, 0)::int as starts, coalesce(s.paid, 0)::int as paid, coalesce(s.viewers, 0)::int as viewers
-         from generate_series($2::timestamptz, date_trunc('day', now()), interval '1 day') as d(day)
+         from generate_series($2::timestamptz, $3::timestamptz - interval '1 day', interval '1 day') as d(day)
          left join (
            select date_trunc('day', created_at) as day,
              sum(amount_micro) filter (where kind = 'watch') as watch,
              sum(amount_micro) filter (where kind = 'tip') as tips,
              sum(seconds) filter (where kind = 'watch') as seconds
-           from payments where creator = $1 and status <> 'failed' and created_at >= $2::timestamptz group by 1
+           from payments where creator = $1 and status <> 'failed' and created_at >= $2::timestamptz and created_at < $3::timestamptz group by 1
          ) p on p.day = d.day
          left join (
            select date_trunc('day', s.started_at) as day, count(*) as starts,
              count(*) filter (where s.spent_micro > 0) as paid,
              count(distinct s.viewer) filter (where s.spent_micro > 0) as viewers
            from playback_sessions s join videos v on v.id = s.video_id
-           where v.creator = $1 and s.started_at >= $2::timestamptz group by 1
+           where v.creator = $1 and s.started_at >= $2::timestamptz and s.started_at < $3::timestamptz group by 1
          ) s on s.day = d.day
          order by d.day`,
-        [addr, cur],
+        [addr, cur, end],
       ),
       query<PaymentTotalsRow>(
         `select
-           coalesce(sum(amount_micro) filter (where kind = 'watch' and created_at >= $2::timestamptz), 0) as cur_watch,
-           coalesce(sum(amount_micro) filter (where kind = 'tip' and created_at >= $2::timestamptz), 0) as cur_tips,
-           coalesce(sum(seconds) filter (where kind = 'watch' and created_at >= $2::timestamptz), 0) as cur_seconds,
+           coalesce(sum(amount_micro) filter (where kind = 'watch' and created_at >= $2::timestamptz and created_at < $4::timestamptz), 0) as cur_watch,
+           coalesce(sum(amount_micro) filter (where kind = 'tip' and created_at >= $2::timestamptz and created_at < $4::timestamptz), 0) as cur_tips,
+           coalesce(sum(seconds) filter (where kind = 'watch' and created_at >= $2::timestamptz and created_at < $4::timestamptz), 0) as cur_seconds,
            coalesce(sum(amount_micro) filter (where kind = 'watch' and created_at < $2::timestamptz), 0) as prev_watch,
            coalesce(sum(amount_micro) filter (where kind = 'tip' and created_at < $2::timestamptz), 0) as prev_tips,
            coalesce(sum(seconds) filter (where kind = 'watch' and created_at < $2::timestamptz), 0) as prev_seconds,
-           coalesce(sum(amount_micro) filter (where status = 'pending' and created_at >= $2::timestamptz), 0) as pending,
-           coalesce(sum(amount_micro) filter (where status = 'settled' and created_at >= $2::timestamptz), 0) as settled
-         from payments where creator = $1 and status <> 'failed' and created_at >= $3::timestamptz`,
-        [addr, cur, prev],
+           coalesce(sum(amount_micro) filter (where status = 'pending' and created_at >= $2::timestamptz and created_at < $4::timestamptz), 0) as pending,
+           coalesce(sum(amount_micro) filter (where status = 'settled' and created_at >= $2::timestamptz and created_at < $4::timestamptz), 0) as settled
+         from payments where creator = $1 and status <> 'failed' and created_at >= $3::timestamptz and created_at < $4::timestamptz`,
+        [addr, cur, prev, end],
       ),
       query<SessionTotalsRow>(
         `select
-           count(*) filter (where s.started_at >= $2::timestamptz)::int as cur_starts,
-           count(*) filter (where s.started_at >= $2::timestamptz and s.spent_micro > 0)::int as cur_paid,
-           count(distinct s.viewer) filter (where s.started_at >= $2::timestamptz and s.spent_micro > 0)::int as cur_viewers,
+           count(*) filter (where s.started_at >= $2::timestamptz and s.started_at < $4::timestamptz)::int as cur_starts,
+           count(*) filter (where s.started_at >= $2::timestamptz and s.started_at < $4::timestamptz and s.spent_micro > 0)::int as cur_paid,
+           count(distinct s.viewer) filter (where s.started_at >= $2::timestamptz and s.started_at < $4::timestamptz and s.spent_micro > 0)::int as cur_viewers,
            count(*) filter (where s.started_at < $2::timestamptz)::int as prev_starts,
            count(*) filter (where s.started_at < $2::timestamptz and s.spent_micro > 0)::int as prev_paid,
            count(distinct s.viewer) filter (where s.started_at < $2::timestamptz and s.spent_micro > 0)::int as prev_viewers,
            (select count(*)::int from (
               select s2.viewer from playback_sessions s2 join videos v2 on v2.id = s2.video_id
-              where v2.creator = $1 and s2.started_at >= $2::timestamptz and s2.spent_micro > 0
+              where v2.creator = $1 and s2.started_at >= $2::timestamptz and s2.started_at < $4::timestamptz and s2.spent_micro > 0
               group by s2.viewer having count(*) > 1) r) as returning
          from playback_sessions s join videos v on v.id = s.video_id
-         where v.creator = $1 and s.started_at >= $3::timestamptz`,
-        [addr, cur, prev],
+         where v.creator = $1 and s.started_at >= $3::timestamptz and s.started_at < $4::timestamptz`,
+        [addr, cur, prev, end],
       ),
       query<VideoRow>(
         `select v.id, v.title, v.status, v.price_micro, v.duration_seconds, v.created_at, v.views,
@@ -146,17 +182,17 @@ export function registerStudioStatsRoutes(router: Router): void {
            coalesce(sum(p.amount_micro) filter (where p.kind = 'tip'), 0) as tips,
            coalesce(sum(p.seconds) filter (where p.kind = 'watch'), 0) as seconds
          from videos v
-         left join payments p on p.video_id = v.id and p.status <> 'failed' and p.created_at >= $2::timestamptz
+         left join payments p on p.video_id = v.id and p.status <> 'failed' and p.created_at >= $2::timestamptz and p.created_at < $3::timestamptz
          where v.creator = $1 and v.status <> 'removed'
          group by v.id order by watch desc, v.created_at desc`,
-        [addr, cur],
+        [addr, cur, end],
       ),
       query<VideoSessionRow>(
         `with per_session as (
            select s.video_id, s.viewer, s.spent_micro,
              least(1.0, (s.segments_authorized * v.segment_seconds)::float / nullif(v.duration_seconds, 0)) as completion
            from playback_sessions s join videos v on v.id = s.video_id
-           where v.creator = $1 and s.started_at >= $2::timestamptz
+           where v.creator = $1 and s.started_at >= $2::timestamptz and s.started_at < $3::timestamptz
          )
          select video_id, count(*)::int as starts,
            count(distinct viewer) filter (where spent_micro > 0)::int as viewers,
@@ -166,14 +202,14 @@ export function registerStudioStatsRoutes(router: Router): void {
            count(*) filter (where spent_micro > 0 and completion >= 0.5 and completion < 0.75)::int as b3,
            count(*) filter (where spent_micro > 0 and completion >= 0.75)::int as b4
          from per_session group by video_id`,
-        [addr, cur],
+        [addr, cur, end],
       ),
       query<SupporterRow>(
         `select payer, sum(amount_micro) as total, count(*)::int as payments,
            coalesce(sum(amount_micro) filter (where kind = 'tip'), 0) as tips
-         from payments where creator = $1 and status <> 'failed' and created_at >= $2::timestamptz
+         from payments where creator = $1 and status <> 'failed' and created_at >= $2::timestamptz and created_at < $3::timestamptz
          group by payer order by total desc limit 8`,
-        [addr, cur],
+        [addr, cur, end],
       ),
     ])
 
@@ -229,8 +265,10 @@ export function registerStudioStatsRoutes(router: Router): void {
 
     const stats: StudioStats = {
       days,
-      from: bounds?.from ?? '',
-      to: bounds?.to ?? '',
+      from: fromDay,
+      to: toDayStr,
+      previousFrom,
+      previousTo,
       series,
       current,
       previous,

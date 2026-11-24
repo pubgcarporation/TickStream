@@ -184,6 +184,9 @@ export interface StudioStats {
   /** First and last day of the period, as YYYY-MM-DD. */
   from: string
   to: string
+  /** The period before, of the same length, as YYYY-MM-DD. The totals in `previous` cover these days. */
+  previousFrom: string
+  previousTo: string
   series: StudioDay[]
   current: StudioTotals
   previous: StudioTotals

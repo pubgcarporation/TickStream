@@ -1,6 +1,6 @@
 import { query } from '@shared/db'
 import type { EarningsSummary, PaymentRecord } from '@shared/types'
-import { requireUser, sendJson, type Router } from '../../http'
+import { HttpError, requireUser, sendJson, type Router } from '../../http'
 import { int } from '../../middleware/request-validation'
 
 interface TotalsRow {
@@ -106,12 +106,38 @@ export function registerEarningsRoutes(router: Router): void {
     const addr = requireUser(ctx)
     const limit = int(ctx.url.searchParams.get('limit') ?? '50', 'limit', 1, 100)
     const offset = int(ctx.url.searchParams.get('offset') ?? '0', 'offset', 0, 100_000)
+    // Optional period (both days included, UTC) and kind/status filter. Both are checked, never pasted into the query.
+    const day = (name: string) => {
+      const value = ctx.url.searchParams.get(name)
+      if (value === null || value === '') return null
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(Date.parse(`${value}T00:00:00Z`))) {
+        throw new HttpError(400, `${name} must be a day like 2026-01-31`, 'invalid_request')
+      }
+      return value
+    }
+    const from = day('from')
+    const to = day('to')
+    if (from && to && from > to) throw new HttpError(400, 'from must not be after to', 'invalid_request')
+    const filters: Record<string, string> = {
+      all: 'true',
+      watch: "p.kind = 'watch'",
+      tip: "p.kind = 'tip'",
+      pending: "p.status = 'pending'",
+      failed: "p.status = 'failed'",
+    }
+    const filterName = ctx.url.searchParams.get('filter') ?? 'all'
+    const filterSql = Object.hasOwn(filters, filterName) ? filters[filterName] : undefined
+    if (!filterSql) throw new HttpError(400, 'filter must be all, watch, tip, pending or failed', 'invalid_request')
     // One extra row tells the page whether there is more to load.
     const rows = await query<PaymentRow>(
       `select p.id, p.video_id, v.title, p.payer, p.amount_micro, p.seconds, p.status, p.transfer_id, p.created_at, p.kind, p.message
        from payments p join videos v on v.id = p.video_id
-       where p.creator = $1 order by p.created_at desc, p.id desc limit $2 offset $3`,
-      [addr, limit + 1, offset],
+       where p.creator = $1
+         and ($4::date is null or p.created_at >= $4::date::timestamptz)
+         and ($5::date is null or p.created_at < ($5::date + interval '1 day')::timestamptz)
+         and ${filterSql}
+       order by p.created_at desc, p.id desc limit $2 offset $3`,
+      [addr, limit + 1, offset, from, to],
     )
     const more = rows.length > limit
     rows.length = Math.min(rows.length, limit)
