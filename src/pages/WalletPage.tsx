@@ -1,16 +1,17 @@
 import { Copy, ExternalLink, Eye, EyeOff, KeyRound, ShieldCheck } from 'lucide-react'
 import { useState } from 'react'
-import { erc20Abi } from 'viem'
-import { useAccount, useReadContract } from 'wagmi'
+import { useAccount } from 'wagmi'
 import { toast } from 'sonner'
 import { RequireAuth } from '@/components/creator/RequireAuth'
 import { AnimatedAmount } from '@/components/ui/AnimatedAmount'
 import { Button } from '@/components/ui/primitives'
 import { DepositSheet } from '@/components/wallet/DepositSheet'
+import { ActivityList } from '@/components/wallet/ActivityList'
 import { WithdrawSheet } from '@/components/wallet/WithdrawSheet'
 import { addressLink, ARC } from '@/lib/arc'
 import { formatMicro, shortAddress } from '@/lib/format'
 import { legacyKeyOf } from '@/lib/spending-wallet'
+import { useChainData } from '@/hooks/useChainData'
 import { useSpendingWallet } from '@/providers/SpendingWalletProvider'
 
 function WalletContent() {
@@ -21,14 +22,8 @@ function WalletContent() {
   const [withdraw, setWithdraw] = useState(false)
   const [revealed, setRevealed] = useState(false)
 
-  const { data: walletBalance } = useReadContract({
-    address: ARC.usdcAddress,
-    abi: erc20Abi,
-    functionName: 'balanceOf',
-    args: address ? [address] : undefined,
-    chainId: ARC.chainId,
-    query: { enabled: Boolean(address), refetchInterval: 10_000 },
-  })
+  const chainData = useChainData(address)
+  const walletBalance = chainData.balance ?? undefined
 
   const oldKey = address ? legacyKeyOf(address) : null
 
@@ -79,6 +74,11 @@ function WalletContent() {
             Circle faucet
           </a>
         </p>
+      </section>
+
+      <section className="py-5">
+        <h2 className="text-sm font-semibold">Recent activity</h2>
+        <ActivityList items={chainData.activity} loading={chainData.loading} error={chainData.error} />
       </section>
 
       <section className="pt-5">

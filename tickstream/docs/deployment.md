@@ -34,39 +34,65 @@ Names only. Put values in `.env`.
 `bun run stack:up` starts only Postgres and Redis. The `app` profile in `infrastructure/docker/docker-compose.yml`
 also builds the API and workers, but it publishes the database ports, so use it on a developer machine only.
 
-## Deploy everything on one VPS (no domain needed)
+## Deploy: website on Vercel, everything else on your VPS
 
-The website, API, both workers, Postgres, Redis and the video files all run on one server with
-`infrastructure/docker/docker-compose.prod.yml`. A Caddy container serves the website and forwards `/api` to the API,
-so the site and API share one address.
-
-Needs: a Linux server with Docker and the Compose plugin (4 GB RAM and 40 GB disk is the practical minimum).
+The website (the Vite app in the project root) is hosted on Vercel. The API, both workers, Postgres, Redis and the
+video files run on your VPS with `infrastructure/docker/docker-compose.prod.yml`. A Caddy proxy on the VPS gives the
+API HTTPS. The browser talks to the API directly, so the API has its own domain and a list of allowed websites.
 
 ```
-Browser ──> http(s)://<server>   (Caddy: website, and /api -> API -> Postgres, Redis, videos on disk)
+Browser ──> https://tickstream.example.com   (Vercel: the website)
+        └─> https://api.example.com          (VPS: Caddy -> API -> Postgres, Redis, videos on disk)
 ```
 
-### Steps
+Needs: a Linux server with Docker and the Compose plugin (4 GB RAM and 40 GB disk is the practical minimum), a domain
+for the API whose DNS A record points at the server, and a Vercel account.
 
-1. Install Docker (docs.docker.com/engine/install), then `sudo systemctl enable --now docker`.
-2. `git clone https://github.com/pubgcarporation/TickStream.git && cd TickStream/tickstream/infrastructure/docker`
-3. `cp .env.example .env`, then fill it in (see the comments inside). With no domain, set `SITE_ADDRESS` to your IP with
-   dashes plus `.sslip.io` (IP 203.0.113.5 becomes `203-0-113-5.sslip.io`). That is a free name that points at your IP and
-   gets real HTTPS. Leave it empty for plain HTTP on the IP (wallet and login features may not work without HTTPS).
+### 1. The API on the VPS
+
+1. Install Docker (docs.docker.com/engine/install) and make sure it starts at boot: `sudo systemctl enable --now docker`.
+2. Get the code onto the server (`git clone`, or upload the project) and `cd tickstream/infrastructure/docker`.
+3. `cp .env.example .env`, then fill it in:
+   - `API_DOMAIN`: the API's domain, for example `api.example.com`. The website needs HTTPS, so do not leave it empty in production.
+   - `CORS_ORIGINS`: the website's address(es), comma-separated, no trailing slash, for example
+     `https://tickstream.example.com,https://tickstream.vercel.app`.
+   - `POSTGRES_PASSWORD` and `SESSION_SECRET`: each from `openssl rand -hex 32`.
+   - `ADMIN_ADDRESSES`: wallet addresses allowed into the admin console.
 4. `docker compose -f docker-compose.prod.yml up -d --build`. The first build takes several minutes.
-5. `docker compose -f docker-compose.prod.yml ps`: every service should be running and `api` healthy.
-6. Open `https://<SITE_ADDRESS>/health/ready`. It should answer `{"ok":true,...}`, then open the site itself.
+5. Check `docker compose -f docker-compose.prod.yml ps` (all services running, `api` healthy) and open
+   `https://<API_DOMAIN>/health/ready`. It should answer `{"ok":true,...}`.
+
+### 2. The website on Vercel
+
+1. Import the repository in Vercel. `vercel.json` already sets the Vite build (`bun install`, `bun run build`, output `dist`)
+   and sends every page path to `index.html`.
+2. Add these environment variables in the Vercel project settings (Production), then redeploy:
+   - `VITE_API_URL`: the API's address, for example `https://api.example.com` (no trailing slash).
+   - `VITE_PRIVY_APP_ID`: your Privy app ID, only if you use Privy login.
+3. Add the website's address to `CORS_ORIGINS` on the VPS (including any preview address you will use), then
+   `docker compose -f docker-compose.prod.yml up -d` to apply it.
+4. In the Privy dashboard, add the website's address under allowed domains, or login is blocked.
+
+`VITE_` values are baked into the site at build time, so change them in Vercel and redeploy.
 
 ### Firewall
 
 Allow only ports 22, 80 and 443. With ufw: `sudo ufw allow 22 && sudo ufw allow 80 && sudo ufw allow 443 && sudo ufw enable`.
 Postgres, Redis and the API are not published, so the stack itself never opens them.
 
-If your domain is on Cloudflare, use DNS only (grey cloud). Cloudflare's proxy limits upload size, and videos can be large.
+If the API's domain is on Cloudflare, use DNS only (grey cloud). Cloudflare's proxy limits upload size, and videos can be large.
+
+### More API copies (optional)
+
+`docker-compose.prod.yml` runs two copies of the API (`api` and `api2`) and Caddy shares requests between them. They keep
+no state of their own, so either can answer any request, and a copy that stops answering is skipped. To add more on a
+bigger server, copy the `api2` block as `api3`, add `api3:3001` to the `reverse_proxy` line in `Caddyfile`, and add it to
+the proxy's `depends_on`. A copy needs roughly one CPU core under load.
 
 ### Update
 
-- Pull the new code on the VPS, then run the same `up -d --build` command. Data survives rebuilds.
+- API and workers: pull the new code on the VPS, then run the same `up -d --build` command. Data survives rebuilds.
+- Website: push to the repository and Vercel redeploys.
 
 ### Backup and restore
 
@@ -78,14 +104,15 @@ Restore videos: `docker run --rm -v tickstream_data:/data -v "$PWD/backups:/back
 
 ### After deploying, check
 
-- The website loads and the video list appears. If it stays empty, open the browser console and check the failing `/api` request.
+- The website loads and the video list appears. If it stays empty, open the browser console: a blocked request
+  usually means the website's address is missing from `CORS_ORIGINS` or `VITE_API_URL` is wrong.
 - A creator can sign in, upload a video, and see it move from Encoding to Live.
 - A signed-in viewer with test USDC in the spending balance can start a video and watch the meter run.
 - `docker compose -f docker-compose.prod.yml logs --tail 50 api media-worker settlement-worker` shows no errors.
 
 ## Production notes
 
-- Keep the site on HTTPS. If you host the website elsewhere, set `CORS_ORIGINS` and `VITE_API_URL` and keep them limited to your own addresses.
+- Keep both the website and the API on HTTPS, and keep `CORS_ORIGINS` limited to your own website addresses.
 - With R2 instead of local disk, use a private bucket. Do not enable public access.
 - Run the media worker and settlement worker as separate processes. They share Postgres and Redis with the API.
 - This build targets Arc Testnet. Moving to mainnet means new chain facts, a production Gateway endpoint, and your own

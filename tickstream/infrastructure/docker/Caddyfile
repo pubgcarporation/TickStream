@@ -1,23 +1,14 @@
-# SITE_ADDRESS is the site's domain (automatic HTTPS) or ":80" for plain HTTP on the server's IP address.
-# The website and the API share one address: /api goes to the API, everything else is the website.
-{$SITE_ADDRESS::80} {
+# API_ADDRESS is the API's domain (automatic HTTPS) or ":80" for plain HTTP on the server's IP address.
+# Browser access rules (CORS) are handled by the API itself, using CORS_ORIGINS.
+{$API_ADDRESS::80} {
 	encode zstd gzip
 
-	handle /api/* {
-		uri strip_prefix /api
-		reverse_proxy api:3001 {
-			flush_interval -1
-		}
-	}
-
-	handle /health/* {
-		reverse_proxy api:3001
-	}
-
-	handle {
-		root * /srv
-		try_files {path} /index.html
-		file_server
+	# Requests are shared between the API copies. A copy that stops answering is skipped until it recovers.
+	reverse_proxy api:3001 api2:3001 {
+		lb_policy least_conn
+		health_uri /health/ready
+		health_interval 10s
+		flush_interval -1
 	}
 
 	header {

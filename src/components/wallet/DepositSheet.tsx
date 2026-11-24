@@ -1,10 +1,11 @@
 import { ExternalLink } from 'lucide-react'
 import { useState } from 'react'
 import { erc20Abi } from 'viem'
-import { useAccount, usePublicClient, useReadContract, useSwitchChain, useWriteContract } from 'wagmi'
+import { useAccount, usePublicClient, useSwitchChain, useWriteContract } from 'wagmi'
 import { toast } from 'sonner'
 import { Button, Sheet } from '@/components/ui/primitives'
 import { ARC, GATEWAY_WALLET_ABI, txLink } from '@/lib/arc'
+import { useChainData } from '@/hooks/useChainData'
 import { formatMicro } from '@/lib/format'
 import { AmountError, formatUsdc, parseUsdc } from '@/onchain-money'
 import { useSpendingWallet } from '@/providers/SpendingWalletProvider'
@@ -39,14 +40,8 @@ export function DepositSheet({ open, onClose }: { open: boolean; onClose: () => 
   const [step, setStep] = useState<Step>('idle')
   const [hash, setHash] = useState<string | null>(null)
 
-  const { data: mainBalance } = useReadContract({
-    address: ARC.usdcAddress,
-    abi: erc20Abi,
-    functionName: 'balanceOf',
-    args: address ? [address] : undefined,
-    chainId: ARC.chainId,
-    query: { enabled: Boolean(address), refetchInterval: 10_000 },
-  })
+  const chainData = useChainData(address)
+  const mainBalance = chainData.balance ?? undefined
 
   let parsed: bigint | null = null
   try {
@@ -103,6 +98,7 @@ export function DepositSheet({ open, onClose }: { open: boolean; onClose: () => 
         if (latest && latest.available > before) break
         await new Promise((resolve) => setTimeout(resolve, 2000))
       }
+      chainData.refresh()
       setStep('done')
       toast.success('Money added to your spending balance')
     } catch (error) {

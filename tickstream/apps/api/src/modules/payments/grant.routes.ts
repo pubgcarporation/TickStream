@@ -94,14 +94,17 @@ export function registerGrantRoutes(router: Router): void {
       const first = session.authEnd
       const next = { ...session, authEnd: first + segments, spentMicro: session.spentMicro + amountMicro }
       const paid = Array.from({ length: segments }, (_, index) => String(first + index))
-      await redis.sadd(paidKey(session.id), ...paid)
-      await redis.expire(paidKey(session.id), 6 * 3600)
-      await patchSession(session.id, { authEnd: next.authEnd, spentMicro: next.spentMicro })
-      await query('update payments set transfer_id = $2 where id = $1', [paymentId, outcome.transaction])
-      await query(
-        `update playback_sessions set spent_micro = $2, segments_authorized = $3, last_seen_at = now() where id = $1`,
-        [session.id, next.spentMicro, next.authEnd - next.startSeg],
-      )
+      // These writes do not depend on each other, so they run together instead of one after another.
+      await Promise.all([
+        redis.multi().sadd(paidKey(session.id), ...paid).expire(paidKey(session.id), 6 * 3600).exec(),
+        patchSession(session.id, { authEnd: next.authEnd, spentMicro: next.spentMicro }),
+        query('update payments set transfer_id = $2 where id = $1', [paymentId, outcome.transaction]),
+        query(`update playback_sessions set spent_micro = $2, segments_authorized = $3, last_seen_at = now() where id = $1`, [
+          session.id,
+          next.spentMicro,
+          next.authEnd - next.startSeg,
+        ]),
+      ])
 
       sendJson(
         ctx.res,
