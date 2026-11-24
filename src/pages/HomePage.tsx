@@ -56,7 +56,7 @@ export function HomePage() {
 
   return (
     <div className="space-y-8">
-      <CategoryChips value={category} onChange={setCategory} />
+      <CategoryChips value={category} onChange={setCategory} className="-mb-6 -mt-4" />
 
       {category ? (
         filtered.data && filtered.data.videos.length === 0 ? (
@@ -76,7 +76,7 @@ export function HomePage() {
         />
       ) : (
         <>
-          <section aria-labelledby="trending" className="space-y-4">
+          <section aria-labelledby="trending">
             <h2 id="trending" className="sr-only">
               Trending now
             </h2>

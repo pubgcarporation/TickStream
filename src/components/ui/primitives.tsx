@@ -91,11 +91,13 @@ export function Chip({
   onClick,
   children,
   disabled,
+  size = 'md',
 }: {
   active?: boolean
   onClick?: () => void
   children: ReactNode
   disabled?: boolean
+  size?: 'sm' | 'md'
 }) {
   return (
     <button
@@ -104,7 +106,8 @@ export function Chip({
       disabled={disabled}
       aria-pressed={active}
       className={clsx(
-        'min-h-9 whitespace-nowrap rounded-full border px-4 text-sm font-medium transition-colors disabled:opacity-40',
+        'whitespace-nowrap rounded-full border font-medium transition-colors disabled:opacity-40',
+        size === 'sm' ? 'min-h-8 px-3 text-[13px]' : 'min-h-9 px-4 text-sm',
         active
           ? 'border-[#f1f1f1] bg-[#f1f1f1] text-[#0f0f0f]'
           : 'border-[var(--border)] bg-[#181818] text-[var(--ink)] hover:bg-[#2a2a2a]',
