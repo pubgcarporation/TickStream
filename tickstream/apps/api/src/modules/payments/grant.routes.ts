@@ -1,5 +1,5 @@
 import { query } from '@shared/db'
-import { chunkSegments, segmentsAmount } from '@shared/pricing'
+import { chunkSecondsFor, chunkSegments, secondsAmount } from '@shared/pricing'
 import { getRedis, keys } from '@shared/redis'
 import { getArcNetwork } from '../../../../../packages/arc-sdk/src/client'
 import {
@@ -39,8 +39,9 @@ export function registerGrantRoutes(router: Router): void {
       const body = await readJson<{ payment?: unknown }>(ctx.req, 32 * 1024)
 
       const segments = Math.min(chunkSegments(session.chunkSeconds), session.segCount - session.authEnd)
-      const seconds = segments * session.segSeconds
-      const amountMicro = segmentsAmount(session.priceMicro, segments)
+      // The last chunk of a video may be shorter than a full chunk, and it is billed for the video that is really there.
+      const seconds = chunkSecondsFor(session.authEnd, segments, session.segCount, session.durationSeconds)
+      const amountMicro = secondsAmount(session.priceMicro, seconds)
       if (session.spentMicro + amountMicro > session.capMicro) {
         throw new HttpError(409, 'Your spending cap for this session has been reached', 'cap_reached', {
           session: toSessionInfo(session),
@@ -53,7 +54,7 @@ export function registerGrantRoutes(router: Router): void {
         (typeof body.payment === 'string' ? body.payment : undefined)
 
       if (!header) {
-        const paymentRequired = buildPaymentRequired(requirements, `/sessions/${id}/grant`, `${seconds}s of video`)
+        const paymentRequired = buildPaymentRequired(requirements, `/sessions/${id}/grant`, `${Math.ceil(seconds)}s of video`)
         sendJson(
           ctx.res,
           402,
@@ -74,7 +75,7 @@ export function registerGrantRoutes(router: Router): void {
         `insert into payments (session_id, video_id, creator, payer, amount_micro, seconds, network, nonce)
          values ($1, $2, $3, $4, $5, $6, $7, $8)
          on conflict (nonce) do nothing returning id`,
-        [session.id, session.videoId, session.creator, session.payer, amountMicro, seconds, arc.caip2, parsed.authorization.nonce.toLowerCase()],
+        [session.id, session.videoId, session.creator, session.payer, amountMicro, Math.ceil(seconds), arc.caip2, parsed.authorization.nonce.toLowerCase()],
       )
       const paymentId = inserted[0]?.id
       if (!paymentId) throw new HttpError(409, 'This payment was already used', 'replayed_payment')
@@ -110,13 +111,14 @@ export function registerGrantRoutes(router: Router): void {
       // Hand back the price of the following payment so the player can sign it straight away, with one request.
       // The server still builds and checks the requirements again when that payment arrives.
       const nextSegments = Math.min(chunkSegments(next.chunkSeconds), next.segCount - next.authEnd)
-      const nextAmount = nextSegments > 0 ? segmentsAmount(next.priceMicro, nextSegments) : 0
+      const nextSeconds = nextSegments > 0 ? chunkSecondsFor(next.authEnd, nextSegments, next.segCount, next.durationSeconds) : 0
+      const nextAmount = nextSegments > 0 ? secondsAmount(next.priceMicro, nextSeconds) : 0
       const nextPaymentRequired =
         nextSegments > 0 && next.spentMicro + nextAmount <= next.capMicro
           ? buildPaymentRequired(
               buildRequirements(nextAmount, next.creator),
               `/sessions/${id}/grant`,
-              `${nextSegments * next.segSeconds}s of video`,
+              `${Math.ceil(nextSeconds)}s of video`,
             )
           : null
 

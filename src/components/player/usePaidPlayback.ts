@@ -29,11 +29,11 @@ const TICK_MS = 1000
 
 /**
  * When to pay for the next interval, as seconds of paid video still left in front of the playhead. Short (2 second)
- * intervals pay at the last second, so what is paid stays as close to what was watched as one interval allows.
- * Longer intervals pay when half an interval is left.
+ * intervals keep about three intervals paid ahead so a payment that takes half a second never shows. Longer intervals
+ * pay when half an interval is left.
  */
 function payAheadSeconds(chunkSeconds: number): number {
-  return chunkSeconds <= 2 ? 1 : Math.max(2, chunkSeconds * 0.5)
+  return chunkSeconds <= 2 ? chunkSeconds * 3 : Math.max(2, chunkSeconds * 0.5)
 }
 const HEARTBEAT_MS = 20_000
 const MAX_RECOVERIES = 3
@@ -208,12 +208,16 @@ export function usePaidPlayback(videoId: string, owner: string | undefined) {
     const session = sessionRef.current
     if (!session || phaseRef.current === 'ended') return
     patch({ phase: 'playing', message: null })
-    const next = await payNext()
+    // Pausing never costs anything, and resuming only pays when the paid video is running low, so repeated
+    // pause and resume cannot pile up payments.
+    const lead = session.authorizedEndSecond - position()
+    const needsPayment = !session.complete && lead <= payAheadSeconds(session.chunkSeconds)
+    const next = needsPayment ? await payNext() : session
     if (next) {
       if (!hlsRef.current) loadPlaylist(next)
       videoRef.current?.play().catch(() => undefined)
     }
-  }, [patch, payNext, loadPlaylist])
+  }, [patch, payNext, loadPlaylist, position])
 
   const seek = useCallback(
     async (second: number) => {
@@ -272,8 +276,13 @@ export function usePaidPlayback(videoId: string, owner: string | undefined) {
       const here = position()
       setView((current) => ({ ...current, position: here, playedSeconds: playedRef.current, paused: video.paused }))
       if (video.ended || (session.complete && here >= session.durationSeconds - 0.4)) {
-        stopPlayback('ended', 'Finished. Payments are final, so the last step is paid for even if you left before it ended.')
-        void api(`sessions/${session.id}`, { method: 'DELETE', body: { second: Math.floor(here) } }).catch(() => undefined)
+        // The last fraction of a second never gets a tick of its own, so count it here. Then the whole video that
+        // was paid for shows as watched, and nothing is left over as paid ahead.
+        playedRef.current += Math.max(0, session.durationSeconds - here)
+        setView((current) => ({ ...current, playedSeconds: playedRef.current, position: session.durationSeconds }))
+        stopPlayback('ended', 'Finished watching. Nothing more will be charged.')
+        // A finished video starts from the beginning next time, not from its last second.
+        void api(`sessions/${session.id}`, { method: 'DELETE', body: { second: 0 } }).catch(() => undefined)
         return
       }
       const lead = session.authorizedEndSecond - here
