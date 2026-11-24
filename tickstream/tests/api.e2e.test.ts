@@ -225,4 +225,76 @@ run('TickStream API', () => {
     expect(feed.videos.length).toBeGreaterThan(0)
     expect(feed.videos.every((v) => v.creator.username === 'creator_test')).toBe(true)
   })
+
+  test('studio stats count real payments and sessions, and compare with the period before', async () => {
+    // The signed-in test wallet plays the creator here, so the stats route answers for it.
+    const me = viewer.address.toLowerCase()
+    const video = (
+      await pool.query(
+        `insert into videos (creator, title, price_micro, status, duration_seconds, segment_seconds, segments, preview_seconds)
+         values ($1, 'stats video', 100, 'ready', 60, 2, '[]'::jsonb, 0) returning id`,
+        [me],
+      )
+    ).rows[0].id as string
+    const session = async (viewerAddress: string, spent: number, segments: number, startedDaysAgo: number) =>
+      (
+        await pool.query(
+          `insert into playback_sessions (video_id, viewer, payer, cap_micro, chunk_seconds, segments_authorized, spent_micro, started_at)
+           values ($1, $2, $2, 1000000, 2, $3, $4, now() - ($5 || ' days')::interval) returning id`,
+          [video, viewerAddress, segments, spent, String(startedDaysAgo)],
+        )
+      ).rows[0].id as string
+    const pay = async (sessionId: string | null, amount: number, seconds: number, kind: 'watch' | 'tip', daysAgo: number, payer: string, status = 'settled') =>
+      pool.query(
+        `insert into payments (session_id, video_id, creator, payer, amount_micro, seconds, network, nonce, kind, status, created_at)
+         values ($1, $2, $3, $4, $5, $6, 'eip155:5042002', $7, $8, $9, now() - ($10 || ' days')::interval)`,
+        [sessionId, video, me, payer, amount, seconds, crypto.randomUUID().replace(/-/g, '').padEnd(64, '0'), kind, status, String(daysAgo)],
+      )
+    const fan = '0x00000000000000000000000000000000000000f1'
+    const fan2 = '0x00000000000000000000000000000000000000f2'
+    // This period: fan paid in two sessions (returning), fan2 in one, one session only used the free preview.
+    const a = await session(fan, 600, 15, 1)
+    const b = await session(fan, 400, 10, 2)
+    const c = await session(fan2, 200, 30, 3)
+    await session('0x00000000000000000000000000000000000000f3', 0, 2, 3)
+    await pay(a, 600, 6, 'watch', 1, fan)
+    await pay(b, 400, 4, 'watch', 2, fan)
+    await pay(c, 200, 2, 'watch', 3, fan2, 'pending')
+    await pay(null, 5000, 0, 'tip', 2, fan2)
+    await pay(c, 999, 9, 'watch', 3, fan2, 'failed')
+    // The 28 days before: one paid session worth 100.
+    const old = await session(fan, 100, 5, 40)
+    await pay(old, 100, 1, 'watch', 40, fan)
+
+    const { stats } = await client.api<{ stats: import('@shared/types').StudioStats }>('creator/stats?days=28')
+    expect(stats.days).toBe(28)
+    expect(stats.series).toHaveLength(28)
+    expect(stats.current.watchMicro).toBe(1200)
+    expect(stats.current.tipsMicro).toBe(5000)
+    expect(stats.current.paidSeconds).toBe(12)
+    expect(stats.current.starts).toBe(4)
+    expect(stats.current.paidSessions).toBe(3)
+    expect(stats.current.payingViewers).toBe(2)
+    expect(stats.returningViewers).toBe(1)
+    expect(stats.previous.watchMicro).toBe(100)
+    expect(stats.previous.payingViewers).toBe(1)
+    expect(stats.series.reduce((sum, day) => sum + day.watchMicro, 0)).toBe(1200)
+    expect(stats.settlement.pendingMicro).toBe(200)
+    const row = stats.videos.find((v) => v.videoId === video)
+    expect(row?.watchMicro).toBe(1200)
+    expect(row?.starts).toBe(4)
+    expect(row?.completion.reduce((x, y) => x + y, 0)).toBe(3)
+    expect(stats.supporters[0]?.payer).toBe(fan2)
+    expect(stats.supporters[0]?.totalMicro).toBe(5200)
+  })
+
+  test('payments are listed a page at a time', async () => {
+    const first = await client.api<{ payments: unknown[]; more: boolean }>('creator/payments?limit=2')
+    expect(first.payments).toHaveLength(2)
+    expect(first.more).toBe(true)
+    const rest = await client.api<{ payments: unknown[]; more: boolean }>('creator/payments?limit=100&offset=2')
+    expect(rest.more).toBe(false)
+    expect(rest.payments.length).toBeGreaterThan(0)
+    await expect(client.api('creator/payments?limit=0')).rejects.toMatchObject({ status: 400 })
+  })
 })

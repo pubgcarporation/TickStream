@@ -1,40 +1,56 @@
-import type { EarningsSummary, PaymentRecord } from '@shared/types'
-import { HandCoins, Timer } from 'lucide-react'
-import { EarningsChart, StatCard } from '@/components/creator/EarningsChart'
-import { UsdcMark } from '@/components/wallet/ActivityList'
-import { ErrorState, Panel, Skeleton } from '@/components/ui/primitives'
+import { useMemo } from 'react'
+import type { PaymentRecord, StudioStats, StudioVideoStats } from '@shared/types'
+import { MiniBar, usdc, watchTime } from '@/components/studio/bits'
+import { Block } from '@/components/studio/Block'
+import { PaymentRows } from '@/components/studio/PaymentRows'
+import { RangePicker, StatsExplorer } from '@/components/studio/StatsExplorer'
+import { useStudioRange, useStudioStats } from '@/components/studio/useStudioStats'
+import { ErrorState, Skeleton } from '@/components/ui/primitives'
 import { useApi } from '@/hooks/useApi'
-import { formatDuration, formatMicro, shortAddress, timeAgo } from '@/lib/format'
+import { thumbnailUrl } from '@/lib/api'
 import { Link } from '@/lib/router'
 
-const STATUS_STYLE = {
-  settled: { label: 'Settled', className: 'bg-[var(--success)]/15 text-[var(--success)]' },
-  pending: { label: 'Batching', className: 'bg-[var(--warn)]/15 text-[var(--warn)]' },
-  failed: { label: 'Failed', className: 'bg-[var(--danger)]/15 text-[var(--danger)]' },
-} as const
+export function VideoThumb({ videoId, className = '' }: { videoId: string; className?: string }) {
+  return (
+    <span className={`block aspect-video shrink-0 overflow-hidden rounded bg-[#2a2a2a] ${className}`}>
+      <img src={thumbnailUrl(videoId)} alt="" loading="lazy" className="size-full object-cover" onError={(event) => (event.currentTarget.style.display = 'none')} />
+    </span>
+  )
+}
 
-export function PaymentList({ payments }: { payments: PaymentRecord[] }) {
-  if (payments.length === 0) return <p className="py-6 text-center text-sm text-[var(--muted)]">No payments yet.</p>
+function TopVideos({ videos }: { videos: StudioVideoStats[] }) {
+  const ranked = videos.filter((video) => video.watchMicro + video.tipsMicro > 0).slice(0, 5)
+  const top = Math.max(1, ...ranked.map((video) => video.watchMicro + video.tipsMicro))
+  if (ranked.length === 0) {
+    return (
+      <p className="px-3.5 py-8 text-center text-[13px] text-[var(--muted)]">
+        {videos.length === 0 ? (
+          <>
+            Nothing uploaded yet. <Link to="/studio/upload" className="font-semibold text-[var(--accent)]">Upload your first video</Link>.
+          </>
+        ) : (
+          'No earnings from your videos in this period yet.'
+        )}
+      </p>
+    )
+  }
   return (
     <ul className="divide-y divide-[var(--border)]">
-      {payments.map((payment) => {
-        const status = STATUS_STYLE[payment.status]
-        const tip = payment.kind === 'tip'
+      {ranked.map((video) => {
+        const earned = video.watchMicro + video.tipsMicro
         return (
-          <li key={payment.id} className="flex items-center gap-3 py-3 text-sm">
-            <UsdcMark incoming size={36} badge={tip ? <HandCoins className="size-3" strokeWidth={3} aria-hidden /> : <Timer className="size-3" strokeWidth={3} aria-hidden />} />
-            <div className="min-w-0 flex-1">
-              <p className="flex items-center gap-2 truncate font-medium">
-                <span className="truncate">{payment.videoTitle}</span>
-                {tip && <span className="shrink-0 rounded-md bg-[var(--accent)]/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--accent)]">Tip</span>}
-              </p>
-              <p className="mono text-xs text-[var(--subtle)]">
-                {shortAddress(payment.payer)} · {tip ? 'tip' : `${payment.seconds}s`} · {timeAgo(payment.createdAt)}
-              </p>
-              {payment.message && <p className="mt-0.5 line-clamp-2 text-pretty text-xs text-[var(--muted)]">{payment.message}</p>}
-            </div>
-            <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${status.className}`}>{status.label}</span>
-            <span className="w-24 shrink-0 text-right font-semibold tabular-nums text-[var(--success)]">+{formatMicro(payment.amountMicro)}</span>
+          <li key={video.videoId}>
+            <Link to={`/watch/${video.videoId}`} className="flex items-center gap-3 px-3.5 py-2 text-[13px] transition-colors hover:bg-white/[0.03]">
+              <VideoThumb videoId={video.videoId} className="w-16" />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-medium">{video.title}</span>
+                <span className="mt-1 flex items-center gap-2">
+                  <MiniBar percent={(earned / top) * 100} className="w-24" />
+                  <span className="text-[11px] tabular-nums text-[var(--subtle)]">{watchTime(video.paidSeconds)} paid</span>
+                </span>
+              </span>
+              <span className="shrink-0 text-right font-semibold tabular-nums">{usdc(earned)}</span>
+            </Link>
           </li>
         )
       })}
@@ -42,52 +58,54 @@ export function PaymentList({ payments }: { payments: PaymentRecord[] }) {
   )
 }
 
-export function StudioOverview() {
-  const earnings = useApi<{ summary: EarningsSummary }>('creator/earnings')
-  const payments = useApi<{ payments: PaymentRecord[] }>('creator/payments')
-  const summary = earnings.data?.summary
+function Status({ stats }: { stats: StudioStats }) {
+  const count = (status: string) => stats.videos.filter((video) => video.status === status).length
+  const items: Array<[string, number, string]> = [
+    ['Live', count('ready'), 'text-[var(--success)]'],
+    ['Encoding', count('processing') + count('uploading'), 'text-[var(--warn)]'],
+    ['Failed', count('failed'), 'text-[var(--danger)]'],
+  ]
+  return (
+    <Block title="Your videos" action={<Link to="/studio/videos" className="font-semibold text-[var(--accent)] hover:underline">Manage</Link>}>
+      <dl className="grid grid-cols-3 divide-x divide-[var(--border)] text-center">
+        {items.map(([label, value, color]) => (
+          <div key={label} className="px-2 py-3">
+            <dd className={`text-xl font-semibold tabular-nums ${value > 0 ? color : 'text-[var(--ink)]'}`}>{value}</dd>
+            <dt className="text-[11px] text-[var(--subtle)]">{label}</dt>
+          </div>
+        ))}
+      </dl>
+    </Block>
+  )
+}
 
-  if (earnings.loading && !summary) return <Skeleton className="h-96" />
-  if (!summary) return <ErrorState title="Could not load your studio" message={earnings.error?.message} onRetry={earnings.reload} />
+export function StudioOverview() {
+  const [days] = useStudioRange()
+  const { stats, loading, error, reload } = useStudioStats(days)
+  const payments = useApi<{ payments: PaymentRecord[] }>('creator/payments?limit=6')
+  const latest = useMemo(() => payments.data?.payments ?? [], [payments.data])
+
+  if (loading && !stats) return <Skeleton className="h-96" />
+  if (!stats) return <ErrorState title="Could not load your studio" message={error?.message} onRetry={reload} />
 
   return (
-    <div className="space-y-5">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Total earned" value={formatMicro(summary.totalMicro)} unit="USDC" trend={summary.daily.map((day) => day.earnedMicro)} />
-        <StatCard label="Last 24 hours" value={formatMicro(summary.last24hMicro)} unit="USDC" />
-        <StatCard label="Time watched" value={formatDuration(summary.secondsSold)} hint="Seconds viewers paid for" trend={summary.daily.map((day) => day.secondsSold)} />
-        <StatCard label="Still batching" value={formatMicro(summary.pendingMicro)} unit="USDC" hint="Accepted, waiting for onchain settlement" />
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-[13px] text-[var(--muted)]">
+          Channel at a glance. Changes compare with the {stats.days} days before.
+        </p>
+        <RangePicker />
       </div>
-      <Panel>
-        <h2 className="mb-4 text-base font-semibold">Earnings, last 14 days</h2>
-        <EarningsChart daily={summary.daily} />
-      </Panel>
-      <div className="grid gap-x-10 gap-y-6 lg:grid-cols-2">
-        <Panel>
-          <h2 className="mb-1 text-base font-semibold">Top videos</h2>
-          {summary.perVideo.length === 0 ? (
-            <p className="py-6 text-center text-sm text-[var(--muted)]">
-              Nothing uploaded yet. <Link to="/studio/upload" className="font-semibold text-[var(--accent)]">Upload your first video</Link>.
-            </p>
-          ) : (
-            <ul className="divide-y divide-[var(--border)]">
-              {summary.perVideo.slice(0, 5).map((video) => (
-                <li key={video.videoId} className="flex items-center gap-3 py-2.5 text-sm">
-                  <Link to={`/watch/${video.videoId}`} className="min-w-0 flex-1 truncate font-medium hover:underline">
-                    {video.title}
-                  </Link>
-                  <span className="text-xs tabular-nums text-[var(--subtle)]">{video.views} views</span>
-                  <span className="w-24 text-right font-semibold tabular-nums">{formatMicro(video.earnedMicro)}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Panel>
-        <Panel>
-          <h2 className="mb-1 text-base font-semibold">Recent payments</h2>
-          <PaymentList payments={(payments.data?.payments ?? []).slice(0, 6)} />
-        </Panel>
+      <StatsExplorer stats={stats} />
+      <div className="grid gap-3 lg:grid-cols-2">
+        <Block title="Top videos" action={<Link to="/studio/analytics" className="font-semibold text-[var(--accent)] hover:underline">All analytics</Link>}>
+          <TopVideos videos={stats.videos} />
+        </Block>
+        <Block title="Latest payments" action={<Link to="/studio/earnings" className="font-semibold text-[var(--accent)] hover:underline">Earnings</Link>}>
+          <PaymentRows payments={latest} />
+        </Block>
       </div>
+      <Status stats={stats} />
     </div>
   )
 }

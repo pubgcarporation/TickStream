@@ -84,3 +84,10 @@ Admins are the wallet addresses listed in `ADMIN_ADDRESSES`. All routes return 4
 | `PUT /sessions/:id/position` | required | Saves the viewer's position `{ "second": n }` and keeps the session alive. |
 | `GET /videos/:id/progress` | required | The last saved position for this video. |
 | `GET /health/ready` | none | Checks Postgres and Redis. |
+
+## Studio
+
+| Endpoint | What it does |
+| - | - |
+| `GET /creator/stats?days=7\|28\|90` | Everything the Studio screens show for the last N days (UTC), counted from real payments and viewing sessions, with the same numbers for the N days before. Also per-video numbers, top paying wallets and settlement status. |
+| `GET /creator/payments?limit=&offset=` | The creator's payments, newest first, up to 100 at a time. `more` tells whether older ones exist. |

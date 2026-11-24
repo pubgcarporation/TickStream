@@ -1,6 +1,7 @@
 import { query } from '@shared/db'
 import type { EarningsSummary, PaymentRecord } from '@shared/types'
 import { requireUser, sendJson, type Router } from '../../http'
+import { int } from '../../middleware/request-validation'
 
 interface TotalsRow {
   total: number
@@ -103,12 +104,17 @@ export function registerEarningsRoutes(router: Router): void {
 
   router.get('/creator/payments', 'required', async (ctx) => {
     const addr = requireUser(ctx)
+    const limit = int(ctx.url.searchParams.get('limit') ?? '50', 'limit', 1, 100)
+    const offset = int(ctx.url.searchParams.get('offset') ?? '0', 'offset', 0, 100_000)
+    // One extra row tells the page whether there is more to load.
     const rows = await query<PaymentRow>(
       `select p.id, p.video_id, v.title, p.payer, p.amount_micro, p.seconds, p.status, p.transfer_id, p.created_at, p.kind, p.message
        from payments p join videos v on v.id = p.video_id
-       where p.creator = $1 order by p.created_at desc limit 50`,
-      [addr],
+       where p.creator = $1 order by p.created_at desc, p.id desc limit $2 offset $3`,
+      [addr, limit + 1, offset],
     )
+    const more = rows.length > limit
+    rows.length = Math.min(rows.length, limit)
     const payments: PaymentRecord[] = rows.map((row) => ({
       id: row.id,
       videoId: row.video_id,
@@ -122,7 +128,7 @@ export function registerEarningsRoutes(router: Router): void {
       kind: row.kind,
       message: row.message,
     }))
-    sendJson(ctx.res, 200, { payments })
+    sendJson(ctx.res, 200, { payments, more })
   })
 
   router.get('/me/history', 'required', async (ctx) => {

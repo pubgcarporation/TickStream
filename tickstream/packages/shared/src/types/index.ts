@@ -17,6 +17,8 @@ export interface VideoSummary {
   status: VideoStatus
   views: number
   createdAt: string
+  /** Why encoding failed. Only set on a failed video, which only its creator and admins can list. */
+  error?: string | null
   creator: { address: string; username: string; displayName: string | null; avatarVersion: number | null }
 }
 
@@ -128,3 +130,67 @@ export interface AdminOverview {
   volume24hMicro: number
 }
 
+
+/** Studio numbers for one period, all from real payments and viewing sessions. Days are UTC. */
+export interface StudioTotals {
+  watchMicro: number
+  tipsMicro: number
+  /** Seconds of video viewers paid for. */
+  paidSeconds: number
+  /** Sessions started, including ones that only used a free preview. */
+  starts: number
+  paidSessions: number
+  payingViewers: number
+}
+
+export interface StudioDay {
+  day: string
+  watchMicro: number
+  tipsMicro: number
+  paidSeconds: number
+  starts: number
+  paidSessions: number
+  payingViewers: number
+}
+
+export interface StudioVideoStats {
+  videoId: string
+  title: string
+  status: VideoStatus
+  priceMicro: number
+  durationSeconds: number | null
+  createdAt: string
+  lifetimeViews: number
+  starts: number
+  payingViewers: number
+  watchMicro: number
+  tipsMicro: number
+  paidSeconds: number
+  /** Average share of the video each paid session paid for, 0 to 100. */
+  avgCompletionPercent: number
+  /** Paid sessions by share of the video paid: under 25, 25 to 50, 50 to 75, 75 or more. */
+  completion: [number, number, number, number]
+}
+
+export interface StudioSupporter {
+  payer: string
+  totalMicro: number
+  payments: number
+  tipsMicro: number
+}
+
+export interface StudioStats {
+  days: number
+  /** First and last day of the period, as YYYY-MM-DD. */
+  from: string
+  to: string
+  series: StudioDay[]
+  current: StudioTotals
+  previous: StudioTotals
+  /** Paying viewers who paid in more than one session this period. */
+  returningViewers: number
+  videos: StudioVideoStats[]
+  supporters: StudioSupporter[]
+  /** Money in the period by where it is in settlement. */
+  settlement: { pendingMicro: number; settledMicro: number }
+}

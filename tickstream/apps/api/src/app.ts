@@ -7,6 +7,7 @@ import { authenticate } from './middleware/authentication'
 import { handleError } from './middleware/error-handler'
 import { registerAdminRoutes } from './modules/admin/admin.routes'
 import { registerAnalyticsRoutes } from './modules/analytics/analytics.routes'
+import { registerStudioStatsRoutes } from './modules/analytics/stats.routes'
 import { registerAuthRoutes } from './modules/auth/auth.routes'
 import { registerCommentRoutes } from './modules/comments/comments.routes'
 import { registerEarningsRoutes } from './modules/earnings/earnings.routes'
@@ -46,6 +47,7 @@ registerTipRoutes(router)
 registerEarningsRoutes(router)
 registerWithdrawRoutes(router)
 registerAnalyticsRoutes(router)
+registerStudioStatsRoutes(router)
 registerCommentRoutes(router)
 registerSubscriptionRoutes(router)
 registerAdminRoutes(router)

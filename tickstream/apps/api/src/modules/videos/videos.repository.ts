@@ -39,6 +39,7 @@ export function mapVideo(row: VideoRow): VideoSummary {
     status: row.status,
     views: row.views,
     createdAt: row.created_at.toISOString(),
+    error: row.status === 'failed' ? row.error : null,
     creator: {
       address: row.creator,
       username: row.username,
