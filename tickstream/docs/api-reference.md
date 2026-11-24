@@ -39,7 +39,7 @@ are shown without the prefix. Send the sign-in token as `Authorization: Bearer <
 | --- | --- |
 | `POST /videos/:id/sessions` | Start a session: `payer`, `capMicro`, `chunkSeconds`, optional `startSecond`. |
 | `GET /sessions/:id` | Session state; also a heartbeat. |
-| `POST /sessions/:id/grant` | x402 payment for the next interval. Returns 402 with the price, then 200 after payment. |
+| `POST /sessions/:id/grant` | x402 payment for the next interval. Returns 402 with the price, then 200 after payment. The 200 also carries `nextPaymentRequired`, the price of the following payment, so the player can pay with one request. |
 | `POST /sessions/:id/seek` | Jump to a second that is not unlocked yet. |
 | `DELETE /sessions/:id` | End the session. |
 | `GET /play/:id/playlist.m3u8`, `/play/:id/key`, `/play/:id/seg/:n` | Paid, session-bound playback. |

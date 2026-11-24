@@ -24,7 +24,7 @@ second, uploads a video, and is paid as people watch. It runs on Arc Testnet wit
 1. **Sign in.** The main wallet signs a message and the server gives back a sign-in token.
 2. **Add money.** The main wallet approves USDC and deposits it into Circle Gateway for the spending address.
 3. **Open a video.** The page shows the price per second, the free preview if any, and a session budget.
-4. **Start a session.** The viewer picks a budget and a billing step (6, 10, 20 or 30 seconds). The server records the
+4. **Start a session.** The viewer picks a budget and a billing step (2, 6, 10, 20 or 30 seconds). The server records the
    price, budget and step. Starting a new session ends any other one for the same wallet.
 5. **Pay each step.** The server asks for exactly price x seconds, paid to the creator. The spending wallet signs that
    exact amount. Circle Gateway accepts it. Only then does the server unlock the next video segments.

@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { SessionInfo } from '@shared/types'
 import { api, ApiError, apiUrl, getToken } from '@/lib/api'
 import { createPaymentScheme } from '@/lib/spending-wallet'
-import { endSessionKeepalive, isFundsError, payNextChunk, seekSession } from './payments'
+import { endSessionKeepalive, forgetNextPayment, isFundsError, payNextChunk, seekSession } from './payments'
 
 export type Phase = 'idle' | 'starting' | 'playing' | 'needs-funds' | 'capped' | 'ended' | 'error'
 
@@ -26,6 +26,14 @@ export interface PlaybackView {
 }
 
 const TICK_MS = 1000
+
+/**
+ * How far ahead of playback to keep paid. Short intervals pay about three intervals ahead so a payment that takes half
+ * a second to settle never shows; long intervals pay when half an interval is left.
+ */
+function payAheadSeconds(chunkSeconds: number): number {
+  return chunkSeconds <= 2 ? chunkSeconds * 3 : Math.max(2, chunkSeconds * 0.5)
+}
 const HEARTBEAT_MS = 20_000
 const MAX_RECOVERIES = 3
 
@@ -173,6 +181,7 @@ export function usePaidPlayback(videoId: string, owner: string | undefined) {
       if (!owner) return
       optionsRef.current = options
       payingRef.current = false
+      if (sessionRef.current) forgetNextPayment(sessionRef.current.id)
       playedRef.current = 0
       lastTimeRef.current = 0
       patch({ phase: 'starting', message: null, playedSeconds: 0, freeSeconds: 0, position: options.startSecond ?? 0, paused: false })
@@ -267,7 +276,7 @@ export function usePaidPlayback(videoId: string, owner: string | undefined) {
         return
       }
       const lead = session.authorizedEndSecond - here
-      if (!session.complete && !video.paused && !payingRef.current && lead <= Math.max(2, session.chunkSeconds * 0.5)) {
+      if (!session.complete && !video.paused && !payingRef.current && lead <= payAheadSeconds(session.chunkSeconds)) {
         void payNext()
       }
     }, TICK_MS)

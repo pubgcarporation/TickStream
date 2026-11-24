@@ -89,26 +89,40 @@ services:
       redis: { condition: service_healthy }
       api: { condition: service_healthy }
 
+  # Copies share one queue and one claim per video, so they never encode the same video twice. Each copy encodes
+  # MEDIA_CONCURRENCY videos at once. Raise MEDIA_WORKERS or MEDIA_CONCURRENCY on a bigger server.
   media-worker:
     build:
       context: ../../..
       dockerfile: tickstream/infrastructure/docker/media-worker.Dockerfile
     restart: unless-stopped
     logging: *logging
-    environment: *app-env
+    deploy:
+      replicas: ${MEDIA_WORKERS:-2}
+    environment:
+      <<: *app-env
+      MEDIA_CONCURRENCY: ${MEDIA_CONCURRENCY:-1}
+      FFMPEG_THREADS: ${FFMPEG_THREADS:-}
     volumes: ["data:/app/tickstream/.data"]
     depends_on:
       init-data: { condition: service_completed_successfully }
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
 
+  # Copies split the payment status checks between them (each payment is claimed before it is checked) and take turns
+  # on the cleanup jobs. Raise SETTLEMENT_WORKERS if the "Batching" label falls behind.
   settlement-worker:
     build:
       context: ../../..
       dockerfile: tickstream/infrastructure/docker/settlement-worker.Dockerfile
     restart: unless-stopped
     logging: *logging
-    environment: *app-env
+    deploy:
+      replicas: ${SETTLEMENT_WORKERS:-2}
+    environment:
+      <<: *app-env
+      RECONCILE_CONCURRENCY: ${RECONCILE_CONCURRENCY:-16}
+      RECONCILE_MAX_CONCURRENCY: ${RECONCILE_MAX_CONCURRENCY:-128}
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }

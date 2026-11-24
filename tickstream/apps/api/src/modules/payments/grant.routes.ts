@@ -25,7 +25,8 @@ export function registerGrantRoutes(router: Router): void {
   router.post('/sessions/:id/grant', 'required', async (ctx) => {
     const viewer = requireUser(ctx)
     const id = uuid(ctx.params.id ?? '')
-    await rateLimit('grant', id, 40, 60)
+    // 2-second payments mean about 30 a minute, plus a retry or two. A looser cap still stops a runaway client.
+    await rateLimit('grant', id, 120, 60)
     const redis = getRedis()
     const locked = await redis.set(keys.grantLock(id), '1', 'PX', 20_000, 'NX')
     if (locked !== 'OK') throw new HttpError(429, 'A payment for this session is already in progress', 'busy')
@@ -106,10 +107,23 @@ export function registerGrantRoutes(router: Router): void {
         ]),
       ])
 
+      // Hand back the price of the following payment so the player can sign it straight away, with one request.
+      // The server still builds and checks the requirements again when that payment arrives.
+      const nextSegments = Math.min(chunkSegments(next.chunkSeconds), next.segCount - next.authEnd)
+      const nextAmount = nextSegments > 0 ? segmentsAmount(next.priceMicro, nextSegments) : 0
+      const nextPaymentRequired =
+        nextSegments > 0 && next.spentMicro + nextAmount <= next.capMicro
+          ? buildPaymentRequired(
+              buildRequirements(nextAmount, next.creator),
+              `/sessions/${id}/grant`,
+              `${nextSegments * next.segSeconds}s of video`,
+            )
+          : null
+
       sendJson(
         ctx.res,
         200,
-        { session: toSessionInfo(next), amountMicro, transferId: outcome.transaction, network: arc.caip2 },
+        { session: toSessionInfo(next), amountMicro, transferId: outcome.transaction, network: arc.caip2, nextPaymentRequired },
         {
           'PAYMENT-RESPONSE': encodeBase64Json({
             success: true,

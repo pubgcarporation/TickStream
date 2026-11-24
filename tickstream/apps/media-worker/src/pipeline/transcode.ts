@@ -1,15 +1,18 @@
 import path from 'node:path'
 import { SEGMENT_SECONDS } from '@shared/constants'
 import { ffmpegPath, run } from '../config/binaries'
+import { ffmpegThreads } from '../config/concurrency'
 import type { ProbeResult } from './probe'
 
 /** Re-encodes to H.264 + AAC and cuts into AES-128 encrypted MPEG-TS segments of SEGMENT_SECONDS. */
 export async function transcodeToHls(input: string, hlsDir: string, keyInfoFile: string, info: ProbeResult): Promise<string> {
   const playlist = path.join(hlsDir, 'index.m3u8')
+  const threads = ffmpegThreads()
   const args = [
     '-y',
     '-i',
     input,
+    ...(threads ? ['-threads', String(threads)] : []),
     '-map',
     '0:v:0',
     ...(info.hasAudio ? ['-map', '0:a:0'] : []),

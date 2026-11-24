@@ -4,10 +4,12 @@ Money moves in four stages. The browser never decides how much is owed.
 
 1. **Add money.** The viewer's connected wallet approves USDC and deposits it into Circle Gateway on behalf of their
    spending address (a small signing key kept in the browser). That balance pays for video.
-2. **Start a session.** The viewer picks a spending cap and a payment interval (6, 10, 20 or 30 seconds). The server
+2. **Start a session.** The viewer picks a spending cap and a payment interval (2, 6, 10, 20 or 30 seconds; 2 is the default and is close to paying every second). The server
    records the cap, the interval, the price per second and the viewer's spending address.
 3. **Pay each interval over x402.** The player asks the server for the next interval. The server replies `402 Payment
    Required` with the exact amount (price x seconds in the interval), the creator as recipient, and the network.
+   Every successful payment also returns the price of the following one, so later payments take one request, not two.
+   The player pays about three intervals (6 seconds) ahead of playback when the interval is 2 seconds.
    The spending key signs exactly that authorization. The server checks it, then settles it with Gateway.
 4. **Settlement.** Gateway batches many small authorizations into onchain settlements. The settlement worker marks each
    payment settled when its transfer completes.

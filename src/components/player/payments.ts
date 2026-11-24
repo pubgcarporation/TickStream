@@ -14,29 +14,57 @@ export interface GrantResponse {
   amountMicro: number
   transferId: string | null
   complete?: boolean
+  /** The price of the following payment. Lets the next payment go out as one request. */
+  nextPaymentRequired?: PaymentRequired | null
+}
+
+/** The next payment's price per session, from the last successful payment. Used once, then replaced. */
+const nextRequired = new Map<string, PaymentRequired>()
+
+export function forgetNextPayment(sessionId: string): void {
+  nextRequired.delete(sessionId)
+}
+
+async function signAndSend(sessionId: string, scheme: BatchEvmScheme, required: PaymentRequired): Promise<Response> {
+  const option = required.accepts[0]
+  if (!option) throw new Error('The server did not return a payment option')
+  const payload = await scheme.createPaymentPayload(2, option)
+  const payment = btoa(JSON.stringify({ ...payload, resource: required.resource, accepted: option }))
+  return apiRaw(`sessions/${sessionId}/grant`, { method: 'POST', body: { payment } })
+}
+
+function remember(sessionId: string, result: GrantResponse): GrantResponse {
+  if (result.nextPaymentRequired) nextRequired.set(sessionId, result.nextPaymentRequired)
+  else nextRequired.delete(sessionId)
+  return result
 }
 
 /**
  * Pays for the next chunk of a session over x402.
- * 1. Ask for the chunk. The server answers 402 with the exact price and recipient.
- * 2. Sign that exact amount with the spending wallet and send it back.
- * The server settles it with Gateway and only then unlocks the segments.
+ * Fast path: the last payment returned the next price, so one signed request is enough.
+ * Otherwise: ask for the chunk, the server answers 402 with the exact price and recipient, then sign and send.
+ * Either way the server checks the amount, recipient and payer itself and settles with Gateway before unlocking.
  */
 export async function payNextChunk(sessionId: string, scheme: BatchEvmScheme): Promise<GrantResponse> {
+  const cached = nextRequired.get(sessionId)
+  nextRequired.delete(sessionId)
+  if (cached) {
+    const fast = await signAndSend(sessionId, scheme, cached)
+    if (fast.ok) return remember(sessionId, (await fast.json()) as GrantResponse)
+    const failure = await parseError(fast)
+    // Only a price that changed (for example after a seek) is retried. Nothing was settled in that case.
+    if (failure.code !== 'amount_mismatch') throw failure
+  }
+
   const first = await apiRaw(`sessions/${sessionId}/grant`, { method: 'POST', body: {} })
-  if (first.ok) return (await first.json()) as GrantResponse
+  if (first.ok) return remember(sessionId, (await first.json()) as GrantResponse)
   if (first.status !== 402) throw await parseError(first)
 
   const body = (await first.json()) as { paymentRequired?: PaymentRequired }
-  const required = body.paymentRequired
-  const option = required?.accepts[0]
-  if (!required || !option) throw new Error('The server did not return a payment option')
-
-  const payload = await scheme.createPaymentPayload(2, option)
-  const payment = btoa(JSON.stringify({ ...payload, resource: required.resource, accepted: option }))
-  const second = await apiRaw(`sessions/${sessionId}/grant`, { method: 'POST', body: { payment } })
+  if (!body.paymentRequired) throw new Error('The server did not return a payment option')
+  const second = await signAndSend(sessionId, scheme, body.paymentRequired)
   if (!second.ok) throw await parseError(second)
-  return (await second.json()) as GrantResponse
+  return remember(sessionId, (await second.json()) as GrantResponse)
 }
 
 export function isFundsError(error: unknown): boolean {

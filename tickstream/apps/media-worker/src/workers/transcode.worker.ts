@@ -1,5 +1,6 @@
 import { SEGMENT_SECONDS } from '@shared/constants'
 import { query, queryOne } from '@shared/db'
+import { acquireLock, keys } from '@shared/redis'
 import { ingest } from '../pipeline/ingest'
 import { createEncryption } from '../pipeline/encrypt'
 import { readSegments } from '../pipeline/package-hls'
@@ -15,8 +16,29 @@ interface VideoJobRow {
   source_key: string | null
 }
 
+/** A running job renews its claim this often. If the worker dies, the claim lapses after CLAIM_TTL_MS. */
+const CLAIM_TTL_MS = 90_000
+const CLAIM_RENEW_MS = 30_000
+
+/**
+ * Encodes one video, but only if no other worker (or lane) already has it. Returns 'busy' when someone else does, so
+ * the caller can try again later in case that worker died.
+ */
+export async function processVideo(videoId: string): Promise<'done' | 'busy'> {
+  const claim = await acquireLock(keys.mediaJob(videoId), CLAIM_TTL_MS)
+  if (!claim) return 'busy'
+  const heartbeat = setInterval(() => void claim.renew().catch(() => undefined), CLAIM_RENEW_MS)
+  try {
+    await encodeVideo(videoId)
+    return 'done'
+  } finally {
+    clearInterval(heartbeat)
+    await claim.release().catch(() => undefined)
+  }
+}
+
 /** Source file in, encrypted HLS segments and a thumbnail out. Marks the video ready or failed. */
-export async function processVideo(videoId: string): Promise<void> {
+async function encodeVideo(videoId: string): Promise<void> {
   const video = await queryOne<VideoJobRow>('select id, status, source_key from videos where id = $1', [videoId])
   if (!video || video.status !== 'processing' || !video.source_key) return
   const workspace = await ingest(video.id, video.source_key)

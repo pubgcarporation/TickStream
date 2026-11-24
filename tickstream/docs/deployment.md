@@ -21,6 +21,14 @@ Names only. Put values in `.env`.
 | `SESSION_SECRET` | API | Random secret for the server. |
 | `API_PORT` | API | Port to listen on (default 3001). |
 | `GATEWAY_API_URL` | API, settlement worker | Circle Gateway API base URL. Testnet: the testnet host. |
+| `RECONCILE_CONCURRENCY` | settlement worker | Optional. Gateway status checks run at once (default 16, max 64). |
+| `RECONCILE_BUDGET_MS` | settlement worker | Optional. Longest one status-check cycle runs before resuming next time (default 8000). |
+| `RECONCILE_EVERY_MS` | settlement worker | Optional. Pause between status-check cycles when nothing is backed up (default 5000). |
+| `RECONCILE_MAX_CONCURRENCY` | settlement worker | Optional. Highest number of Gateway status checks at once (default 128). |
+| `SETTLEMENT_WORKERS` | production compose | Optional. Copies of the settlement worker (default 2). They share the work safely. |
+| `MEDIA_WORKERS` | production compose | Optional. Copies of the media worker (default 2). Each video is encoded by one copy only. |
+| `MEDIA_CONCURRENCY` | media worker | Optional. Videos one copy encodes at once (default 1 in the production compose file, half the cores otherwise). |
+| `FFMPEG_THREADS` | media worker | Optional. Threads per encode. Leave empty to let ffmpeg use all cores. |
 | `STORAGE_DRIVER` | API, media worker | `local` or `r2`. |
 | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` | API, media worker | Needed when `STORAGE_DRIVER=r2`. |
 | `ADMIN_ADDRESSES` | API | Comma-separated wallet addresses allowed into the admin console. |

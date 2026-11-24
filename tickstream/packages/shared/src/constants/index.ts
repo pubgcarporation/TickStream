@@ -2,8 +2,8 @@
 export const SEGMENT_SECONDS = 2
 
 /** Seconds of video one payment unlocks. The viewer picks one of these. */
-export const CHUNK_SECONDS_OPTIONS = [6, 10, 20, 30] as const
-export const DEFAULT_CHUNK_SECONDS = 10
+export const CHUNK_SECONDS_OPTIONS = [2, 6, 10, 20, 30] as const
+export const DEFAULT_CHUNK_SECONDS = 2
 
 /** Price per second, in USDC base units (6 decimals). 100 units is 0.0001 USDC per second. */
 export const MIN_PRICE_PER_SECOND = 1
@@ -33,7 +33,7 @@ export const CATEGORY_SLUGS: readonly string[] = CATEGORIES.map((c) => c.slug)
 export const SESSION_IDLE_SECONDS = 90
 
 /** Segments a viewer may fetch beyond the highest one already served, to keep a short buffer only. */
-export const SEGMENT_LOOKAHEAD = 4
+export const SEGMENT_LOOKAHEAD = 6
 
 export const AUTH_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 7
 export const AUTH_NONCE_TTL_SECONDS = 60 * 5

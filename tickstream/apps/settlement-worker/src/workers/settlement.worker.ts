@@ -1,6 +1,7 @@
 import { SESSION_IDLE_SECONDS } from '@shared/constants'
 import { query } from '@shared/db'
 import { getRedis, keys } from '@shared/redis'
+import { runPool } from '../services/pool'
 
 /** Closes sessions whose viewer went away (no activity past the idle window) so they stop counting as active. */
 export async function expireIdleSessions(): Promise<number> {
@@ -10,14 +11,14 @@ export async function expireIdleSessions(): Promise<number> {
     [String(SESSION_IDLE_SECONDS * 2)],
   )
   const redis = getRedis()
-  for (const session of idle) {
+  await runPool(idle, 16, async (session) => {
     const live = await redis.exists(keys.session(session.id))
-    if (live) continue
+    if (live) return
     await query(
       `update playback_sessions set status = 'ended', ended_at = now(), end_reason = 'idle' where id = $1 and status = 'active'`,
       [session.id],
     )
-  }
+  })
   return idle.length
 }
 
