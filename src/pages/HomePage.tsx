@@ -1,7 +1,7 @@
-import { Pause, ShieldCheck, Timer } from 'lucide-react'
+import { Clapperboard, Pause, ShieldCheck, Timer } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import type { VideoSummary } from '@shared/types'
-import { EmptyState } from '@/components/ui/primitives'
+import { EmptyState, ErrorState } from '@/components/ui/primitives'
 import { CategoryChips } from '@/components/video/CategoryChips'
 import { VideoGrid } from '@/components/video/VideoGrid'
 import { useApi } from '@/hooks/useApi'
@@ -16,7 +16,7 @@ const STEPS = [
   {
     icon: Pause,
     title: 'Pause and the meter stops',
-    body: 'Close the tab or hit pause and nothing more is charged. The most at risk is one short interval.',
+    body: 'Close the tab or hit pause and nothing more is charged. At most a few seconds of video are paid ahead.',
   },
   {
     icon: ShieldCheck,
@@ -53,19 +53,28 @@ export function HomePage() {
   }, [trending.data, latest.data])
 
   const empty = trending.data !== null && trending.data.videos.length === 0
+  const failed = !trending.data && !latest.data ? (trending.error ?? latest.error) : null
+  const retry = () => {
+    trending.reload()
+    latest.reload()
+    filtered.reload()
+  }
 
   return (
     <div className="space-y-8">
       <CategoryChips value={category} onChange={setCategory} className="-mb-6 -mt-4" />
 
-      {category ? (
+      {failed ? (
+        <ErrorState title="Could not load videos" message={failed.message} onRetry={retry} />
+      ) : category ? (
         filtered.data && filtered.data.videos.length === 0 ? (
           <EmptyState title="Nothing here yet" body="No videos in this topic yet. Try another one." />
         ) : (
-          <VideoGrid videos={filtered.data?.videos ?? null} loading={filtered.loading && !filtered.data} />
+          <VideoGrid videos={filtered.data?.videos ?? null} loading={filtered.loading && !filtered.data} error={filtered.error} onRetry={filtered.reload} />
         )
       ) : empty ? (
         <EmptyState
+          icon={Clapperboard}
           title="No videos yet"
           body="Be the first to publish. Set a price per second and get paid as people watch."
           action={

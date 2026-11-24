@@ -23,13 +23,21 @@ export function CostMeter({ view, priceMicro, onEnd, onAddFunds, onResume, onCon
   const prepaid = Math.max(0, session.spentMicro - cost)
   const live = view.phase === 'playing' && !view.paused
 
+  const capUsed = session.capMicro > 0 ? Math.min(100, (session.spentMicro / session.capMicro) * 100) : 0
+
   return (
-    <section id="payment" aria-label="Payment" className="scroll-mt-32 border-y border-[var(--border)] py-3">
+    <section id="payment" aria-label="Payment" className="scroll-mt-32 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3.5 sm:p-4">
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-        <p className="text-2xl font-semibold tabular-nums">
-          <AnimatedAmount micro={cost} />
-          <span className="ml-1.5 text-sm font-medium text-[var(--subtle)]">USDC watched</span>
-        </p>
+        <div>
+          <p className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.08em] text-[var(--subtle)]">
+            <span className="live-dot" data-idle={!live} aria-hidden />
+            {live ? 'Metering' : view.phase === 'playing' ? 'Paused' : 'Session'}
+          </p>
+          <p className="mt-0.5 text-2xl font-semibold tabular-nums">
+            <AnimatedAmount micro={cost} />
+            <span className="ml-1.5 text-sm font-medium text-[var(--subtle)]">USDC watched</span>
+          </p>
+        </div>
 
         <dl className="flex flex-wrap gap-x-6 gap-y-1 text-xs tabular-nums">
           <div title="Paid in advance for video you have not watched yet. Payments cannot be refunded.">
@@ -52,6 +60,16 @@ export function CostMeter({ view, priceMicro, onEnd, onAddFunds, onResume, onCon
             </Button>
           </div>
         )}
+      </div>
+
+      <div className="mt-3" title="How much of this session's spending limit is used">
+        <div className="meter-track" role="progressbar" aria-label="Session limit used" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(capUsed)}>
+          <div className="meter-fill" data-warn={capUsed >= 80} style={{ width: `${capUsed}%` }} />
+        </div>
+        <p className="mt-1 flex justify-between text-[11px] tabular-nums text-[var(--subtle)]">
+          <span>{formatMicro(session.spentMicro)} of {formatMicro(session.capMicro)} USDC session limit</span>
+          {capUsed >= 80 && <span className="text-[var(--warn)]">Nearly used up</span>}
+        </p>
       </div>
 
       <div className="mt-3">

@@ -42,6 +42,8 @@ function mapComment(row: CommentRow, viewer: string | undefined): CommentItem {
 export function registerCommentRoutes(router: Router): void {
   router.get('/videos/:id/comments', 'optional', async (ctx) => {
     const videoId = uuid(ctx.params.id ?? '')
+    const video = await queryOne<{ status: string }>('select status from videos where id = $1', [videoId])
+    if (!video || video.status === 'removed') throw new HttpError(404, 'Video not found', 'not_found')
     const before = ctx.url.searchParams.get('before')
     const parsedBefore = before && !Number.isNaN(Date.parse(before)) ? before : null
     const rows = await query<CommentRow>(

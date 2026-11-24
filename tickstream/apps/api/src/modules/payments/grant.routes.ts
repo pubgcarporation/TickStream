@@ -1,6 +1,6 @@
 import { query } from '@shared/db'
 import { chunkSecondsFor, chunkSegments, secondsAmount } from '@shared/pricing'
-import { getRedis, keys } from '@shared/redis'
+import { acquireLock, getRedis, keys } from '@shared/redis'
 import { getArcNetwork } from '../../../../../packages/arc-sdk/src/client'
 import {
   buildPaymentRequired,
@@ -13,7 +13,7 @@ import {
 import { HttpError, readJson, requireUser, sendJson, type Router } from '../../http'
 import { rateLimit } from '../../middleware/rate-limit'
 import { uuid } from '../../middleware/request-validation'
-import { paidKey, requireSession } from '../playback/playback.service'
+import { getManifest, paidKey, requireSession } from '../playback/playback.service'
 import { patchSession, toSessionInfo } from '../playback/session-store'
 
 /**
@@ -28,10 +28,12 @@ export function registerGrantRoutes(router: Router): void {
     // 2-second payments mean about 30 a minute, plus a retry or two. A looser cap still stops a runaway client.
     await rateLimit('grant', id, 120, 60)
     const redis = getRedis()
-    const locked = await redis.set(keys.grantLock(id), '1', 'PX', 20_000, 'NX')
-    if (locked !== 'OK') throw new HttpError(429, 'A payment for this session is already in progress', 'busy')
+    const lock = await acquireLock(keys.grantLock(id), 20_000)
+    if (!lock) throw new HttpError(429, 'A payment for this session is already in progress', 'busy')
     try {
       const session = await requireSession(id, viewer)
+      // A video taken down mid-session must stop taking payments for video nobody can play.
+      await getManifest(session.videoId)
       if (session.authEnd >= session.segCount) {
         sendJson(ctx.res, 200, { session: toSessionInfo(session), amountMicro: 0, transferId: null, complete: true })
         return
@@ -136,7 +138,7 @@ export function registerGrantRoutes(router: Router): void {
         },
       )
     } finally {
-      await redis.del(keys.grantLock(id))
+      await lock.release().catch(() => undefined)
     }
   })
 }

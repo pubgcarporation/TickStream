@@ -4,7 +4,7 @@ import { useAccount } from 'wagmi'
 import { toast } from 'sonner'
 import { RequireAuth } from '@/components/creator/RequireAuth'
 import { AnimatedAmount } from '@/components/ui/AnimatedAmount'
-import { Button } from '@/components/ui/primitives'
+import { Button, PageHeader } from '@/components/ui/primitives'
 import { DepositSheet } from '@/components/wallet/DepositSheet'
 import { ActivityList } from '@/components/wallet/ActivityList'
 import { WithdrawSheet } from '@/components/wallet/WithdrawSheet'
@@ -44,16 +44,16 @@ function WalletContent() {
   }
 
   return (
-    <div className="max-w-xl divide-y divide-[var(--border)]">
-      <section className="pb-6">
-        <p className="text-xs font-medium text-[var(--subtle)]">Spending balance</p>
+    <div className="max-w-2xl space-y-2">
+      <section className="hero-card p-5 sm:p-6">
+        <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-[var(--subtle)]">Spending balance</p>
         <p className="mt-1 text-5xl font-semibold tabular-nums">
           {balance ? <AnimatedAmount micro={Number(balance.available)} /> : loading ? '...' : '0.00'}
           <span className="ml-2 text-lg font-medium text-[var(--subtle)]">USDC</span>
         </p>
         <p className="mt-2 text-sm text-[var(--muted)]">Videos are paid from this. It sits in Circle Gateway on {ARC.name}, so payments cost no network fees.</p>
         {error && <p className="mt-2 text-sm text-[var(--danger)]">Could not read the balance: {error}</p>}
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-5 flex flex-wrap gap-2">
           <Button onClick={() => setDeposit(true)}>Add money</Button>
           <Button variant="secondary" onClick={() => setWithdraw(true)} disabled={!balance || balance.available === 0n}>
             Move back to wallet
@@ -61,7 +61,7 @@ function WalletContent() {
         </div>
       </section>
 
-      <section className="py-5">
+      <section className="divide-y-0 border-b border-[var(--border)] px-1 py-5">
         <div className="flex items-center justify-between text-sm">
           <span className="text-[var(--muted)]">Your wallet</span>
           <span className="font-semibold tabular-nums">
@@ -76,12 +76,12 @@ function WalletContent() {
         </p>
       </section>
 
-      <section className="py-5">
+      <section className="border-b border-[var(--border)] px-1 py-5">
         <h2 className="text-sm font-semibold">Recent activity</h2>
         <ActivityList items={chainData.activity} loading={chainData.loading} error={chainData.error} />
       </section>
 
-      <section className="pt-5">
+      <section className="px-1 pt-5">
         <h2 className="text-sm font-semibold">Spending address</h2>
         <p className="mt-1 text-pretty text-sm text-[var(--muted)]">
           {keyMode === 'derived'
@@ -141,7 +141,7 @@ function WalletContent() {
 export function WalletPage() {
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Wallet</h1>
+      <PageHeader title="Wallet" subtitle="Add money, see what you spend, and take the rest back." />
       <RequireAuth title="Sign in to see your wallet" body="Sign in to add money and see your spending balance.">
         <WalletContent />
       </RequireAuth>

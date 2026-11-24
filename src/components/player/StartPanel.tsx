@@ -94,7 +94,7 @@ export function StartPanel({ priceMicro, durationSeconds, previewSeconds, resume
   )
 
   return (
-    <section id="payment" aria-label="Payment" className="scroll-mt-32 border-y border-[var(--border)] py-3">
+    <section id="payment" aria-label="Payment" className="scroll-mt-32 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3.5 sm:p-4">
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
         <div className="flex items-baseline gap-3">
           <p className="text-2xl font-semibold tabular-nums">
@@ -130,7 +130,7 @@ export function StartPanel({ priceMicro, durationSeconds, previewSeconds, resume
       </div>
 
       <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[var(--muted)]">
-        <span className="tabular-nums">${formatMicro(chunkCost)} every {chunkSeconds}s, paid just ahead of playback, and payments are final</span>
+        <span className="tabular-nums">${formatMicro(chunkCost)} every {chunkSeconds}s, paid a few seconds ahead of playback. Payments are final</span>
         <span aria-hidden>·</span>
         <span>Pause or leave and payments stop</span>
         {previewSeconds > 0 && (

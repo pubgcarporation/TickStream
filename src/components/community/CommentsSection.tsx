@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { COMMENT_MAX_LENGTH } from '@shared/constants'
 import type { CommentItem } from '@shared/types'
 import { Avatar } from '@/components/ui/Avatar'
-import { Button, inputClass } from '@/components/ui/primitives'
+import { Button, Skeleton, inputClass } from '@/components/ui/primitives'
 import { api } from '@/lib/api'
 import { timeAgo } from '@/lib/format'
 import { Link } from '@/lib/router'
@@ -20,20 +20,25 @@ export function CommentsSection({ videoId }: { videoId: string }) {
   const [comments, setComments] = useState<CommentItem[]>([])
   const [nextBefore, setNextBefore] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [failed, setFailed] = useState<string | null>(null)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [draft, setDraft] = useState('')
   const [posting, setPosting] = useState(false)
 
   const load = useCallback(
     async (before?: string) => {
       const query = before ? `?before=${encodeURIComponent(before)}` : ''
+      if (before) setLoadingMore(true)
       try {
         const page = await api<Page>(`videos/${videoId}/comments${query}`)
-        setComments((current) => (before ? [...current, ...page.comments] : page.comments))
+        setComments((list) => (before ? [...list, ...page.comments] : page.comments))
         setNextBefore(page.nextBefore)
-      } catch {
-        // an empty list is shown when comments cannot load
+        setFailed(null)
+      } catch (error) {
+        setFailed(error instanceof Error ? error.message : 'Could not load comments')
       } finally {
         setLoading(false)
+        setLoadingMore(false)
       }
     },
     [videoId],
@@ -42,7 +47,7 @@ export function CommentsSection({ videoId }: { videoId: string }) {
   useEffect(() => {
     const timer = setTimeout(() => void load(), 0)
     return () => clearTimeout(timer)
-  }, [load, user?.address])
+  }, [load])
 
   const post = async () => {
     const body = draft.trim()
@@ -102,7 +107,17 @@ export function CommentsSection({ videoId }: { videoId: string }) {
       )}
 
       {loading ? (
-        <p className="text-sm text-[var(--muted)]">Loading comments...</p>
+        <div className="space-y-3" aria-label="Loading comments">
+          <Skeleton className="h-10 w-full !rounded-lg" />
+          <Skeleton className="h-10 w-5/6 !rounded-lg" />
+        </div>
+      ) : failed && comments.length === 0 ? (
+        <p className="text-sm text-[var(--muted)]">
+          Could not load comments.{' '}
+          <button type="button" onClick={() => void load()} className="font-semibold text-[var(--accent)] hover:underline">
+            Try again
+          </button>
+        </p>
       ) : comments.length === 0 ? (
         <p className="text-sm text-[var(--muted)]">No comments yet. Be the first.</p>
       ) : (
@@ -135,7 +150,7 @@ export function CommentsSection({ videoId }: { videoId: string }) {
         </ul>
       )}
       {nextBefore && (
-        <Button variant="ghost" onClick={() => void load(nextBefore)}>
+        <Button variant="ghost" loading={loadingMore} onClick={() => void load(nextBefore)}>
           Show more
         </Button>
       )}

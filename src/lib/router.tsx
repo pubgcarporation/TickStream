@@ -6,7 +6,8 @@ export function navigate(to: string, options: { replace?: boolean } = {}): void 
   if (options.replace) window.history.replaceState(null, '', to)
   else window.history.pushState(null, '', to)
   window.dispatchEvent(new Event(EVENT))
-  window.scrollTo({ top: 0 })
+  // Changing a filter in place keeps the reader where they are. A new page starts at the top.
+  if (!options.replace) window.scrollTo({ top: 0 })
 }
 
 export function useLocation(): { path: string; search: URLSearchParams } {
@@ -31,7 +32,9 @@ interface LinkProps extends Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'
 export function Link({ to, onClick, children, ...rest }: LinkProps) {
   const handle = (event: MouseEvent<HTMLAnchorElement>) => {
     onClick?.(event)
-    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey) return
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+    // Links that open elsewhere or download keep their normal browser behavior.
+    if ((rest.target && rest.target !== '_self') || rest.download !== undefined) return
     event.preventDefault()
     navigate(to)
   }

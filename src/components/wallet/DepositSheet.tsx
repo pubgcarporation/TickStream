@@ -11,6 +11,9 @@ import { AmountError, formatUsdc, parseUsdc } from '@/onchain-money'
 import { useSpendingWallet } from '@/providers/SpendingWalletProvider'
 import { AmountInput } from './AmountInput'
 
+/** On Arc the gas token is USDC too, so Max leaves a little in the wallet to pay the network fee of the two steps. */
+const GAS_RESERVE = 100_000n // 0.10 USDC
+
 type Step = 'idle' | 'unlocking' | 'switching' | 'approving' | 'depositing' | 'crediting' | 'done'
 
 const STEP_LABEL: Record<Step, string> = {
@@ -50,6 +53,8 @@ export function DepositSheet({ open, onClose }: { open: boolean; onClose: () => 
     if (!(error instanceof AmountError)) throw error
   }
   const tooMuch = parsed !== null && mainBalance !== undefined && parsed > mainBalance
+  const maxDeposit = mainBalance !== undefined && mainBalance > GAS_RESERVE ? mainBalance - GAS_RESERVE : 0n
+  const eatsGas = parsed !== null && mainBalance !== undefined && !tooMuch && parsed > maxDeposit
   const busy = step !== 'idle' && step !== 'done'
 
   const submit = async () => {
@@ -129,9 +134,10 @@ export function DepositSheet({ open, onClose }: { open: boolean; onClose: () => 
           chips={['1', '5', '10']}
           disabled={busy}
           balanceLabel={mainBalance !== undefined ? `Wallet: ${formatMicro(mainBalance)}` : 'Wallet balance loading'}
-          onMax={mainBalance !== undefined && mainBalance > 0n ? () => setAmount(formatUsdc(mainBalance)) : undefined}
+          onMax={maxDeposit > 0n ? () => setAmount(formatUsdc(maxDeposit)) : undefined}
         />
         {tooMuch && <p className="text-sm text-[var(--danger)]">That is more than your wallet holds.</p>}
+        {eatsGas && <p className="text-sm text-[var(--warn)]">Leave about 0.10 USDC in your wallet. The network fee is paid in USDC too, and the deposit would fail without it.</p>}
         {step === 'done' ? (
           <Button full onClick={close}>
             Done

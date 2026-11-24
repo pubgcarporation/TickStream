@@ -3,7 +3,7 @@ import { pipeline } from 'node:stream/promises'
 import { CHUNK_SECONDS_OPTIONS, SEGMENT_LOOKAHEAD } from '@shared/constants'
 import { query } from '@shared/db'
 import { chunkSegments, segmentsAmount } from '@shared/pricing'
-import { getRedis, keys } from '@shared/redis'
+import { acquireLockWait, getRedis, keys } from '@shared/redis'
 import { getStorage, storageKeys } from '@shared/storage'
 import { HttpError, readJson, requireUser, sendJson, type Router } from '../../http'
 import { rateLimit } from '../../middleware/rate-limit'
@@ -133,20 +133,29 @@ export function registerPlaybackRoutes(router: Router): void {
   router.post('/sessions/:id/seek', 'required', async (ctx) => {
     const viewer = requireUser(ctx)
     await rateLimit('seek', viewer, 60, 60)
-    const session = await requireSession(uuid(ctx.params.id ?? ''), viewer)
+    const id = uuid(ctx.params.id ?? '')
     const body = await readJson(ctx.req)
     const second = int(body.second, 'second', 0, 10 * 24 * 3600)
-    const target = Math.min(Math.floor(second / session.segSeconds), session.segCount - 1)
-    if (target >= session.startSeg && target < session.authEnd) {
-      sendJson(ctx.res, 200, { session: toSessionInfo(session), reset: false })
-      return
+    // A payment in flight rewrites the session's paid window. Seeking waits for it, so the two can never overwrite
+    // each other and leave the window pointing at the wrong place.
+    const lock = await acquireLockWait(keys.grantLock(id), 20_000, 6_000)
+    if (!lock) throw new HttpError(429, 'A payment is still going through. Try again in a moment.', 'busy')
+    try {
+      const session = await requireSession(id, viewer)
+      const target = Math.min(Math.floor(second / session.segSeconds), session.segCount - 1)
+      if (target >= session.startSeg && target < session.authEnd) {
+        sendJson(ctx.res, 200, { session: toSessionInfo(session), reset: false })
+        return
+      }
+      // Jumping outside what is unlocked starts a new playlist window. Skipped video is never billed,
+      // and segments already paid for earlier in this session stay unlocked.
+      const authEnd = await firstUnpaid(session.id, target, session.segCount)
+      const next = { ...session, startSeg: target, authEnd, served: target - 1, epoch: session.epoch + 1 }
+      await patchSession(session.id, { startSeg: next.startSeg, authEnd: next.authEnd, served: next.served, epoch: next.epoch })
+      sendJson(ctx.res, 200, { session: toSessionInfo(next), reset: true })
+    } finally {
+      await lock.release().catch(() => undefined)
     }
-    // Jumping outside what is unlocked starts a new playlist window. Skipped video is never billed,
-    // and segments already paid for earlier in this session stay unlocked.
-    const authEnd = await firstUnpaid(session.id, target, session.segCount)
-    const next = { ...session, startSeg: target, authEnd, served: target - 1, epoch: session.epoch + 1 }
-    await patchSession(session.id, { startSeg: next.startSeg, authEnd: next.authEnd, served: next.served, epoch: next.epoch })
-    sendJson(ctx.res, 200, { session: toSessionInfo(next), reset: true })
   })
 
   router.delete('/sessions/:id', 'required', async (ctx) => {

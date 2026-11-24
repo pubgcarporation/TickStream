@@ -125,3 +125,19 @@ Restore videos: `docker run --rm -v tickstream_data:/data -v "$PWD/backups:/back
 - Run the media worker and settlement worker as separate processes. They share Postgres and Redis with the API.
 - This build targets Arc Testnet. Moving to mainnet means new chain facts, a production Gateway endpoint, and your own
   review of every address and permission before real funds are involved.
+
+## Tests
+
+`bun run test:api` runs the API end to end against a throwaway Postgres database and Redis, with a stand-in for Circle
+Gateway. It checks what each payment costs (including the last, shorter one), the spending limit, wrong-amount
+payments, seeking during a payment, comments, and the feed.
+
+```bash
+docker run -d --name test-pg -e POSTGRES_PASSWORD=pw -e POSTGRES_DB=tickstream_test -p 55432:5432 postgres:18-alpine
+docker run -d --name test-redis -p 56379:6379 redis:8-alpine
+TEST_DATABASE_URL=postgres://postgres:pw@127.0.0.1:55432/tickstream_test \
+TEST_REDIS_URL=redis://127.0.0.1:56379/15 bun run test:api
+```
+
+The test database is wiped and Redis database 15 is flushed. Never point these at real data. Without the two
+variables the tests are skipped.

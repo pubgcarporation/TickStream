@@ -62,7 +62,11 @@ export async function loadSession(id: string, touch = true): Promise<LiveSession
 export async function patchSession(id: string, fields: Partial<Record<keyof LiveSession, string | number>>): Promise<void> {
   const flat: Record<string, string> = {}
   for (const [field, value] of Object.entries(fields)) flat[field] = String(value)
-  await getRedis().hset(keys.session(id), flat)
+  const redis = getRedis()
+  const key = keys.session(id)
+  await redis.hset(key, flat)
+  // A late write after the session ended would otherwise leave a partial record with no expiry.
+  await redis.expire(key, SESSION_IDLE_SECONDS)
 }
 
 export async function dropSession(session: LiveSession): Promise<void> {

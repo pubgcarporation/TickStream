@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { Link, useLocation } from '@/lib/router'
 import { useAuth } from '@/providers/AuthProvider'
 import { HowItWorksSheet } from './HowItWorksSheet'
+import { safeStorage } from '@/lib/safe-storage'
 import { Wordmark } from './Brand'
 
 const KEY = 'tickstream:sidebar'
@@ -19,13 +20,13 @@ interface SidebarState {
 const SidebarContext = createContext<SidebarState | null>(null)
 
 export function SidebarProvider({ children }: { children: ReactNode }) {
-  const [expanded, setExpanded] = useState(() => localStorage.getItem(KEY) !== 'rail')
+  const [expanded, setExpanded] = useState(() => safeStorage.get(KEY) !== 'rail')
   const [drawerOpen, setDrawerOpen] = useState(false)
 
   const toggle = useCallback(() => {
     if (window.matchMedia('(min-width: 1024px)').matches) {
       setExpanded((value) => {
-        localStorage.setItem(KEY, value ? 'rail' : 'wide')
+        safeStorage.set(KEY, value ? 'rail' : 'wide')
         return !value
       })
     } else {

@@ -1,5 +1,5 @@
 import { query, queryOne } from '@shared/db'
-import type { CreatorSummary, FollowState, VideoSummary } from '@shared/types'
+import type { CreatorSummary, FollowState } from '@shared/types'
 import { HttpError, requireUser, sendJson, type Ctx, type Router } from '../../http'
 import { rateLimit } from '../../middleware/rate-limit'
 import { listVideos } from '../videos/videos.repository'
@@ -71,12 +71,7 @@ export function registerSubscriptionRoutes(router: Router): void {
 
   router.get('/me/feed', 'required', async (ctx) => {
     const viewer = requireUser(ctx)
-    const followed = await query<{ creator: string }>('select creator from follows where follower = $1', [viewer])
-    const videos: VideoSummary[] = []
-    for (const { creator } of followed.slice(0, 50)) {
-      videos.push(...(await listVideos({ creator, status: 'ready', sort: 'new', limit: 6, offset: 0 })))
-    }
-    videos.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-    sendJson(ctx.res, 200, { videos: videos.slice(0, 24) })
+    const videos = await listVideos({ followedBy: viewer, status: 'ready', sort: 'new', limit: 24, offset: 0 })
+    sendJson(ctx.res, 200, { videos })
   })
 }

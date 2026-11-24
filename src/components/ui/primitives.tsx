@@ -1,8 +1,9 @@
-import { AnimatePresence, motion } from 'framer-motion'
-import { Loader2, X } from 'lucide-react'
-import { useEffect, type ButtonHTMLAttributes, type ReactNode } from 'react'
+import { AnimatePresence, LayoutGroup, motion } from 'framer-motion'
+import { CloudOff, Loader2, X, type LucideIcon } from 'lucide-react'
+import { useEffect, useRef, type ButtonHTMLAttributes, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { clsx } from 'clsx'
+import { Link } from '@/lib/router'
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
 
@@ -41,8 +42,57 @@ export function Button({ variant = 'primary', shape = 'pill', loading, full, cla
   )
 }
 
+/**
+ * The title row every page except Home starts with. It sits right under the header with the same small gap Home's
+ * topic strip has, and leaves the same gap below it, so moving between pages never shifts the content.
+ * Put it first inside a `space-y-4` wrapper.
+ */
+export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: string; actions?: ReactNode }) {
+  return (
+    <header className="-mb-2 -mt-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 pb-2 pt-1">
+      <div className="min-w-0">
+        <h1 className="display text-xl font-bold leading-8 sm:text-2xl">{title}</h1>
+        {subtitle && <p className="-mt-0.5 text-pretty text-sm text-[var(--muted)]">{subtitle}</p>}
+      </div>
+      {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
+    </header>
+  )
+}
+
+export interface TabItem {
+  to: string
+  label: string
+  active: boolean
+}
+
+/** Underlined page sections. The line slides to the active tab. `id` keeps two tab rows from sharing one line. */
+export function Tabs({ id, label, items, className }: { id: string; label: string; items: TabItem[]; className?: string }) {
+  return (
+    <nav className={clsx('-mx-4 flex gap-1 overflow-x-auto border-b border-[var(--border)] px-2 [scrollbar-width:none] sm:mx-0 sm:px-0', className)} aria-label={label}>
+      <LayoutGroup id={id}>
+        {items.map((tab) => (
+          <Link
+            key={tab.to}
+            to={tab.to}
+            aria-current={tab.active ? 'page' : undefined}
+            className={clsx(
+              'relative min-h-11 whitespace-nowrap px-3.5 py-2.5 text-sm font-medium transition-colors',
+              tab.active ? 'text-[var(--ink)]' : 'text-[var(--muted)] hover:text-[var(--ink)]',
+            )}
+          >
+            {tab.label}
+            {tab.active && (
+              <motion.span layoutId="tab-line" className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-[var(--accent)]" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />
+            )}
+          </Link>
+        ))}
+      </LayoutGroup>
+    </nav>
+  )
+}
+
 export function Panel({ className, children }: { className?: string; children: ReactNode }) {
-  return <section className={clsx('rise border-b border-[var(--border)] pb-6 last:border-b-0 last:pb-0', className)}>{children}</section>
+  return <section className={clsx('rise rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-5', className)}>{children}</section>
 }
 
 /** A bordered surface for grouped content such as the payment panel and analytics blocks. */
@@ -123,12 +173,37 @@ export function Skeleton({ className }: { className?: string }) {
   return <div className={clsx('skeleton rounded-2xl', className)} aria-hidden />
 }
 
-export function EmptyState({ title, body, action }: { title: string; body?: string; action?: ReactNode }) {
+export function EmptyState({ title, body, action, icon: Icon }: { title: string; body?: string; action?: ReactNode; icon?: LucideIcon }) {
   return (
-    <div className="flex flex-col items-center gap-1.5 px-6 py-16 text-center">
+    <div className="rise flex flex-col items-center gap-1.5 px-6 py-16 text-center">
+      {Icon && (
+        <span className="mb-2 flex size-12 items-center justify-center rounded-full bg-white/[0.06] text-[var(--muted)]">
+          <Icon className="size-6" aria-hidden />
+        </span>
+      )}
       <h3 className="text-lg font-semibold">{title}</h3>
       {body && <p className="max-w-sm text-pretty text-sm text-[var(--muted)]">{body}</p>}
       {action && <div className="mt-3">{action}</div>}
+    </div>
+  )
+}
+
+/** Shown when a request fails, so a page never sits on loading placeholders forever. */
+export function ErrorState({ title = 'Could not load this', message, onRetry }: { title?: string; message?: string; onRetry?: () => void }) {
+  return (
+    <div role="alert">
+      <EmptyState
+        icon={CloudOff}
+        title={title}
+        body={message ?? 'Check your connection and try again.'}
+        action={
+          onRetry && (
+            <Button variant="secondary" onClick={onRetry}>
+              Try again
+            </Button>
+          )
+        }
+      />
     </div>
   )
 }
@@ -144,18 +219,40 @@ export function Sheet({
   title: string
   children: ReactNode
 }) {
+  const panel = useRef<HTMLElement | null>(null)
   useEffect(() => {
     if (!open) return
+    // Keyboard and screen reader users land inside the sheet, and go back to what opened it when it closes.
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const focusTimer = setTimeout(() => {
+      const target = panel.current?.querySelector<HTMLElement>('input, textarea, select, button:not([aria-label="Close"])') ?? panel.current
+      target?.focus({ preventScroll: true })
+    }, 60)
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose()
+      if (event.key !== 'Tab' || !panel.current) return
+      // Keep Tab inside the sheet while it is open.
+      const items = Array.from(panel.current.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled])')).filter((el) => el.offsetParent !== null)
+      const first = items[0]
+      const last = items[items.length - 1]
+      if (!first || !last) return
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
     }
     window.addEventListener('keydown', onKey)
     // The page behind stays still while the sheet is open, so the sheet is always what you see.
     const previous = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     return () => {
+      clearTimeout(focusTimer)
       window.removeEventListener('keydown', onKey)
       document.body.style.overflow = previous
+      opener?.focus({ preventScroll: true })
     }
   }, [open, onClose])
   // Rendered straight into <body>. A sheet nested inside an animated or blurred parent would otherwise be placed
@@ -175,8 +272,10 @@ export function Sheet({
         >
           <div className="absolute inset-0 bg-black/55 backdrop-blur-sm" />
           <motion.section
+            ref={panel}
+            tabIndex={-1}
             className="relative max-h-[92dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-2xl border border-[var(--border)] p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:rounded-xl"
-            style={{ background: '#212121' }}
+            style={{ background: '#212121', outline: 'none' }}
             initial={{ y: 40, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 40, opacity: 0 }}

@@ -1,7 +1,8 @@
 import { Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { VideoSummary } from '@shared/types'
-import { Button, Chip, EmptyState, inputClass } from '@/components/ui/primitives'
+import { toast } from 'sonner'
+import { Button, Chip, EmptyState, PageHeader, inputClass } from '@/components/ui/primitives'
 import { CategoryChips } from '@/components/video/CategoryChips'
 import { VideoGrid } from '@/components/video/VideoGrid'
 import { useApi } from '@/hooks/useApi'
@@ -40,14 +41,14 @@ export function ExplorePage() {
   const params = new URLSearchParams({ sort, limit: String(PAGE) })
   if (category) params.set('category', category)
   if (q) params.set('q', q)
-  const { data, loading } = useApi<{ videos: VideoSummary[] }>(`videos?${params.toString()}`)
+  const { data, loading, error, reload } = useApi<{ videos: VideoSummary[] }>(`videos?${params.toString()}`)
   const filterKey = params.toString()
   const [extra, setExtra] = useState<{ key: string; videos: VideoSummary[]; done: boolean }>({ key: filterKey, videos: [], done: false })
   const [loadingMore, setLoadingMore] = useState(false)
   // Extra pages belong to one set of filters; changing the filters starts over.
   const more = extra.key === filterKey ? extra : { key: filterKey, videos: [], done: false }
   const videos = data ? [...data.videos, ...more.videos] : null
-  const canLoadMore = Boolean(data) && data!.videos.length === PAGE && !more.done
+  const canLoadMore = data !== null && data.videos.length === PAGE && !more.done
 
   const loadMore = async () => {
     setLoadingMore(true)
@@ -56,6 +57,8 @@ export function ExplorePage() {
       next.set('offset', String(PAGE + more.videos.length))
       const result = await api<{ videos: VideoSummary[] }>(`videos?${next.toString()}`)
       setExtra({ key: filterKey, videos: [...more.videos, ...result.videos], done: result.videos.length < PAGE })
+    } catch (caught) {
+      toast.error(caught instanceof Error ? caught.message : 'Could not load more videos')
     } finally {
       setLoadingMore(false)
     }
@@ -63,35 +66,46 @@ export function ExplorePage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <h1 className="text-2xl font-bold">Explore</h1>
-        <form
-          onSubmit={(event) => {
-            event.preventDefault()
-            update({ q: draft.trim() })
-          }}
-          className="relative w-full lg:max-w-sm"
-          role="search"
-        >
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[var(--subtle)]" aria-hidden />
-          <input
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            placeholder="Search titles and creators"
-            aria-label="Search videos"
-            className={`${inputClass} rounded-full pl-10`}
-          />
-        </form>
-      </div>
+      <PageHeader
+        title="Explore"
+        subtitle={q ? `Results for "${q}"` : 'Every video shows its price per second.'}
+        actions={
+          <form
+            onSubmit={(event) => {
+              event.preventDefault()
+              update({ q: draft.trim() })
+            }}
+            className="relative w-full min-w-[min(100%,18rem)] sm:w-80"
+            role="search"
+          >
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[var(--subtle)]" aria-hidden />
+            <input
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              placeholder="Search titles and creators"
+              aria-label="Search videos"
+              className={`${inputClass} rounded-full pl-10`}
+            />
+          </form>
+        }
+      />
 
       <CategoryChips value={category} onChange={(slug) => update({ category: slug })} />
 
-      <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Sort">
-        {SORTS.map((item) => (
-          <Chip key={item.value} active={sort === item.value} onClick={() => update({ sort: item.value })}>
-            {item.label}
-          </Chip>
-        ))}
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Sort">
+          {SORTS.map((item) => (
+            <Chip key={item.value} active={sort === item.value} onClick={() => update({ sort: item.value })}>
+              {item.label}
+            </Chip>
+          ))}
+        </div>
+        {videos && videos.length > 0 && (
+          <p className="text-xs tabular-nums text-[var(--subtle)]">
+            {videos.length}
+            {canLoadMore ? '+' : ''} {videos.length === 1 ? 'video' : 'videos'}
+          </p>
+        )}
       </div>
 
       {videos && videos.length === 0 ? (
@@ -100,7 +114,7 @@ export function ExplorePage() {
           body={q || category ? 'No videos match those filters. Try clearing them.' : 'No videos have been published yet.'}
         />
       ) : (
-        <VideoGrid videos={videos} loading={loading} />
+        <VideoGrid videos={videos} loading={loading} error={error} onRetry={reload} />
       )}
       {canLoadMore && (
         <div className="flex justify-center">

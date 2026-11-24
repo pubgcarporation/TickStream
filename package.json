@@ -19,7 +19,8 @@
     "typecheck": "tsc --noEmit",
     "check": "bash scripts/check.sh",
     "contracts:build": "forge build",
-    "contracts:test": "forge test"
+    "contracts:test": "forge test",
+    "test:api": "bun test tickstream/tests"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1175.0",

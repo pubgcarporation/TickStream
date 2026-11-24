@@ -1,4 +1,4 @@
-import { MoreVertical } from 'lucide-react'
+import { Film, MoreVertical, Play } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { CATEGORIES } from '@shared/constants'
@@ -46,12 +46,17 @@ export function VideoCard({ video, index = 0 }: { video: VideoSummary; index?: n
   return (
     <article className="group rise" style={{ ['--i' as string]: Math.min(index, 8) }}>
       <Link to={`/watch/${video.id}`} className="block max-[559px]:-mx-4" aria-label={`Watch ${video.title}`}>
-        <div className="relative aspect-video overflow-hidden rounded-xl bg-[#272727] transition-[border-radius] duration-200 group-hover:rounded-none max-[559px]:rounded-none">
+        <div className="thumb relative aspect-video overflow-hidden rounded-xl bg-[#272727] ring-1 ring-inset ring-white/5 transition-[border-radius] duration-200 group-hover:rounded-lg max-[559px]:rounded-none">
           {failed ? (
-            <div className="flex size-full items-center justify-center text-xs text-[var(--subtle)]">No preview</div>
+            <div className="flex size-full flex-col items-center justify-center gap-1 text-xs text-[var(--subtle)]"><Film className="size-6 opacity-60" aria-hidden />No preview</div>
           ) : (
             <img src={thumbnailUrl(video.id)} alt="" loading="lazy" onError={() => setFailed(true)} className="size-full object-cover" />
           )}
+          <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-200 group-hover:bg-black/25 group-hover:opacity-100 max-lg:hidden" aria-hidden>
+            <span className="flex size-12 items-center justify-center rounded-full bg-white/90 shadow-lg shadow-black/40">
+              <Play className="size-5 translate-x-0.5 fill-black text-black" />
+            </span>
+          </span>
           {video.previewSeconds > 0 && (
             <span className="absolute left-2 top-2 rounded bg-[var(--accent)] px-1.5 py-0.5 text-[11px] font-semibold text-[var(--accent-ink)]">
               {video.previewSeconds}s free

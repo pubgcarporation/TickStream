@@ -1,7 +1,5 @@
-import { clsx } from 'clsx'
 import { RequireAuth } from '@/components/creator/RequireAuth'
-import { EmptyState } from '@/components/ui/primitives'
-import { Link } from '@/lib/router'
+import { EmptyState, PageHeader, Tabs } from '@/components/ui/primitives'
 import { useAuth } from '@/providers/AuthProvider'
 import { AdminOverview } from './admin/AdminOverview'
 import { AdminPayments, AdminUsers } from './admin/AdminTables'
@@ -25,21 +23,8 @@ function Console({ section }: { section: string }) {
     )
   }
   return (
-    <div className="space-y-5">
-      <nav className="flex gap-1 overflow-x-auto border-b border-[var(--border)]" aria-label="Admin sections">
-        {TABS.map((tab) => (
-          <Link
-            key={tab.section}
-            to={tab.section ? `/admin/${tab.section}` : '/admin'}
-            className={clsx(
-              '-mb-px whitespace-nowrap border-b-2 px-3.5 py-2.5 text-sm font-medium transition-colors',
-              section === tab.section ? 'border-[var(--accent)] text-[var(--ink)]' : 'border-transparent text-[var(--muted)] hover:text-[var(--ink)]',
-            )}
-          >
-            {tab.label}
-          </Link>
-        ))}
-      </nav>
+    <div className="space-y-4">
+      <Tabs id="admin" label="Admin sections" items={TABS.map((tab) => ({ to: tab.section ? `/admin/${tab.section}` : '/admin', label: tab.label, active: section === tab.section }))} />
       {section === '' && <AdminOverview />}
       {section === 'videos' && <AdminVideos />}
       {section === 'payments' && <AdminPayments />}
@@ -51,7 +36,7 @@ function Console({ section }: { section: string }) {
 export function AdminPage({ section }: { section: string }) {
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Admin</h1>
+      <PageHeader title="Admin" subtitle="Takedowns, payments and users." />
       <RequireAuth title="Sign in to continue" body="Sign in with an administrator account.">
         <Console section={section} />
       </RequireAuth>

@@ -1,5 +1,5 @@
 import type { VideoSummary } from '@shared/types'
-import { Skeleton } from '@/components/ui/primitives'
+import { ErrorState, Skeleton } from '@/components/ui/primitives'
 import { VideoCard } from './VideoCard'
 
 const GRID = 'grid grid-cols-[repeat(auto-fill,minmax(270px,1fr))] gap-x-4 gap-y-7 sm:gap-y-9'
@@ -21,7 +21,21 @@ function CardSkeleton() {
 }
 
 /** `lead` shows the first three videos large in a row, then the rest in the regular grid. */
-export function VideoGrid({ videos, loading, lead }: { videos: VideoSummary[] | null; loading?: boolean; lead?: boolean }) {
+export function VideoGrid({
+  videos,
+  loading,
+  lead,
+  error,
+  onRetry,
+}: {
+  videos: VideoSummary[] | null
+  loading?: boolean
+  lead?: boolean
+  /** When set and nothing loaded, shows a message with a retry button instead of placeholders. */
+  error?: Error | null
+  onRetry?: () => void
+}) {
+  if (error && !videos) return <ErrorState title="Could not load videos" message={error.message} onRetry={onRetry} />
   if (loading || !videos) {
     return (
       <div className={lead ? LEAD_GRID : GRID}>

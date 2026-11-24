@@ -69,7 +69,7 @@ export function StudioUpload() {
 
   return (
     <div className="grid items-start gap-x-10 gap-y-6 lg:grid-cols-[1fr_320px]">
-      <Panel className="space-y-4 border-b-0 pb-0">
+      <Panel className="space-y-4">
         <div>
           <label htmlFor="title" className="mb-1.5 block text-sm font-medium">
             Title
@@ -144,7 +144,7 @@ export function StudioUpload() {
         </Button>
       </Panel>
 
-      <Panel className="space-y-4 border-b-0 pb-0">
+      <Panel className="space-y-4">
         <div>
           <label htmlFor="price" className="mb-1.5 block text-sm font-medium">
             Price per second (USDC)

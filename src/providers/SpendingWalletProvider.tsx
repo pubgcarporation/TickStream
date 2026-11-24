@@ -72,10 +72,18 @@ export function SpendingWalletProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Defer so state updates never run synchronously inside the effect body.
     const first = setTimeout(() => void refresh(), 0)
-    const interval = setInterval(() => void refresh(), 15_000)
+    // A hidden tab does not need a fresh balance, so it is read again when the tab comes back.
+    const interval = setInterval(() => {
+      if (!document.hidden) void refresh()
+    }, 15_000)
+    const onVisible = () => {
+      if (!document.hidden) void refresh()
+    }
+    document.addEventListener('visibilitychange', onVisible)
     return () => {
       clearTimeout(first)
       clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisible)
     }
   }, [refresh])
 

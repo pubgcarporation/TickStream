@@ -16,7 +16,8 @@ export function optionalStr(value: unknown, field: string, max: number): string 
 }
 
 export function int(value: unknown, field: string, min: number, max: number): number {
-  const parsed = typeof value === 'string' ? Number(value) : value
+  // An empty or blank string would read as 0, so it is refused here instead of slipping through as a number.
+  const parsed = typeof value === 'string' ? (value.trim() === '' ? Number.NaN : Number(value)) : value
   if (typeof parsed !== 'number' || !Number.isInteger(parsed) || parsed < min || parsed > max) {
     throw new HttpError(400, `${field} must be a whole number between ${min} and ${max}`, 'invalid_request')
   }

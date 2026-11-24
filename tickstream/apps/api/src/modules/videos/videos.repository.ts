@@ -50,6 +50,8 @@ export function mapVideo(row: VideoRow): VideoSummary {
 
 export interface VideoFilter {
   creator?: string
+  /** Only videos from creators this wallet follows. */
+  followedBy?: string
   status?: VideoStatus
   /** Include videos taken down (admin only). */
   includeRemoved?: boolean
@@ -72,6 +74,7 @@ export async function listVideos(filter: VideoFilter): Promise<VideoSummary[]> {
   else if (!filter.includeRemoved) where.push(`v.status <> 'removed'`)
   if (filter.exclude) where.push(`v.id <> ${push(filter.exclude)}`)
   if (filter.creator) where.push(`v.creator = ${push(filter.creator)}`)
+  if (filter.followedBy) where.push(`v.creator in (select creator from follows where follower = ${push(filter.followedBy)})`)
   if (filter.category) where.push(`v.category = ${push(filter.category)}`)
   if (filter.q) {
     const term = push(`%${filter.q.replace(/[%_\\]/g, '\\$&')}%`)

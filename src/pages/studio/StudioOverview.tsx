@@ -1,6 +1,6 @@
 import type { EarningsSummary, PaymentRecord } from '@shared/types'
 import { EarningsChart, StatCard } from '@/components/creator/EarningsChart'
-import { EmptyState, Panel, Skeleton } from '@/components/ui/primitives'
+import { ErrorState, Panel, Skeleton } from '@/components/ui/primitives'
 import { useApi } from '@/hooks/useApi'
 import { formatDuration, formatMicro, shortAddress, timeAgo } from '@/lib/format'
 import { Link } from '@/lib/router'
@@ -41,11 +41,11 @@ export function StudioOverview() {
   const summary = earnings.data?.summary
 
   if (earnings.loading && !summary) return <Skeleton className="h-96" />
-  if (!summary) return <EmptyState title="Could not load your studio" body={earnings.error?.message} />
+  if (!summary) return <ErrorState title="Could not load your studio" message={earnings.error?.message} onRetry={earnings.reload} />
 
   return (
     <div className="space-y-5">
-      <div className="grid gap-x-8 gap-y-5 border-b border-[var(--border)] pb-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Total earned" value={formatMicro(summary.totalMicro)} unit="USDC" trend={summary.daily.map((day) => day.earnedMicro)} />
         <StatCard label="Last 24 hours" value={formatMicro(summary.last24hMicro)} unit="USDC" />
         <StatCard label="Time watched" value={formatDuration(summary.secondsSold)} hint="Seconds viewers paid for" trend={summary.daily.map((day) => day.secondsSold)} />
@@ -56,7 +56,7 @@ export function StudioOverview() {
         <EarningsChart daily={summary.daily} />
       </Panel>
       <div className="grid gap-x-10 gap-y-6 lg:grid-cols-2">
-        <Panel className="border-b-0 pb-0">
+        <Panel>
           <h2 className="mb-1 text-base font-semibold">Top videos</h2>
           {summary.perVideo.length === 0 ? (
             <p className="py-6 text-center text-sm text-[var(--muted)]">
@@ -76,7 +76,7 @@ export function StudioOverview() {
             </ul>
           )}
         </Panel>
-        <Panel className="border-b-0 pb-0">
+        <Panel>
           <h2 className="mb-1 text-base font-semibold">Recent payments</h2>
           <PaymentList payments={(payments.data?.payments ?? []).slice(0, 6)} />
         </Panel>

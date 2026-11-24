@@ -2,6 +2,8 @@
  * Where the API lives. Empty means the same site under /api (the dev server and the single-server setup forward it).
  * Set VITE_API_URL to the API's full address (for example https://api.example.com) when the site is hosted elsewhere.
  */
+import { safeStorage } from './safe-storage'
+
 const API_BASE = (import.meta.env.VITE_API_URL ?? '').trim().replace(/\/+$/, '') || '/api'
 const TOKEN_KEY = 'tickstream:token'
 
@@ -21,12 +23,12 @@ type Listener = () => void
 const listeners = new Set<Listener>()
 
 export function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY)
+  return safeStorage.get(TOKEN_KEY)
 }
 
 export function setToken(token: string | null): void {
-  if (token) localStorage.setItem(TOKEN_KEY, token)
-  else localStorage.removeItem(TOKEN_KEY)
+  if (token) safeStorage.set(TOKEN_KEY, token)
+  else safeStorage.remove(TOKEN_KEY)
   listeners.forEach((listener) => listener())
 }
 
@@ -52,6 +54,16 @@ interface Options {
 
 /** Returns the raw response so callers can branch on 402 (payment required). */
 export async function apiRaw(path: string, options: Options = {}): Promise<Response> {
+  try {
+    return await rawFetch(path, options)
+  } catch (error) {
+    // A cancelled request is not a failure, so it passes through untouched.
+    if (error instanceof DOMException && error.name === 'AbortError') throw error
+    throw new ApiError(0, 'Could not reach TickStream. Check your connection and try again.', 'network', {})
+  }
+}
+
+function rawFetch(path: string, options: Options): Promise<Response> {
   return fetch(apiUrl(path), {
     method: options.method ?? 'GET',
     headers: {

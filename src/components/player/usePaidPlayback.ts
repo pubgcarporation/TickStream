@@ -36,6 +36,14 @@ function payAheadSeconds(chunkSeconds: number): number {
   return chunkSeconds <= 2 ? chunkSeconds * 3 : Math.max(2, chunkSeconds * 0.5)
 }
 const HEARTBEAT_MS = 20_000
+/** Waits (ms) before each retry of a payment that failed for a reason that usually clears up on its own. */
+const PAYMENT_RETRY_DELAYS = [350, 900, 1800]
+
+/** A dropped connection, a Gateway hiccup (502) or a payment already in progress (429 busy) is worth another try. */
+function isTransient(error: unknown): boolean {
+  if (!(error instanceof ApiError)) return false
+  return error.status === 0 || error.status === 502 || error.status === 503 || error.status === 504 || (error.status === 429 && error.code === 'busy')
+}
 const MAX_RECOVERIES = 3
 
 /**
@@ -165,9 +173,18 @@ export function usePaidPlayback(videoId: string, owner: string | undefined) {
     payingRef.current = true
     patch({ paying: true })
     try {
-      const result = await payNextChunk(session.id, createPaymentScheme(owner))
-      patch({ session: result.session })
-      return result.session
+      for (let attempt = 0; ; attempt += 1) {
+        try {
+          const result = await payNextChunk(session.id, createPaymentScheme(owner))
+          patch({ session: result.session })
+          return result.session
+        } catch (error) {
+          const delay = PAYMENT_RETRY_DELAYS[attempt]
+          if (delay === undefined || !isTransient(error)) throw error
+          // A short pause and another try keeps one bad moment on the network from ending the viewing session.
+          await new Promise((resolve) => setTimeout(resolve, delay))
+        }
+      }
     } catch (error) {
       classify(error)
       return undefined

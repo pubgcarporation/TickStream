@@ -2,7 +2,7 @@ import { ExternalLink } from 'lucide-react'
 import { useState } from 'react'
 import { useAccount } from 'wagmi'
 import type { EarningsSummary, PaymentRecord } from '@shared/types'
-import { Button, EmptyState, Panel, Skeleton } from '@/components/ui/primitives'
+import { Button, ErrorState, Panel, Skeleton } from '@/components/ui/primitives'
 import { WithdrawEarningsSheet } from '@/components/wallet/WithdrawEarningsSheet'
 import { useGatewayBalanceOf } from '@/hooks/useGatewayBalanceOf'
 import { StatCard } from '@/components/creator/EarningsChart'
@@ -20,11 +20,11 @@ export function StudioEarnings() {
   const summary = earnings.data?.summary
 
   if (earnings.loading && !summary) return <Skeleton className="h-96" />
-  if (!summary) return <EmptyState title="Could not load earnings" body={earnings.error?.message} />
+  if (!summary) return <ErrorState title="Could not load earnings" message={earnings.error?.message} onRetry={earnings.reload} />
 
   return (
     <div className="space-y-5">
-      <div className="grid gap-x-8 gap-y-5 border-b border-[var(--border)] pb-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Total earned" value={formatMicro(summary.totalMicro)} unit="USDC" />
         <StatCard label="Settled onchain" value={formatMicro(summary.settledMicro)} unit="USDC" />
         <StatCard label="Batching" value={formatMicro(summary.pendingMicro)} unit="USDC" hint="Accepted, settling in the next batch" />

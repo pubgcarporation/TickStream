@@ -1,5 +1,5 @@
 import { HandCoins, Share2 } from 'lucide-react'
-import { useEffect, useState, useSyncExternalStore } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useAccount } from 'wagmi'
 import { toast } from 'sonner'
 import { CATEGORIES, DEFAULT_CHUNK_SECONDS } from '@shared/constants'
@@ -62,6 +62,16 @@ export function WatchPage({ videoId }: { videoId: string }) {
     else setActivePlayback(null)
     return () => setActivePlayback(null)
   }, [phase, price, videoId])
+  // After a session ends, ask the server where the viewer stopped, so "Resume at" is never out of date.
+  const reloadProgress = progress.reload
+  const wasActive = useRef(false)
+  useEffect(() => {
+    if (phase === 'playing') wasActive.current = true
+    else if ((phase === 'idle' || phase === 'ended') && wasActive.current) {
+      wasActive.current = false
+      reloadProgress()
+    }
+  }, [phase, reloadProgress])
   const lastSecond = progress.data?.second ?? 0
   const resumeAt = video?.durationSeconds && lastSecond >= 10 && lastSecond < video.durationSeconds - 10 ? lastSecond : 0
   const { view } = playback
@@ -118,7 +128,7 @@ export function WatchPage({ videoId }: { videoId: string }) {
 
   // On phones every block is its own grid item so the payment panel can sit right under the title and the player can stay pinned.
   return (
-    <div className="grid items-start gap-x-6 gap-y-4 xl:grid-cols-[minmax(0,1fr)_380px] xl:gap-y-5">
+    <div className="-mt-4 grid items-start gap-x-6 gap-y-4 sm:-mt-3 xl:grid-cols-[minmax(0,1fr)_380px] xl:gap-y-5">
       <div className="contents xl:col-start-1 xl:row-start-1 xl:block xl:space-y-4">
         <div className={`order-1 -mx-4 sm:mx-0 xl:static ${idle ? '' : 'sticky top-14 z-30 shadow-lg shadow-black/50 sm:static sm:shadow-none'}`}>
           <PlayerSurface
@@ -190,7 +200,8 @@ export function WatchPage({ videoId }: { videoId: string }) {
       </aside>
 
       <div className="order-6 xl:order-none xl:col-start-1 xl:row-start-2">
-        <CommentsSection videoId={video.id} />
+        {/* Keyed by viewer, so signing in or out reloads the list with the right remove buttons. */}
+        <CommentsSection key={`${video.id}:${user?.address ?? ''}`} videoId={video.id} />
       </div>
       {!wide && (
         <div className="order-7">

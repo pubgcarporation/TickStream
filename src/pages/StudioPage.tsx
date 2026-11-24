@@ -9,7 +9,7 @@ import { StudioVideos } from './studio/StudioVideos'
 
 export function StudioPage({ section }: { section: string }) {
   return (
-    <div>
+    <div className="space-y-4">
       <StudioNav />
       <RequireAuth title="Sign in to open your studio" body="Sign in to continue. Payments from viewers go straight to that wallet's address.">
         {section === 'videos' && <StudioVideos />}

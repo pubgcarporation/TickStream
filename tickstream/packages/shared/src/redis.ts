@@ -53,3 +53,14 @@ export async function acquireLock(key: string, ttlMs: number): Promise<Lock | un
     },
   }
 }
+
+/** Like `acquireLock`, but keeps trying for up to `waitMs`. Returns undefined if the lock never frees up. */
+export async function acquireLockWait(key: string, ttlMs: number, waitMs: number): Promise<Lock | undefined> {
+  const deadline = Date.now() + waitMs
+  for (;;) {
+    const lock = await acquireLock(key, ttlMs)
+    if (lock) return lock
+    if (Date.now() >= deadline) return undefined
+    await new Promise((resolve) => setTimeout(resolve, 60))
+  }
+}

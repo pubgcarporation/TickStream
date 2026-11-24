@@ -1,11 +1,12 @@
+import { History as HistoryIcon, Users } from 'lucide-react'
 import type { CreatorSummary, VideoSummary } from '@shared/types'
 import { RequireAuth } from '@/components/creator/RequireAuth'
-import { Chip, EmptyState, Skeleton } from '@/components/ui/primitives'
+import { EmptyState, ErrorState, PageHeader, Skeleton, Tabs } from '@/components/ui/primitives'
 import { VideoGrid } from '@/components/video/VideoGrid'
 import { useApi } from '@/hooks/useApi'
 import { thumbnailUrl } from '@/lib/api'
 import { formatDuration, formatMicro, timeAgo } from '@/lib/format'
-import { Link, navigate, useLocation } from '@/lib/router'
+import { Link, useLocation } from '@/lib/router'
 
 interface HistoryItem {
   id: string
@@ -50,11 +51,13 @@ function dayLabel(iso: string): string {
 }
 
 function History() {
-  const { data, loading } = useApi<{ history: HistoryItem[] }>('me/history')
+  const { data, loading, error, reload } = useApi<{ history: HistoryItem[] }>('me/history')
   if (loading && !data) return <Skeleton className="h-64" />
+  if (error && !data) return <ErrorState title="Could not load your history" message={error.message} onRetry={reload} />
   if (!data || data.history.length === 0) {
     return (
       <EmptyState
+        icon={HistoryIcon}
         title="Nothing watched yet"
         body="Videos you pay to watch show up here with exactly what each one cost."
         action={
@@ -145,9 +148,11 @@ function Following() {
   const creators = useApi<{ creators: CreatorSummary[] }>('me/following')
   const feed = useApi<{ videos: VideoSummary[] }>('me/feed')
   if (creators.loading && !creators.data) return <Skeleton className="h-64" />
+  if (creators.error && !creators.data) return <ErrorState title="Could not load who you follow" message={creators.error.message} onRetry={creators.reload} />
   if (!creators.data || creators.data.creators.length === 0) {
     return (
       <EmptyState
+        icon={Users}
         title="You are not following anyone"
         body="Follow creators from a video or profile page to see their new videos here."
         action={
@@ -177,7 +182,7 @@ function Following() {
         {feed.data && feed.data.videos.length === 0 ? (
           <p className="text-sm text-[var(--muted)]">Nothing new yet.</p>
         ) : (
-          <VideoGrid videos={feed.data?.videos ?? null} loading={feed.loading && !feed.data} />
+          <VideoGrid videos={feed.data?.videos ?? null} loading={feed.loading && !feed.data} error={feed.error} onRetry={feed.reload} />
         )}
       </section>
     </div>
@@ -187,20 +192,19 @@ function Following() {
 export function LibraryPage() {
   const { search } = useLocation()
   const tab: 'history' | 'following' = search.get('tab') === 'following' ? 'following' : 'history'
-  const setTab = (next: 'history' | 'following') => navigate(`/library?tab=${next}`, { replace: true })
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Library</h1>
+      <PageHeader title="Library" subtitle="Your watch history and the creators you follow." />
       <RequireAuth title="Sign in to see your library" body="Your watch history and the creators you follow are tied to your wallet.">
         <div className="space-y-4">
-          <div className="flex gap-2" role="tablist" aria-label="Library sections">
-            <Chip active={tab === 'history'} onClick={() => setTab('history')}>
-              History
-            </Chip>
-            <Chip active={tab === 'following'} onClick={() => setTab('following')}>
-              Following
-            </Chip>
-          </div>
+          <Tabs
+            id="library"
+            label="Library sections"
+            items={[
+              { to: '/library?tab=history', label: 'History', active: tab === 'history' },
+              { to: '/library?tab=following', label: 'Following', active: tab === 'following' },
+            ]}
+          />
           {tab === 'history' ? <History /> : <Following />}
         </div>
       </RequireAuth>

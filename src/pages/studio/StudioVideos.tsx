@@ -1,9 +1,9 @@
-import { Check, Loader2, Pencil, SlidersHorizontal, Trash2, X } from 'lucide-react'
+import { Check, Clapperboard, Loader2, Pencil, SlidersHorizontal, Trash2, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import type { VideoSummary } from '@shared/types'
 import { CATEGORIES, MAX_PREVIEW_SECONDS, MAX_PRICE_PER_SECOND, MIN_PRICE_PER_SECOND } from '@shared/constants'
-import { Button, Chip, EmptyState, Sheet, Skeleton, inputClass } from '@/components/ui/primitives'
+import { Button, Chip, EmptyState, ErrorState, Sheet, Skeleton, inputClass } from '@/components/ui/primitives'
 import { useApi } from '@/hooks/useApi'
 import { api, thumbnailUrl } from '@/lib/api'
 import { formatDuration, formatMicro, timeAgo } from '@/lib/format'
@@ -185,7 +185,7 @@ function VideoRow({ video, onChanged }: { video: VideoSummary; onChanged: () => 
 }
 
 export function StudioVideos() {
-  const { data, loading, reload } = useApi<{ videos: VideoSummary[] }>('me/videos')
+  const { data, loading, error, reload } = useApi<{ videos: VideoSummary[] }>('me/videos')
   const processing = data?.videos.some((video) => video.status === 'processing' || video.status === 'uploading') ?? false
 
   // Check again every few seconds while anything is still encoding.
@@ -196,9 +196,11 @@ export function StudioVideos() {
   }, [processing, reload])
 
   if (loading && !data) return <Skeleton className="h-64" />
+  if (error && !data) return <ErrorState title="Could not load your videos" message={error.message} onRetry={reload} />
   if (!data || data.videos.length === 0) {
     return (
       <EmptyState
+        icon={Clapperboard}
         title="No videos yet"
         body="Upload a video, set a price per second, and viewers pay you as they watch."
         action={

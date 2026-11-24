@@ -4,8 +4,8 @@ import { formatMicro } from '@/lib/format'
 
 export function StatCard({ label, value, unit, hint, trend }: { label: string; value: string; unit?: string; hint?: string; trend?: number[] }) {
   return (
-    <div className="rise">
-      <p className="text-xs font-medium text-[var(--subtle)]">{label}</p>
+    <div className="rise rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
+      <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-[var(--subtle)]">{label}</p>
       <p className="mt-1 text-2xl font-semibold tabular-nums">
         {value}
         {unit && <span className="ml-1.5 text-sm font-medium text-[var(--subtle)]">{unit}</span>}
