@@ -34,6 +34,8 @@ interface PaymentRow {
   status: PaymentRecord['status']
   transfer_id: string | null
   created_at: Date
+  kind: PaymentRecord['kind']
+  message: string | null
 }
 
 interface HistoryRow {
@@ -101,7 +103,7 @@ export function registerEarningsRoutes(router: Router): void {
   router.get('/creator/payments', 'required', async (ctx) => {
     const addr = requireUser(ctx)
     const rows = await query<PaymentRow>(
-      `select p.id, p.video_id, v.title, p.payer, p.amount_micro, p.seconds, p.status, p.transfer_id, p.created_at
+      `select p.id, p.video_id, v.title, p.payer, p.amount_micro, p.seconds, p.status, p.transfer_id, p.created_at, p.kind, p.message
        from payments p join videos v on v.id = p.video_id
        where p.creator = $1 order by p.created_at desc limit 50`,
       [addr],
@@ -116,6 +118,8 @@ export function registerEarningsRoutes(router: Router): void {
       status: row.status,
       transferId: row.transfer_id,
       createdAt: row.created_at.toISOString(),
+      kind: row.kind,
+      message: row.message,
     }))
     sendJson(ctx.res, 200, { payments })
   })

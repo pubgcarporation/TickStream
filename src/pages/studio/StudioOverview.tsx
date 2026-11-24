@@ -12,10 +12,14 @@ export function PaymentList({ payments }: { payments: PaymentRecord[] }) {
       {payments.map((payment) => (
         <li key={payment.id} className="flex items-center gap-3 py-2.5 text-sm">
           <div className="min-w-0 flex-1">
-            <p className="truncate font-medium">{payment.videoTitle}</p>
-            <p className="mono text-xs text-[var(--subtle)]">
-              {shortAddress(payment.payer)} · {payment.seconds}s · {timeAgo(payment.createdAt)}
+            <p className="flex items-center gap-2 truncate font-medium">
+              <span className="truncate">{payment.videoTitle}</span>
+              {payment.kind === 'tip' && <span className="shrink-0 rounded-md bg-[var(--accent)]/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--accent)]">Tip</span>}
             </p>
+            <p className="mono text-xs text-[var(--subtle)]">
+              {shortAddress(payment.payer)} · {payment.kind === 'tip' ? 'tip' : `${payment.seconds}s`} · {timeAgo(payment.createdAt)}
+            </p>
+            {payment.message && <p className="mt-0.5 line-clamp-2 text-pretty text-xs text-[var(--muted)]">{payment.message}</p>}
           </div>
           <span
             className={`text-xs font-medium ${

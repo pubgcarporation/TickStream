@@ -1,4 +1,4 @@
-import { Share2 } from 'lucide-react'
+import { HandCoins, Share2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useAccount } from 'wagmi'
 import { toast } from 'sonner'
@@ -14,6 +14,7 @@ import { usePaidPlayback } from '@/components/player/usePaidPlayback'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button, EmptyState, Skeleton } from '@/components/ui/primitives'
 import { RelatedVideos } from '@/components/video/RelatedVideos'
+import { TipSheet } from '@/components/video/TipSheet'
 import { VideoDescription } from '@/components/video/VideoDescription'
 import { DepositSheet } from '@/components/wallet/DepositSheet'
 import { useApi } from '@/hooks/useApi'
@@ -35,6 +36,7 @@ export function WatchPage({ videoId }: { videoId: string }) {
   const [capChoice, setCapChoice] = useState(DEFAULT_CAP)
   const [chunkSeconds, setChunkSeconds] = useState<number>(DEFAULT_CHUNK_SECONDS)
   const [depositOpen, setDepositOpen] = useState(false)
+  const [tipOpen, setTipOpen] = useState(false)
   const shareUrl = useShareLink(`/watch/${videoId}`)
 
   const video = data?.video
@@ -110,9 +112,16 @@ export function WatchPage({ videoId }: { videoId: string }) {
             <span className="min-w-0 truncate font-semibold hover:underline">{creatorName}</span>
           </Link>
           <FollowButton username={video.creator.username} creatorAddress={video.creator.address} />
-          <Button variant="secondary" shape="rect" onClick={() => void copyLink()} disabled={!shareUrl} className="ml-auto">
-            <Share2 className="size-4" aria-hidden /> Share
-          </Button>
+          <div className="ml-auto flex gap-2">
+            {user?.address !== video.creator.address && (
+              <Button shape="rect" onClick={() => setTipOpen(true)}>
+                <HandCoins className="size-4" aria-hidden /> Tip
+              </Button>
+            )}
+            <Button variant="secondary" shape="rect" onClick={() => void copyLink()} disabled={!shareUrl}>
+              <Share2 className="size-4" aria-hidden /> Share
+            </Button>
+          </div>
         </div>
         <VideoDescription views={video.views} createdAt={video.createdAt} category={category} description={video.description} />
       </div>
@@ -152,6 +161,7 @@ export function WatchPage({ videoId }: { videoId: string }) {
       <div className="xl:col-start-1 xl:row-start-2">
         <CommentsSection videoId={video.id} />
       </div>
+      <TipSheet open={tipOpen} onClose={() => setTipOpen(false)} videoId={video.id} creatorName={creatorName} onAddFunds={() => setDepositOpen(true)} />
       <DepositSheet open={depositOpen} onClose={() => setDepositOpen(false)} />
     </div>
   )

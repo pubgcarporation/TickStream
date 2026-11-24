@@ -11,6 +11,7 @@ import { registerAuthRoutes } from './modules/auth/auth.routes'
 import { registerCommentRoutes } from './modules/comments/comments.routes'
 import { registerEarningsRoutes } from './modules/earnings/earnings.routes'
 import { registerGrantRoutes } from './modules/payments/grant.routes'
+import { registerTipRoutes } from './modules/payments/tips.routes'
 import { registerWithdrawRoutes } from './modules/payments/withdraw.routes'
 import { registerPlaybackRoutes } from './modules/playback/playback.routes'
 import { registerSubscriptionRoutes } from './modules/subscriptions/subscriptions.routes'
@@ -41,6 +42,7 @@ registerVideoRoutes(router)
 registerUploadRoutes(router)
 registerPlaybackRoutes(router)
 registerGrantRoutes(router)
+registerTipRoutes(router)
 registerEarningsRoutes(router)
 registerWithdrawRoutes(router)
 registerAnalyticsRoutes(router)

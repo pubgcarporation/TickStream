@@ -10,6 +10,11 @@ export const MIN_PRICE_PER_SECOND = 1
 export const MAX_PRICE_PER_SECOND = 100_000
 export const DEFAULT_PRICE_PER_SECOND = 200
 
+/** Tips, in USDC base units (6 decimals): 0.01 to 100 USDC. */
+export const MIN_TIP_MICRO = 10_000
+export const MAX_TIP_MICRO = 100_000_000
+export const MAX_TIP_MESSAGE_LENGTH = 140
+
 export const CATEGORIES = [
   { slug: 'music', label: 'Music' },
   { slug: 'learning', label: 'Learning' },

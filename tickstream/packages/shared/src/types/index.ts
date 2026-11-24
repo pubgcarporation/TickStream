@@ -71,6 +71,10 @@ export interface PaymentRecord {
   status: 'pending' | 'settled' | 'failed'
   transferId: string | null
   createdAt: string
+  /** 'watch' for pay-per-second payments, 'tip' for tips. */
+  kind: 'watch' | 'tip'
+  /** Note the viewer attached to a tip. */
+  message: string | null
 }
 
 export interface CommentItem {
