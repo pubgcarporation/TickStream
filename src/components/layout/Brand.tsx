@@ -10,12 +10,12 @@ export function BrandMark({ size = 30 }: { size?: number }) {
   )
 }
 
-/** `compact` drops the name on phones so the header never crowds. */
+/** The name sits to the right of the mark, with no bubble. `compact` shrinks it on phones and hides it only on very narrow screens. */
 export function Wordmark({ compact }: { compact?: boolean }) {
   return (
-    <span className="flex items-center gap-2">
-      <BrandMark />
-      <span className={`display text-xl font-bold tracking-tight${compact ? ' max-[439px]:hidden' : ''}`}>
+    <span className="flex items-center gap-1.5 sm:gap-2">
+      <BrandMark size={compact ? 28 : 30} />
+      <span className={`display font-bold leading-none tracking-tight whitespace-nowrap ${compact ? 'text-[17px] max-[379px]:hidden sm:text-xl' : 'text-xl'}`}>
         Tick<span className="text-[var(--accent)]">Stream</span>
       </span>
     </span>

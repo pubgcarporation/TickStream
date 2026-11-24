@@ -20,7 +20,6 @@ export function CostMeter({ view, priceMicro, onEnd, onAddFunds, onResume, onCon
   if (!session) return null
   // The free preview is never billed, so only time past it counts toward the cost.
   const cost = billedMicro(view, priceMicro)
-  const prepaid = Math.max(0, session.spentMicro - cost)
   const live = view.phase === 'playing' && !view.paused
 
   return (
@@ -32,10 +31,6 @@ export function CostMeter({ view, priceMicro, onEnd, onAddFunds, onResume, onCon
         </p>
 
         <dl className="flex flex-wrap gap-x-6 gap-y-1 text-xs tabular-nums">
-          <div title="Paid in advance for video you have not watched yet. Payments cannot be refunded.">
-            <dt className="text-[var(--subtle)]">Paid ahead</dt>
-            <dd className="text-sm font-medium">{formatMicro(prepaid)}</dd>
-          </div>
           <div title="Everything Gateway has accepted this session. Payments are final.">
             <dt className="text-[var(--subtle)]">Paid in total</dt>
             <dd className="text-sm font-medium">{formatMicro(session.spentMicro)}</dd>

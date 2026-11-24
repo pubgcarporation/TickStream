@@ -28,11 +28,12 @@ export interface PlaybackView {
 const TICK_MS = 1000
 
 /**
- * How far ahead of playback to keep paid. Short intervals pay about three intervals ahead so a payment that takes half
- * a second to settle never shows; long intervals pay when half an interval is left.
+ * When to pay for the next interval, as seconds of paid video still left in front of the playhead. Short (2 second)
+ * intervals pay at the last second, so what is paid stays as close to what was watched as one interval allows.
+ * Longer intervals pay when half an interval is left.
  */
 function payAheadSeconds(chunkSeconds: number): number {
-  return chunkSeconds <= 2 ? chunkSeconds * 3 : Math.max(2, chunkSeconds * 0.5)
+  return chunkSeconds <= 2 ? 1 : Math.max(2, chunkSeconds * 0.5)
 }
 const HEARTBEAT_MS = 20_000
 const MAX_RECOVERIES = 3

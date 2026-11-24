@@ -9,7 +9,7 @@ Money moves in four stages. The browser never decides how much is owed.
 3. **Pay each interval over x402.** The player asks the server for the next interval. The server replies `402 Payment
    Required` with the exact amount (price x seconds in the interval), the creator as recipient, and the network.
    Every successful payment also returns the price of the following one, so later payments take one request, not two.
-   The player pays about three intervals (6 seconds) ahead of playback when the interval is 2 seconds.
+   The player pays in the last second of the paid video, so what is paid stays as close to what was watched as a 2-second interval allows.
    The spending key signs exactly that authorization. The server checks it, then settles it with Gateway.
 4. **Settlement.** Gateway batches many small authorizations into onchain settlements. The settlement worker marks each
    payment settled when its transfer completes.
