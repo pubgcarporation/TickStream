@@ -117,7 +117,7 @@ export function StartPanel({ priceMicro, durationSeconds, previewSeconds, resume
         </div>
 
         <div className="flex w-full flex-wrap items-center gap-x-4 gap-y-2 sm:ml-auto sm:w-auto">
-          {balance && (
+          {balance && !hasFunds && (
             <p className="text-sm tabular-nums text-[var(--muted)]">
               Balance <span className="font-medium text-[var(--ink)]">{formatMicro(balance.available)}</span> USDC{' '}
               <button type="button" onClick={onAddFunds} className="ml-1 text-xs font-semibold text-[var(--accent)] hover:underline">
@@ -130,9 +130,9 @@ export function StartPanel({ priceMicro, durationSeconds, previewSeconds, resume
       </div>
 
       <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[var(--muted)]">
-        <span className="tabular-nums">${formatMicro(chunkCost)} every {chunkSeconds}s, paid just ahead of playback</span>
+        <span className="tabular-nums">${formatMicro(chunkCost)} every {chunkSeconds}s, paid just ahead of playback, and payments are final</span>
         <span aria-hidden>·</span>
-        <span>Pause or leave and it stops</span>
+        <span>Pause or leave and payments stop</span>
         {previewSeconds > 0 && (
           <>
             <span aria-hidden>·</span>

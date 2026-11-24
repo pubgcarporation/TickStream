@@ -114,7 +114,7 @@ export function PlayerSurface({ videoId, videoRef, view, viewer, durationSeconds
       {active && viewer && view.session && <Watermark address={viewer} sessionId={view.session.id} />}
 
       {active && (
-        <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-2 rounded-md bg-black/65 px-2.5 py-1.5 backdrop-blur" aria-live="off">
+        <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-2 sm:hidden rounded-md bg-black/65 px-2.5 py-1.5 backdrop-blur" aria-live="off">
           <span className={`size-1.5 rounded-full ${metering ? 'bg-[var(--success)]' : 'bg-[var(--subtle)]'}`} aria-hidden />
           <span className="mono text-xs tabular-nums text-white">
             $<AnimatedAmount micro={costMicro} />

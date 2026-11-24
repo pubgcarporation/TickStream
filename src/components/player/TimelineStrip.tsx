@@ -24,20 +24,18 @@ export function TimelineStrip({ view }: { view: PlaybackView }) {
         <div className="absolute inset-y-0 rounded-full bg-[var(--accent)]" style={{ left: pct(paidFrom), width: pct(played - paidFrom) }} />
         {view.freeSeconds > 0 && <div className="absolute inset-y-0 left-0 rounded-full bg-[var(--success)]/80" style={{ width: pct(view.freeSeconds) }} />}
       </div>
-      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-[var(--subtle)]">
-        <span className="flex items-center gap-1.5">
-          <span className="size-2 rounded-full bg-[var(--accent)]" aria-hidden /> Played
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="size-2 rounded-full bg-[var(--accent)]/30" aria-hidden /> Paid ahead
-        </span>
+      <p className="mt-1.5 flex flex-wrap items-center gap-x-2 text-[11px] tabular-nums text-[var(--subtle)]">
+        <span>{formatDuration(Math.floor(view.position))} played</span>
+        <span aria-hidden>·</span>
+        <span>paid through {formatDuration(Math.floor(paidTo))}</span>
         {view.freeSeconds > 0 && (
-          <span className="flex items-center gap-1.5">
-            <span className="size-2 rounded-full bg-[var(--success)]/80" aria-hidden /> Free preview
-          </span>
+          <>
+            <span aria-hidden>·</span>
+            <span className="text-[var(--success)]">first {formatDuration(view.freeSeconds)} free</span>
+          </>
         )}
-        <span className="ml-auto tabular-nums">{formatDuration(total)}</span>
-      </div>
+        <span className="ml-auto">{formatDuration(total)}</span>
+      </p>
     </div>
   )
 }

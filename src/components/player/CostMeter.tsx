@@ -1,7 +1,7 @@
-import { Pause, Play, Square } from 'lucide-react'
+import { Square } from 'lucide-react'
 import { AnimatedAmount } from '@/components/ui/AnimatedAmount'
 import { Button } from '@/components/ui/primitives'
-import { formatDuration, formatMicro } from '@/lib/format'
+import { formatMicro } from '@/lib/format'
 import { billedMicro } from './billing'
 import { TimelineStrip } from './TimelineStrip'
 import type { PlaybackView } from './usePaidPlayback'
@@ -9,63 +9,46 @@ import type { PlaybackView } from './usePaidPlayback'
 interface CostMeterProps {
   view: PlaybackView
   priceMicro: number
-  onToggle: () => void
   onEnd: () => void
   onAddFunds: () => void
   onResume: () => void
   onContinue: () => void
 }
 
-export function CostMeter({ view, priceMicro, onToggle, onEnd, onAddFunds, onResume, onContinue }: CostMeterProps) {
+export function CostMeter({ view, priceMicro, onEnd, onAddFunds, onResume, onContinue }: CostMeterProps) {
   const session = view.session
   if (!session) return null
   // The free preview is never billed, so only time past it counts toward the cost.
   const cost = billedMicro(view, priceMicro)
   const prepaid = Math.max(0, session.spentMicro - cost)
   const live = view.phase === 'playing' && !view.paused
-  const statusLabel = live ? 'Charging' : view.phase === 'playing' ? 'Paused' : view.phase === 'ended' ? 'Ended' : 'Stopped'
 
   return (
     <section id="payment" aria-label="Payment" className="scroll-mt-32 border-y border-[var(--border)] py-3">
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-        <div className="flex items-center gap-3">
-          <p className="text-2xl font-semibold tabular-nums">
-            <AnimatedAmount micro={cost} />
-            <span className="ml-1.5 text-sm font-medium text-[var(--subtle)]">USDC</span>
-          </p>
-          <span
-            className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium ${
-              live ? 'bg-[var(--success)]/12 text-[var(--success)]' : 'bg-white/5 text-[var(--muted)]'
-            }`}
-          >
-            <span className={`size-1.5 rounded-full ${live ? 'animate-pulse bg-[var(--success)]' : 'bg-[var(--subtle)]'}`} aria-hidden />
-            {statusLabel}
-          </span>
-        </div>
+        <p className="text-2xl font-semibold tabular-nums">
+          <AnimatedAmount micro={cost} />
+          <span className="ml-1.5 text-sm font-medium text-[var(--subtle)]">USDC watched</span>
+        </p>
 
-        <dl className="flex flex-wrap gap-x-5 gap-y-1 text-xs tabular-nums">
-          <div>
-            <dt className="text-[var(--subtle)]">Watched</dt>
-            <dd className="text-sm font-medium">{formatDuration(view.playedSeconds)} at ${formatMicro(priceMicro)}/s</dd>
-          </div>
-          <div>
+        <dl className="flex flex-wrap gap-x-6 gap-y-1 text-xs tabular-nums">
+          <div title="Paid in advance for video you have not watched yet. Payments cannot be refunded.">
             <dt className="text-[var(--subtle)]">Paid ahead</dt>
             <dd className="text-sm font-medium">{formatMicro(prepaid)}</dd>
           </div>
-          <div>
+          <div title="Everything Gateway has accepted this session. Payments are final.">
             <dt className="text-[var(--subtle)]">Paid in total</dt>
             <dd className="text-sm font-medium">{formatMicro(session.spentMicro)}</dd>
           </div>
         </dl>
 
         {view.phase === 'playing' && (
-          <div className="flex w-full gap-2 sm:ml-auto sm:w-auto">
-            <Button shape="rect" variant="secondary" onClick={onToggle} className="min-h-10 flex-1 sm:flex-none">
-              {view.paused ? <Play className="size-4" aria-hidden /> : <Pause className="size-4" aria-hidden />}
-              {view.paused ? 'Resume' : 'Pause'}
-            </Button>
+          <div className="flex w-full items-center gap-3 sm:ml-auto sm:w-auto">
+            <span className="text-xs text-[var(--muted)]" aria-live="polite">
+              {view.paying ? 'Paying next step' : live ? 'Paid as it plays' : 'Paused, not charging'}
+            </span>
             <Button shape="rect" variant="secondary" onClick={onEnd} className="min-h-10 flex-1 sm:flex-none">
-              <Square className="size-4" aria-hidden /> End
+              <Square className="size-4" aria-hidden /> End session
             </Button>
           </div>
         )}

@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { compactNumber, timeAgo } from '@/lib/format'
 
-/** Views, age, category and description in one surface. Long descriptions fold until expanded. */
+/** Views, age, category and description. Long descriptions fold until expanded. */
 export function VideoDescription({ views, createdAt, category, description }: { views: number; createdAt: string; category: string; description: string }) {
   const [open, setOpen] = useState(false)
   const long = description.length > 180 || description.split('\n').length > 3
 
   return (
-    <div className="rounded-xl bg-[var(--surface)] p-4 text-sm">
+    <div className="border-t border-[var(--border)] pt-3 text-sm">
       <p className="flex flex-wrap items-center gap-x-2 gap-y-1 font-semibold tabular-nums">
         <span>{compactNumber(views)} views</span>
         <span className="text-[var(--subtle)]" aria-hidden>

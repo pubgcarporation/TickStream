@@ -155,7 +155,6 @@ export function WatchPage({ videoId }: { videoId: string }) {
           <CostMeter
             view={view}
             priceMicro={video.priceMicro}
-            onToggle={playback.togglePlay}
             onEnd={() => void playback.end()}
             onAddFunds={() => setDepositOpen(true)}
             onResume={() => void playback.resume()}

@@ -262,7 +262,7 @@ export function usePaidPlayback(videoId: string, owner: string | undefined) {
       const here = position()
       setView((current) => ({ ...current, position: here, playedSeconds: playedRef.current, paused: video.paused }))
       if (video.ended || (session.complete && here >= session.durationSeconds - 0.4)) {
-        stopPlayback('ended', 'Finished. You were charged only for what played.')
+        stopPlayback('ended', 'Finished. Payments are final, so the last step is paid for even if you left before it ended.')
         void api(`sessions/${session.id}`, { method: 'DELETE', body: { second: Math.floor(here) } }).catch(() => undefined)
         return
       }
