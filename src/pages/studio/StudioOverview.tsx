@@ -1,36 +1,43 @@
 import type { EarningsSummary, PaymentRecord } from '@shared/types'
+import { HandCoins, Timer } from 'lucide-react'
 import { EarningsChart, StatCard } from '@/components/creator/EarningsChart'
+import { UsdcMark } from '@/components/wallet/ActivityList'
 import { ErrorState, Panel, Skeleton } from '@/components/ui/primitives'
 import { useApi } from '@/hooks/useApi'
 import { formatDuration, formatMicro, shortAddress, timeAgo } from '@/lib/format'
 import { Link } from '@/lib/router'
 
+const STATUS_STYLE = {
+  settled: { label: 'Settled', className: 'bg-[var(--success)]/15 text-[var(--success)]' },
+  pending: { label: 'Batching', className: 'bg-[var(--warn)]/15 text-[var(--warn)]' },
+  failed: { label: 'Failed', className: 'bg-[var(--danger)]/15 text-[var(--danger)]' },
+} as const
+
 export function PaymentList({ payments }: { payments: PaymentRecord[] }) {
   if (payments.length === 0) return <p className="py-6 text-center text-sm text-[var(--muted)]">No payments yet.</p>
   return (
     <ul className="divide-y divide-[var(--border)]">
-      {payments.map((payment) => (
-        <li key={payment.id} className="flex items-center gap-3 py-2.5 text-sm">
-          <div className="min-w-0 flex-1">
-            <p className="flex items-center gap-2 truncate font-medium">
-              <span className="truncate">{payment.videoTitle}</span>
-              {payment.kind === 'tip' && <span className="shrink-0 rounded-md bg-[var(--accent)]/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--accent)]">Tip</span>}
-            </p>
-            <p className="mono text-xs text-[var(--subtle)]">
-              {shortAddress(payment.payer)} · {payment.kind === 'tip' ? 'tip' : `${payment.seconds}s`} · {timeAgo(payment.createdAt)}
-            </p>
-            {payment.message && <p className="mt-0.5 line-clamp-2 text-pretty text-xs text-[var(--muted)]">{payment.message}</p>}
-          </div>
-          <span
-            className={`text-xs font-medium ${
-              payment.status === 'settled' ? 'text-[var(--success)]' : payment.status === 'failed' ? 'text-[var(--danger)]' : 'text-[var(--muted)]'
-            }`}
-          >
-            {payment.status === 'pending' ? 'Batching' : payment.status === 'settled' ? 'Settled' : 'Failed'}
-          </span>
-          <span className="w-24 text-right font-semibold tabular-nums">+{formatMicro(payment.amountMicro)}</span>
-        </li>
-      ))}
+      {payments.map((payment) => {
+        const status = STATUS_STYLE[payment.status]
+        const tip = payment.kind === 'tip'
+        return (
+          <li key={payment.id} className="flex items-center gap-3 py-3 text-sm">
+            <UsdcMark incoming size={36} badge={tip ? <HandCoins className="size-3" strokeWidth={3} aria-hidden /> : <Timer className="size-3" strokeWidth={3} aria-hidden />} />
+            <div className="min-w-0 flex-1">
+              <p className="flex items-center gap-2 truncate font-medium">
+                <span className="truncate">{payment.videoTitle}</span>
+                {tip && <span className="shrink-0 rounded-md bg-[var(--accent)]/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--accent)]">Tip</span>}
+              </p>
+              <p className="mono text-xs text-[var(--subtle)]">
+                {shortAddress(payment.payer)} · {tip ? 'tip' : `${payment.seconds}s`} · {timeAgo(payment.createdAt)}
+              </p>
+              {payment.message && <p className="mt-0.5 line-clamp-2 text-pretty text-xs text-[var(--muted)]">{payment.message}</p>}
+            </div>
+            <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${status.className}`}>{status.label}</span>
+            <span className="w-24 shrink-0 text-right font-semibold tabular-nums text-[var(--success)]">+{formatMicro(payment.amountMicro)}</span>
+          </li>
+        )
+      })}
     </ul>
   )
 }

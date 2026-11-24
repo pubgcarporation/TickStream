@@ -51,8 +51,8 @@ export function registerSubscriptionRoutes(router: Router): void {
 
   router.get('/me/following', 'required', async (ctx) => {
     const viewer = requireUser(ctx)
-    const rows = await query<CreatorRow & { videos: number; followers: number }>(
-      `select u.address, u.username, u.display_name,
+    const rows = await query<CreatorRow & { videos: number; followers: number; avatar_updated_at: Date | null }>(
+      `select u.address, u.username, u.display_name, u.avatar_updated_at,
          (select count(*)::int from videos v where v.creator = u.address and v.status = 'ready') as videos,
          (select count(*)::int from follows f2 where f2.creator = u.address) as followers
        from follows f join users u on u.address = f.creator
@@ -63,6 +63,7 @@ export function registerSubscriptionRoutes(router: Router): void {
       address: row.address,
       username: row.username,
       displayName: row.display_name,
+      avatarVersion: row.avatar_updated_at ? Math.floor(row.avatar_updated_at.getTime() / 1000) : null,
       videos: row.videos,
       followers: row.followers,
     }))

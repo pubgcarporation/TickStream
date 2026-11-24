@@ -96,6 +96,7 @@ export interface CreatorSummary {
   address: string
   username: string
   displayName: string | null
+  avatarVersion: number | null
   videos: number
   followers: number
 }

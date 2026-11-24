@@ -1,5 +1,6 @@
 import { History as HistoryIcon, Users } from 'lucide-react'
 import type { CreatorSummary, VideoSummary } from '@shared/types'
+import { Avatar } from '@/components/ui/Avatar'
 import { RequireAuth } from '@/components/creator/RequireAuth'
 import { EmptyState, ErrorState, PageHeader, Skeleton, Tabs } from '@/components/ui/primitives'
 import { VideoGrid } from '@/components/video/VideoGrid'
@@ -76,59 +77,60 @@ function History() {
     groups.set(label, [...(groups.get(label) ?? []), video])
   }
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       <p className="text-sm tabular-nums text-[var(--muted)]">
-        {videos.length} {videos.length === 1 ? 'video' : 'videos'} watched recently, {formatMicro(total)} USDC in total.
+        {videos.length} {videos.length === 1 ? 'video' : 'videos'} watched recently, <span className="font-semibold text-[var(--ink)]">{formatMicro(total)} USDC</span> in total.
       </p>
       {[...groups.entries()].map(([label, items]) => (
         <section key={label} aria-label={label}>
-          <h2 className="mb-2 text-sm font-semibold">{label}</h2>
-          <ul className="space-y-3">
+          <h2 className="mb-1 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--subtle)]">{label}</h2>
+          <ul className="divide-y divide-[var(--border)]">
             {items.map((item) => {
               const partial = item.durationSeconds ? item.positionSecond >= 10 && item.positionSecond < item.durationSeconds - 10 : false
               const progress = item.durationSeconds ? Math.min(100, (item.positionSecond / item.durationSeconds) * 100) : 0
               return (
-                <li key={item.videoId} className="flex gap-3 sm:gap-4">
-                  <Link to={`/watch/${item.videoId}`} className="relative block w-40 shrink-0 overflow-hidden rounded-lg bg-black sm:w-52" aria-label={`Watch ${item.title}`}>
-                    <div className="aspect-video">
-                      <img
-                        src={thumbnailUrl(item.videoId)}
-                        alt=""
-                        loading="lazy"
-                        className="size-full object-cover"
-                        onError={(event) => {
-                          event.currentTarget.style.display = 'none'
-                        }}
-                      />
-                    </div>
+                <li key={item.videoId} className="flex gap-3 py-3 sm:gap-4">
+                  <Link to={`/watch/${item.videoId}`} className="relative block aspect-video w-36 shrink-0 overflow-hidden rounded-lg bg-[#2a2a2a] sm:w-48" aria-label={`Watch ${item.title}`}>
+                    <img
+                      src={thumbnailUrl(item.videoId)}
+                      alt=""
+                      loading="lazy"
+                      className="size-full object-cover"
+                      onError={(event) => {
+                        event.currentTarget.style.display = 'none'
+                      }}
+                    />
                     {item.durationSeconds ? (
-                      <span className="absolute bottom-1.5 right-1.5 rounded bg-black/80 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums">{formatDuration(item.durationSeconds)}</span>
+                      <span className="absolute bottom-1.5 right-1.5 rounded bg-black/75 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums">{formatDuration(item.durationSeconds)}</span>
                     ) : null}
                     {progress > 0 && (
-                      <div className="absolute inset-x-0 bottom-0 h-1 bg-white/25" aria-hidden>
-                        <div className="h-full bg-[var(--accent)]" style={{ width: `${progress}%` }} />
-                      </div>
+                      <span className="absolute inset-x-0 bottom-0 h-1 bg-white/25" aria-hidden>
+                        <span className="block h-full bg-[var(--accent)]" style={{ width: `${progress}%` }} />
+                      </span>
                     )}
                   </Link>
-                  <div className="min-w-0 flex-1 py-0.5">
-                    <Link to={`/watch/${item.videoId}`} className="line-clamp-2 text-pretty font-semibold leading-snug hover:underline">
-                      {item.title}
-                    </Link>
-                    <p className="mt-1 truncate text-sm text-[var(--muted)]">
-                      <Link to={`/profile/${item.creator}`} className="hover:text-[var(--ink)]">
-                        {item.creator}
+                  <div className="flex min-w-0 flex-1 flex-col justify-between gap-1 py-0.5">
+                    <div className="min-w-0">
+                      <Link to={`/watch/${item.videoId}`} className="line-clamp-2 text-pretty font-semibold leading-snug hover:underline">
+                        {item.title}
                       </Link>
-                    </p>
-                    <p className="mt-0.5 text-xs tabular-nums text-[var(--subtle)]">
-                      {timeAgo(item.startedAt)}
-                      {item.sessions > 1 ? ` · ${item.sessions} sessions` : ''}
-                    </p>
-                    <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs tabular-nums">
+                      <p className="mt-1 truncate text-sm text-[var(--muted)]">
+                        <Link to={`/profile/${item.creator}`} className="hover:text-[var(--ink)]">
+                          {item.creator}
+                        </Link>
+                        <span className="text-[var(--subtle)]">
+                          {' '}
+                          · {timeAgo(item.startedAt)}
+                          {item.sessions > 1 ? ` · ${item.sessions} sessions` : ''}
+                        </span>
+                      </p>
+                    </div>
+                    <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm tabular-nums">
                       <span className="font-semibold">
-                        {formatMicro(item.totalMicro)} <span className="font-medium text-[var(--subtle)]">USDC</span>
+                        {formatMicro(item.totalMicro)} <span className="text-xs font-medium text-[var(--subtle)]">USDC</span>
                       </span>
                       {partial && (
-                        <Link to={`/watch/${item.videoId}`} className="font-semibold text-[var(--accent)] hover:underline">
+                        <Link to={`/watch/${item.videoId}`} className="text-xs font-semibold text-[var(--accent)] hover:underline">
                           Resume at {formatDuration(item.positionSecond)}
                         </Link>
                       )}
@@ -165,18 +167,32 @@ function Following() {
   }
   return (
     <div className="space-y-6">
-      <ul className="flex flex-wrap gap-2" aria-label="Creators you follow">
-        {creators.data.creators.map((creator) => (
-          <li key={creator.address}>
-            <Link to={`/profile/${creator.username}`} className="inline-flex min-h-9 items-center gap-2 rounded-full border border-[var(--border)] px-3.5 text-sm font-medium hover:bg-white/10">
-              {creator.displayName ?? creator.username}
-              <span className="text-xs tabular-nums text-[var(--subtle)]">{creator.videos} videos</span>
-            </Link>
-          </li>
-        ))}
-      </ul>
+      <section aria-labelledby="creators" className="space-y-1">
+        <h2 id="creators" className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--subtle)]">
+          Creators you follow
+        </h2>
+        <ul className="divide-y divide-[var(--border)]">
+          {creators.data.creators.map((creator) => {
+            const name = creator.displayName ?? creator.username
+            return (
+              <li key={creator.address}>
+                <Link to={`/profile/${creator.username}`} className="-mx-2 flex min-h-14 items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-white/[0.04]">
+                  <Avatar name={name} size={40} username={creator.username} version={creator.avatarVersion} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-semibold">{name}</span>
+                    <span className="block text-xs text-[var(--subtle)]">@{creator.username}</span>
+                  </span>
+                  <span className="text-xs tabular-nums text-[var(--muted)]">
+                    {creator.videos} {creator.videos === 1 ? 'video' : 'videos'}
+                  </span>
+                </Link>
+              </li>
+            )
+          })}
+        </ul>
+      </section>
       <section aria-labelledby="latest" className="space-y-3">
-        <h2 id="latest" className="text-lg font-semibold">
+        <h2 id="latest" className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--subtle)]">
           Latest from creators you follow
         </h2>
         {feed.data && feed.data.videos.length === 0 ? (
