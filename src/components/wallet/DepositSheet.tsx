@@ -10,10 +10,11 @@ import { AmountError, formatUsdc, parseUsdc } from '@/onchain-money'
 import { useSpendingWallet } from '@/providers/SpendingWalletProvider'
 import { AmountInput } from './AmountInput'
 
-type Step = 'idle' | 'switching' | 'approving' | 'depositing' | 'crediting' | 'done'
+type Step = 'idle' | 'unlocking' | 'switching' | 'approving' | 'depositing' | 'crediting' | 'done'
 
 const STEP_LABEL: Record<Step, string> = {
   idle: 'Add money',
+  unlocking: 'Confirm in your wallet (free)...',
   switching: 'Switch network in your wallet...',
   approving: 'Allow USDC in your wallet...',
   depositing: 'Confirm the deposit in your wallet...',
@@ -33,7 +34,7 @@ export function DepositSheet({ open, onClose }: { open: boolean; onClose: () => 
   const { switchChainAsync } = useSwitchChain()
   const { writeContractAsync } = useWriteContract()
   const publicClient = usePublicClient({ chainId: ARC.chainId })
-  const { spender, balance, refresh } = useSpendingWallet()
+  const { balance, refresh, unlock } = useSpendingWallet()
   const [amount, setAmount] = useState('')
   const [step, setStep] = useState<Step>('idle')
   const [hash, setHash] = useState<string | null>(null)
@@ -57,9 +58,12 @@ export function DepositSheet({ open, onClose }: { open: boolean; onClose: () => 
   const busy = step !== 'idle' && step !== 'done'
 
   const submit = async () => {
-    if (!address || !spender || !publicClient || parsed === null || parsed <= 0n) return
+    if (!address || !publicClient || parsed === null || parsed <= 0n) return
     const before = balance?.available ?? 0n
     try {
+      // Confirm the spending address first, so the money can never go to an address nobody can sign for.
+      setStep('unlocking')
+      const spender = await unlock()
       if (chainId !== ARC.chainId) {
         setStep('switching')
         await switchChainAsync({ chainId: ARC.chainId })

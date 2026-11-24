@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { createGatewayClient } from '@/lib/spending-wallet'
+import { createReadOnlyGatewayClient } from '@/lib/spending-wallet'
 
 /** Reads the Circle Gateway balance held for any address (for example a creator's payout balance). */
 export function useGatewayBalanceOf(address: string | undefined) {
@@ -9,7 +9,7 @@ export function useGatewayBalanceOf(address: string | undefined) {
   useEffect(() => {
     if (!address) return
     let cancelled = false
-    createGatewayClient(address)
+    createReadOnlyGatewayClient()
       .getBalances(address as `0x${string}`)
       .then((result) => {
         if (!cancelled) setState({ available: result.gateway.available, total: result.gateway.total })

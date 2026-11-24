@@ -11,10 +11,11 @@ import { AmountError, formatUsdc, parseUsdc } from '@/onchain-money'
 import { useSpendingWallet } from '@/providers/SpendingWalletProvider'
 import { AmountInput } from './AmountInput'
 
-type Step = 'idle' | 'switching' | 'gas' | 'withdrawing' | 'done'
+type Step = 'idle' | 'unlocking' | 'switching' | 'gas' | 'withdrawing' | 'done'
 
 const STEP_LABEL: Record<Step, string> = {
   idle: 'Move to my wallet',
+  unlocking: 'Confirm in your wallet (free)...',
   switching: 'Switch network in your wallet...',
   gas: 'Confirm the network fee top-up in your wallet...',
   withdrawing: 'Moving your money...',
@@ -30,7 +31,7 @@ export function WithdrawSheet({ open, onClose }: { open: boolean; onClose: () =>
   const { switchChainAsync } = useSwitchChain()
   const { writeContractAsync } = useWriteContract()
   const publicClient = usePublicClient({ chainId: ARC.chainId })
-  const { spender, balance, refresh } = useSpendingWallet()
+  const { balance, refresh, unlock } = useSpendingWallet()
   const [amount, setAmount] = useState('')
   const [step, setStep] = useState<Step>('idle')
   const [hash, setHash] = useState<string | null>(null)
@@ -46,8 +47,10 @@ export function WithdrawSheet({ open, onClose }: { open: boolean; onClose: () =>
   const busy = step !== 'idle' && step !== 'done'
 
   const submit = async () => {
-    if (!address || !spender || !publicClient || parsed === null || parsed <= 0n) return
+    if (!address || !publicClient || parsed === null || parsed <= 0n) return
     try {
+      setStep('unlocking')
+      const spender = await unlock()
       const client = createGatewayClient(address)
       const balances = await client.getBalances()
       if (balances.wallet.balance < GAS_FLOOR) {

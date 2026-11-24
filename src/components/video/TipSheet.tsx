@@ -45,7 +45,7 @@ export function TipSheet({ open, onClose, videoId, creatorName, onAddFunds }: Ti
 function TipForm({ onClose, videoId, creatorName, onAddFunds }: Omit<TipSheetProps, 'open'>) {
   const { address } = useAccount()
   const { user, signIn, signingIn } = useAuth()
-  const { spender, balance, refresh } = useSpendingWallet()
+  const { balance, refresh, unlock } = useSpendingWallet()
   const [amount, setAmount] = useState('1')
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
@@ -63,11 +63,12 @@ function TipForm({ onClose, videoId, creatorName, onAddFunds }: Omit<TipSheetPro
   const afford = micro !== null && micro <= available
 
   const submit = async () => {
-    if (!address || !spender || micro === null || !inRange) return
+    if (!address || micro === null || !inRange) return
     setSending(true)
     setError(null)
     try {
-      await sendTip(videoId, { amountMicro: Number(micro), message: message.trim(), payer: spender }, createPaymentScheme(address))
+      const payer = await unlock()
+      await sendTip(videoId, { amountMicro: Number(micro), message: message.trim(), payer }, createPaymentScheme(address))
       setSent(micro)
       void refresh()
     } catch (caught) {

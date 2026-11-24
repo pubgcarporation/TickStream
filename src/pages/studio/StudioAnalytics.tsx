@@ -132,7 +132,7 @@ function Detail({ row }: { row: Row }) {
   return (
     <Card className="p-5">
       <div className="flex flex-wrap items-center gap-4">
-        <Thumb videoId={row.videoId} className="w-32" />
+        <Thumb videoId={row.videoId} className="w-28 sm:w-32" />
         <div className="min-w-0 flex-1">
           <h2 className="truncate text-base font-semibold">{row.title}</h2>
           <p className="mt-0.5 text-xs tabular-nums text-[var(--muted)]">
@@ -209,7 +209,7 @@ export function StudioAnalytics() {
   if (analyticsQuery.loading && !analytics) {
     return (
       <div className="space-y-5">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {[0, 1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-24" />
           ))}
@@ -265,7 +265,7 @@ export function StudioAnalytics() {
 
   return (
     <div className="space-y-5">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Kpi label="Total earned" value={formatMicro(totalEarned)} unit="USDC" />
         <Kpi label="Views" value={String(totalViews)} hint={`${rows.length} ${rows.length === 1 ? 'video' : 'videos'}`} />
         <Kpi label="Paying viewers" value={String(totalViewers)} hint={`${totalSessions} paid ${totalSessions === 1 ? 'session' : 'sessions'}, counted per video`} />
@@ -279,7 +279,31 @@ export function StudioAnalytics() {
           <h2 className="text-base font-semibold">Your videos</h2>
           <p className="text-xs text-[var(--muted)]">Select a video for its breakdown</p>
         </div>
-        <div className="overflow-x-auto">
+        <ul className="divide-y divide-[var(--border)] border-t border-[var(--border)] md:hidden">
+          {rows.map((row) => {
+            const active = row.videoId === current.videoId
+            return (
+              <li key={row.videoId}>
+                <button
+                  type="button"
+                  onClick={() => setSelected(row.videoId)}
+                  aria-pressed={active}
+                  className={`flex w-full items-center gap-3 px-4 py-3 text-left transition-colors ${active ? 'bg-white/[0.07]' : 'active:bg-white/5'}`}
+                >
+                  <Thumb videoId={row.videoId} className="w-24" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium">{row.title}</span>
+                    <span className="mt-0.5 block text-xs tabular-nums text-[var(--muted)]">
+                      {row.views} views · {row.viewers} paying
+                    </span>
+                    <span className="mt-0.5 block text-xs font-semibold tabular-nums text-[var(--accent)]">{formatMicro(row.earnedMicro)} USDC</span>
+                  </span>
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full min-w-[720px] text-sm">
             <thead className="border-y border-[var(--border)] bg-black/20">
               <tr>

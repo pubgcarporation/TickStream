@@ -16,10 +16,10 @@ import { useSidebar } from './Sidebar'
 /** The live rate while a video plays, otherwise the spending balance. Both are real values. */
 function RatePill() {
   const { user } = useAuth()
-  const { balance } = useSpendingWallet()
+  const { balance, spender } = useSpendingWallet()
   const playing = useActivePlayback()
   if (!user) return null
-  const text = playing ? `$${formatMicro(playing.priceMicro)} / sec` : balance ? `$${formatMicro(balance.available)}` : '...'
+  const text = playing ? `$${formatMicro(playing.priceMicro)} / sec` : balance ? `$${formatMicro(balance.available)}` : spender ? '...' : 'Set up'
   return (
     <Link
       to="/wallet"

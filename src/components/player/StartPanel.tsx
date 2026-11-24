@@ -1,4 +1,6 @@
-import { ChevronDown, Wallet } from 'lucide-react'
+import { ChevronDown, KeyRound, Wallet } from 'lucide-react'
+import { useState } from 'react'
+import { toast } from 'sonner'
 import { CHUNK_SECONDS_OPTIONS } from '@shared/constants'
 import { Button, Card, Segmented } from '@/components/ui/primitives'
 import { WalletConnect } from '@/components/wallet/WalletConnect'
@@ -32,7 +34,8 @@ function watchTime(capMicro: number, priceMicro: number, durationSeconds: number
 
 export function StartPanel({ priceMicro, durationSeconds, previewSeconds, resumeAt, onResumeAt, chunkSeconds, capMicro, onChunk, onCap, onStart, onAddFunds, starting, message }: StartPanelProps) {
   const { user, signIn, signingIn } = useAuth()
-  const { balance, error: balanceError } = useSpendingWallet()
+  const { balance, spender, unlock, error: balanceError } = useSpendingWallet()
+  const [unlocking, setUnlocking] = useState(false)
   const chunkCost = priceMicro * chunkSeconds
   const available = balance?.available ?? 0n
   const affordable = CAP_CHOICES.filter((cap) => cap >= chunkCost && BigInt(cap) <= available)
@@ -134,6 +137,29 @@ export function StartPanel({ priceMicro, durationSeconds, previewSeconds, resume
                 <Button full shape="rect" className="min-h-12" loading={signingIn} onClick={() => void signIn()}>
                   Sign in to watch
                 </Button>
+              )
+            }
+            if (!spender) {
+              return (
+                <div className="space-y-2">
+                  <Button
+                    full
+                    shape="rect"
+                    className="min-h-12"
+                    loading={unlocking}
+                    onClick={() => {
+                      setUnlocking(true)
+                      unlock()
+                        .catch((error: unknown) => toast.error(error instanceof Error ? error.message : 'Could not unlock'))
+                        .finally(() => setUnlocking(false))
+                    }}
+                  >
+                    <KeyRound className="size-4" aria-hidden /> Set up spending wallet
+                  </Button>
+                  <p className="text-pretty text-center text-xs text-[var(--subtle)]">
+                    Your wallet asks for a free signature, twice the first time. It sends no money and costs no gas.
+                  </p>
+                </div>
               )
             }
             if (!hasFunds) {

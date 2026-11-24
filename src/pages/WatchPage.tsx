@@ -1,5 +1,5 @@
 import { HandCoins, Share2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import { useAccount } from 'wagmi'
 import { toast } from 'sonner'
 import { CATEGORIES, DEFAULT_CHUNK_SECONDS } from '@shared/constants'
@@ -25,10 +25,23 @@ import { useAuth } from '@/providers/AuthProvider'
 import { useSpendingWallet } from '@/providers/SpendingWalletProvider'
 
 const DEFAULT_CAP = 1_000_000
+const WIDE = '(min-width: 1280px)'
+
+function useWide(): boolean {
+  return useSyncExternalStore(
+    (notify) => {
+      const query = window.matchMedia(WIDE)
+      query.addEventListener('change', notify)
+      return () => query.removeEventListener('change', notify)
+    },
+    () => window.matchMedia(WIDE).matches,
+    () => false,
+  )
+}
 
 export function WatchPage({ videoId }: { videoId: string }) {
   const { address } = useAccount()
-  const { spender, balance } = useSpendingWallet()
+  const { balance, unlock } = useSpendingWallet()
   const { data, error, loading } = useApi<{ video: VideoSummary; error: string | null }>(`videos/${videoId}`)
   const { user } = useAuth()
   const progress = useApi<{ second: number }>(user ? `videos/${videoId}/progress` : null)
@@ -38,6 +51,7 @@ export function WatchPage({ videoId }: { videoId: string }) {
   const [depositOpen, setDepositOpen] = useState(false)
   const [tipOpen, setTipOpen] = useState(false)
   const shareUrl = useShareLink(`/watch/${videoId}`)
+  const wide = useWide()
 
   const video = data?.video
   const phase = playback.view.phase
@@ -58,8 +72,10 @@ export function WatchPage({ videoId }: { videoId: string }) {
   const capMicro = BigInt(capChoice) <= available ? capChoice : Math.max(Number(available > 5_000_000n ? 5_000_000n : available), 0)
 
   const start = (startSecond = 0, cap = capMicro) => {
-    if (!spender) return
-    void playback.start({ capMicro: cap, chunkSeconds, startSecond }, spender)
+    // The key must be unlocked before the first payment. The wallet may ask for a free signature once.
+    void unlock()
+      .then((payer) => playback.start({ capMicro: cap, chunkSeconds, startSecond }, payer))
+      .catch((error: unknown) => toast.error(error instanceof Error ? error.message : 'Could not unlock your spending wallet'))
   }
 
   if (loading && !video) {
@@ -161,12 +177,17 @@ export function WatchPage({ videoId }: { videoId: string }) {
             onRaiseCap={(cap) => start(Math.floor(view.position), cap)}
           />
         )}
-        <RelatedVideos videoId={video.id} />
+        {wide && <RelatedVideos videoId={video.id} />}
       </aside>
 
       <div className="order-6 xl:order-none xl:col-start-1 xl:row-start-2">
         <CommentsSection videoId={video.id} />
       </div>
+      {!wide && (
+        <div className="order-7">
+          <RelatedVideos videoId={video.id} />
+        </div>
+      )}
       <TipSheet open={tipOpen} onClose={() => setTipOpen(false)} videoId={video.id} creatorName={creatorName} onAddFunds={() => setDepositOpen(true)} />
       <DepositSheet open={depositOpen} onClose={() => setDepositOpen(false)} />
     </div>
