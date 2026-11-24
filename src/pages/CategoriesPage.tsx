@@ -18,7 +18,7 @@ export function CategoriesPage() {
   const { data, error } = useApi<{ counts: Record<string, number> }>('categories')
   return (
     <div className="space-y-4">
-      <PageHeader title="Categories" subtitle="Pick a topic and see what is worth the seconds." />
+      <PageHeader title="Categories" />
       <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {CATEGORIES.map((category, index) => {
           const Icon = ICONS[category.slug] ?? Shapes

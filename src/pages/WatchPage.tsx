@@ -19,6 +19,7 @@ import { VideoDescription } from '@/components/video/VideoDescription'
 import { DepositSheet } from '@/components/wallet/DepositSheet'
 import { useApi } from '@/hooks/useApi'
 import { useShareLink } from '@/hooks/useShareLink'
+import { creatorLabel } from '@/lib/format'
 import { setActivePlayback } from '@/lib/playback-store'
 import { Link } from '@/lib/router'
 import { useAuth } from '@/providers/AuthProvider'
@@ -119,7 +120,7 @@ export function WatchPage({ videoId }: { videoId: string }) {
   }
 
   const category = CATEGORIES.find((c) => c.slug === video.category)?.label ?? 'Other'
-  const creatorName = video.creator.displayName ?? video.creator.username
+  const creatorName = creatorLabel(video.creator)
   const copyLink = async () => {
     if (!shareUrl) return
     await navigator.clipboard.writeText(shareUrl)

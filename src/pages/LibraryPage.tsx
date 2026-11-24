@@ -14,6 +14,8 @@ interface HistoryItem {
   videoId: string
   title: string
   creator: string
+  /** Display name of the creator. Null when they have not set one. */
+  creatorName: string | null
   spentMicro: number
   seconds: number
   startedAt: string
@@ -116,7 +118,7 @@ function History() {
                       </Link>
                       <p className="mt-1 truncate text-sm text-[var(--muted)]">
                         <Link to={`/profile/${item.creator}`} className="hover:text-[var(--ink)]">
-                          {item.creator}
+                          {item.creatorName?.trim() || 'Creator'}
                         </Link>
                         <span className="text-[var(--subtle)]">
                           {' '}
@@ -210,7 +212,7 @@ export function LibraryPage() {
   const tab: 'history' | 'following' = search.get('tab') === 'following' ? 'following' : 'history'
   return (
     <div className="space-y-4">
-      <PageHeader title="Library" subtitle="Your watch history and the creators you follow." />
+      <PageHeader title="Library" />
       <RequireAuth title="Sign in to see your library" body="Your watch history and the creators you follow are tied to your wallet.">
         <div className="space-y-4">
           <Tabs

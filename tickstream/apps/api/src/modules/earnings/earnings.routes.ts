@@ -43,6 +43,7 @@ interface HistoryRow {
   video_id: string
   title: string
   username: string
+  display_name: string | null
   spent_micro: number
   seconds: number
   started_at: Date
@@ -127,7 +128,7 @@ export function registerEarningsRoutes(router: Router): void {
   router.get('/me/history', 'required', async (ctx) => {
     const addr = requireUser(ctx)
     const rows = await query<HistoryRow>(
-      `select s.id, s.video_id, v.title, u.username, s.spent_micro, s.segments_authorized * v.segment_seconds as seconds,
+      `select s.id, s.video_id, v.title, u.username, u.display_name, s.spent_micro, s.segments_authorized * v.segment_seconds as seconds,
          s.started_at, s.status, s.last_position, v.duration_seconds
        from playback_sessions s join videos v on v.id = s.video_id join users u on u.address = v.creator
        where s.viewer = $1 and s.spent_micro > 0 order by s.started_at desc limit 60`,
@@ -139,6 +140,7 @@ export function registerEarningsRoutes(router: Router): void {
         videoId: row.video_id,
         title: row.title,
         creator: row.username,
+        creatorName: row.display_name,
         spentMicro: row.spent_micro,
         seconds: row.seconds,
         startedAt: row.started_at.toISOString(),

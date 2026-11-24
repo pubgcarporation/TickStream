@@ -17,7 +17,6 @@ export function StudioNav() {
     <div className="space-y-4">
       <PageHeader
         title="Studio"
-        subtitle="Set a price per second and get paid as people watch."
         actions={
           path !== '/studio/upload' && (
             <Link

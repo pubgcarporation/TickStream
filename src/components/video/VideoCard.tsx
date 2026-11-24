@@ -1,12 +1,11 @@
 import { Film, MoreVertical, Play } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { CATEGORIES } from '@shared/constants'
 import type { VideoSummary } from '@shared/types'
 import { Avatar } from '@/components/ui/Avatar'
 import { useShareLink } from '@/hooks/useShareLink'
 import { thumbnailUrl } from '@/lib/api'
-import { compactNumber, formatDuration, formatMicro, timeAgo } from '@/lib/format'
+import { creatorLabel, formatDuration, formatMicro, timeAgoLong, viewsLabel } from '@/lib/format'
 import { Link } from '@/lib/router'
 
 export function PriceTag({ priceMicro }: { priceMicro: number }) {
@@ -31,28 +30,37 @@ function CopyLinkButton({ path }: { path: string }) {
       }}
       aria-label="Copy link"
       title="Copy link"
-      className="-mr-2 flex size-8 shrink-0 items-center justify-center rounded-full text-[var(--ink)] opacity-0 transition-opacity hover:bg-white/10 focus-visible:opacity-100 group-hover:opacity-100 disabled:hidden max-lg:size-10 max-lg:opacity-100"
+      className="-mr-2 flex size-10 shrink-0 items-center justify-center rounded-full text-[var(--ink)] opacity-0 transition-opacity hover:bg-white/10 focus-visible:opacity-100 group-hover:opacity-100 disabled:hidden max-lg:opacity-100"
     >
       <MoreVertical className="size-5" aria-hidden />
     </button>
   )
 }
 
+/**
+ * The video card, laid out like a video site's: a 16:9 thumbnail with the length in its corner, then the channel
+ * picture beside the title, the creator's name, and "views, age". The price per second and any free preview sit on
+ * the thumbnail, since that is the one thing here a video site would not have.
+ */
 export function VideoCard({ video, index = 0 }: { video: VideoSummary; index?: number }) {
   const [failed, setFailed] = useState(false)
-  const category = CATEGORIES.find((c) => c.slug === video.category)?.label ?? 'Other'
-  const name = video.creator.displayName ?? video.creator.username
-  const fullCost = video.durationSeconds ? video.priceMicro * video.durationSeconds : null
+  const name = creatorLabel(video.creator)
   return (
     <article className="group rise" style={{ ['--i' as string]: Math.min(index, 8) }}>
       <Link to={`/watch/${video.id}`} className="block max-[559px]:-mx-4" aria-label={`Watch ${video.title}`}>
-        <div className="thumb relative aspect-video overflow-hidden rounded-xl bg-[#272727] ring-1 ring-inset ring-white/5 transition-[border-radius] duration-200 group-hover:rounded-lg max-[559px]:rounded-none">
+        <div className="thumb relative aspect-video overflow-hidden rounded-xl bg-[#2a2a2a] transition-[border-radius] duration-200 max-[559px]:rounded-none">
           {failed ? (
-            <div className="flex size-full flex-col items-center justify-center gap-1 text-xs text-[var(--subtle)]"><Film className="size-6 opacity-60" aria-hidden />No preview</div>
+            <div className="flex size-full flex-col items-center justify-center gap-1 text-xs text-[var(--subtle)]">
+              <Film className="size-6 opacity-60" aria-hidden />
+              No preview
+            </div>
           ) : (
             <img src={thumbnailUrl(video.id)} alt="" loading="lazy" onError={() => setFailed(true)} className="size-full object-cover" />
           )}
-          <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-200 group-hover:bg-black/25 group-hover:opacity-100 max-lg:hidden" aria-hidden>
+          <span
+            className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-200 group-hover:bg-black/25 group-hover:opacity-100 max-lg:hidden"
+            aria-hidden
+          >
             <span className="flex size-12 items-center justify-center rounded-full bg-white/90 shadow-lg shadow-black/40">
               <Play className="size-5 translate-x-0.5 fill-black text-black" />
             </span>
@@ -65,30 +73,25 @@ export function VideoCard({ video, index = 0 }: { video: VideoSummary; index?: n
           <div className="absolute bottom-2 left-2">
             <PriceTag priceMicro={video.priceMicro} />
           </div>
-          <span className="absolute bottom-2 right-2 rounded bg-black/80 px-1.5 py-0.5 text-xs font-semibold tabular-nums">
-            {formatDuration(video.durationSeconds)}
-          </span>
+          {video.durationSeconds ? (
+            <span className="absolute bottom-2 right-2 rounded bg-black/80 px-1.5 py-0.5 text-xs font-medium tabular-nums">{formatDuration(video.durationSeconds)}</span>
+          ) : null}
         </div>
       </Link>
-      <div className="mt-2.5 flex gap-3 sm:mt-3">
+      <div className="mt-3 flex gap-3">
         <Link to={`/profile/${video.creator.username}`} aria-label={`${name}'s profile`} className="shrink-0">
-          <Avatar name={name} size={40} username={video.creator.username} version={video.creator.avatarVersion} />
+          <Avatar name={name} size={36} username={video.creator.username} version={video.creator.avatarVersion} />
         </Link>
         <div className="min-w-0 flex-1">
-          <Link to={`/watch/${video.id}`} className="line-clamp-2 text-pretty text-base font-semibold leading-snug">
+          <Link to={`/watch/${video.id}`} className="line-clamp-2 text-pretty text-base font-medium leading-[22px]">
             {video.title}
           </Link>
           <Link to={`/profile/${video.creator.username}`} className="mt-1 block truncate text-sm text-[var(--muted)] hover:text-[var(--ink)]">
             {name}
           </Link>
           <p className="truncate text-sm tabular-nums text-[var(--muted)]">
-            {compactNumber(video.views)} views · {timeAgo(video.createdAt)}
+            {viewsLabel(video.views)} <span aria-hidden>&bull;</span> {timeAgoLong(video.createdAt)}
           </p>
-          {fullCost !== null && (
-            <p className="truncate text-xs tabular-nums text-[var(--subtle)]">
-              {category} · About ${formatMicro(fullCost)} to watch it all
-            </p>
-          )}
         </div>
         <CopyLinkButton path={`/watch/${video.id}`} />
       </div>

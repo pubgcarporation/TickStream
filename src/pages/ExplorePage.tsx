@@ -68,7 +68,6 @@ export function ExplorePage() {
     <div className="space-y-4">
       <PageHeader
         title="Explore"
-        subtitle={q ? `Results for "${q}"` : 'Every video shows its price per second.'}
         actions={
           <form
             onSubmit={(event) => {

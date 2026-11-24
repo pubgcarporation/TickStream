@@ -141,7 +141,7 @@ function WalletContent() {
 export function WalletPage() {
   return (
     <div className="space-y-4">
-      <PageHeader title="Wallet" subtitle="Add money, see what you spend, and take the rest back." />
+      <PageHeader title="Wallet" />
       <RequireAuth title="Sign in to see your wallet" body="Sign in to add money and see your spending balance.">
         <WalletContent />
       </RequireAuth>

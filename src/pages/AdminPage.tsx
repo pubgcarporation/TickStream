@@ -36,7 +36,7 @@ function Console({ section }: { section: string }) {
 export function AdminPage({ section }: { section: string }) {
   return (
     <div className="space-y-4">
-      <PageHeader title="Admin" subtitle="Takedowns, payments and users." />
+      <PageHeader title="Admin" />
       <RequireAuth title="Sign in to continue" body="Sign in with an administrator account.">
         <Console section={section} />
       </RequireAuth>

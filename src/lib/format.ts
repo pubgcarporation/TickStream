@@ -47,3 +47,31 @@ export function ratePerHour(priceMicro: number): string {
 export function compactNumber(value: number): string {
   return new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(value)
 }
+
+/** The creator's name as shown on cards. Usernames are for addresses and links, so a creator without a display name reads as "Creator". */
+export function creatorLabel(creator: { displayName: string | null }): string {
+  return creator.displayName?.trim() || 'Creator'
+}
+
+/** "1 view", "1.2K views". */
+export function viewsLabel(views: number): string {
+  return `${compactNumber(views)} ${views === 1 ? 'view' : 'views'}`
+}
+
+/** "just now", "5 minutes ago", "3 days ago", "2 months ago": the way video sites write a video's age. */
+export function timeAgoLong(iso: string): string {
+  const seconds = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000))
+  const units: Array<[string, number]> = [
+    ['year', 31_536_000],
+    ['month', 2_592_000],
+    ['week', 604_800],
+    ['day', 86_400],
+    ['hour', 3_600],
+    ['minute', 60],
+  ]
+  for (const [name, size] of units) {
+    const count = Math.floor(seconds / size)
+    if (count >= 1) return `${count} ${name}${count === 1 ? '' : 's'} ago`
+  }
+  return 'just now'
+}

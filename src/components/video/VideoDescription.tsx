@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { compactNumber, timeAgo } from '@/lib/format'
+import { timeAgoLong, viewsLabel } from '@/lib/format'
 
 /** Views, age, category and description. Long descriptions fold until expanded. */
 export function VideoDescription({ views, createdAt, category, description }: { views: number; createdAt: string; category: string; description: string }) {
@@ -9,11 +9,11 @@ export function VideoDescription({ views, createdAt, category, description }: { 
   return (
     <div className="border-t border-[var(--border)] pt-3 text-sm">
       <p className="flex flex-wrap items-center gap-x-2 gap-y-1 font-semibold tabular-nums">
-        <span>{compactNumber(views)} views</span>
+        <span>{viewsLabel(views)}</span>
         <span className="text-[var(--subtle)]" aria-hidden>
-          ·
+          &bull;
         </span>
-        <span>{timeAgo(createdAt)}</span>
+        <span>{timeAgoLong(createdAt)}</span>
         <span className="ml-1 rounded-md bg-white/10 px-2 py-0.5 text-xs font-medium text-[var(--ink-2)]">{category}</span>
       </p>
       {description ? (
