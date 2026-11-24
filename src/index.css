@@ -127,6 +127,73 @@ a {
   }
 }
 
+/* Video scrubber: a thin track that thickens on hover, filled up to --pct. */
+.scrubber {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 16px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.scrubber::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--accent) var(--pct, 0%), rgba(255, 255, 255, 0.3) var(--pct, 0%));
+  transition: height 0.15s var(--ease-out);
+}
+
+.scrubber::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.scrubber::-moz-range-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.scrubber:hover::-webkit-slider-runnable-track {
+  height: 6px;
+}
+
+.scrubber::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 0;
+  height: 0;
+  margin-top: 2px;
+  border-radius: 999px;
+  background: #fff;
+  transition: all 0.15s var(--ease-out);
+}
+
+.scrubber:hover::-webkit-slider-thumb,
+.scrubber:focus-visible::-webkit-slider-thumb {
+  width: 14px;
+  height: 14px;
+  margin-top: -4px;
+}
+
+.scrubber::-moz-range-thumb {
+  width: 0;
+  height: 0;
+  border: 0;
+  background: #fff;
+}
+
+.scrubber:hover::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+}
+
+.scrubber:focus-visible {
+  outline: none;
+}
+
 .skip-link {
   position: fixed;
   left: 12px;

@@ -1,4 +1,4 @@
-import { Link2 } from 'lucide-react'
+import { Share2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useAccount } from 'wagmi'
 import { toast } from 'sonner'
@@ -14,10 +14,10 @@ import { usePaidPlayback } from '@/components/player/usePaidPlayback'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button, EmptyState, Skeleton } from '@/components/ui/primitives'
 import { RelatedVideos } from '@/components/video/RelatedVideos'
+import { VideoDescription } from '@/components/video/VideoDescription'
 import { DepositSheet } from '@/components/wallet/DepositSheet'
 import { useApi } from '@/hooks/useApi'
 import { useShareLink } from '@/hooks/useShareLink'
-import { compactNumber, timeAgo } from '@/lib/format'
 import { setActivePlayback } from '@/lib/playback-store'
 import { Link } from '@/lib/router'
 import { useAuth } from '@/providers/AuthProvider'
@@ -83,6 +83,7 @@ export function WatchPage({ videoId }: { videoId: string }) {
   }
 
   const category = CATEGORIES.find((c) => c.slug === video.category)?.label ?? 'Other'
+  const creatorName = video.creator.displayName ?? video.creator.username
   const copyLink = async () => {
     if (!shareUrl) return
     await navigator.clipboard.writeText(shareUrl)
@@ -90,8 +91,8 @@ export function WatchPage({ videoId }: { videoId: string }) {
   }
 
   return (
-    <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
-      <div className="space-y-4">
+    <div className="grid items-start gap-x-6 gap-y-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="space-y-4 xl:col-start-1 xl:row-start-1">
         <PlayerSurface
           videoId={video.id}
           videoRef={playback.videoRef}
@@ -102,34 +103,21 @@ export function WatchPage({ videoId }: { videoId: string }) {
           onToggle={playback.togglePlay}
           onSeek={(second) => void playback.seek(second)}
         />
-        <div className="space-y-3">
-          <h1 className="text-balance text-lg font-semibold leading-snug sm:text-xl">{video.title}</h1>
-          <div className="flex flex-wrap items-center gap-3">
-            <Link to={`/profile/${video.creator.username}`} aria-label={`${video.creator.displayName ?? video.creator.username}'s profile`}>
-              <Avatar name={video.creator.displayName ?? video.creator.username} size={40} />
-            </Link>
-            <div className="min-w-0">
-              <Link to={`/profile/${video.creator.username}`} className="block truncate font-semibold hover:underline">
-                {video.creator.displayName ?? video.creator.username}
-              </Link>
-              <p className="text-xs text-[var(--subtle)]">{category}</p>
-            </div>
-            <FollowButton username={video.creator.username} creatorAddress={video.creator.address} />
-            <Button variant="secondary" onClick={() => void copyLink()} disabled={!shareUrl} className="ml-auto min-h-10 rounded-full px-4">
-              <Link2 className="size-4" aria-hidden /> Copy link
-            </Button>
-          </div>
-          <div className="text-sm">
-            <p className="font-semibold tabular-nums">
-              {compactNumber(video.views)} views · {timeAgo(video.createdAt)}
-            </p>
-            {video.description && <p className="mt-1.5 max-w-3xl whitespace-pre-wrap text-pretty text-[var(--ink-2)]">{video.description}</p>}
-          </div>
+        <h1 className="text-balance text-xl font-semibold leading-snug">{video.title}</h1>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+          <Link to={`/profile/${video.creator.username}`} className="flex min-w-0 items-center gap-3" aria-label={`${creatorName}'s profile`}>
+            <Avatar name={creatorName} size={40} />
+            <span className="min-w-0 truncate font-semibold hover:underline">{creatorName}</span>
+          </Link>
+          <FollowButton username={video.creator.username} creatorAddress={video.creator.address} />
+          <Button variant="secondary" shape="rect" onClick={() => void copyLink()} disabled={!shareUrl} className="ml-auto">
+            <Share2 className="size-4" aria-hidden /> Share
+          </Button>
         </div>
-        <CommentsSection videoId={video.id} />
+        <VideoDescription views={video.views} createdAt={video.createdAt} category={category} description={video.description} />
       </div>
 
-      <aside className="space-y-5 xl:sticky xl:top-20" aria-label="Payment">
+      <aside className="space-y-6 xl:sticky xl:top-20 xl:col-start-2 xl:row-span-2 xl:row-start-1" aria-label="Payment">
         {idle ? (
           <StartPanel
             priceMicro={video.priceMicro}
@@ -160,6 +148,10 @@ export function WatchPage({ videoId }: { videoId: string }) {
         )}
         <RelatedVideos videoId={video.id} />
       </aside>
+
+      <div className="xl:col-start-1 xl:row-start-2">
+        <CommentsSection videoId={video.id} />
+      </div>
       <DepositSheet open={depositOpen} onClose={() => setDepositOpen(false)} />
     </div>
   )

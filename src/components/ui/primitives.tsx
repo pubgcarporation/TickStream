@@ -9,6 +9,8 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant
   loading?: boolean
   full?: boolean
+  /** Pill is the default. Rect gives the squarer, denser look used on watch and studio screens. */
+  shape?: 'pill' | 'rect'
 }
 
 const VARIANTS: Record<Variant, string> = {
@@ -18,13 +20,14 @@ const VARIANTS: Record<Variant, string> = {
   danger: 'bg-[var(--danger)]/15 text-[var(--danger)] hover:bg-[var(--danger)]/25',
 }
 
-export function Button({ variant = 'primary', loading, full, className, children, disabled, ...rest }: ButtonProps) {
+export function Button({ variant = 'primary', shape = 'pill', loading, full, className, children, disabled, ...rest }: ButtonProps) {
   return (
     <button
       {...rest}
       disabled={disabled || loading}
       className={clsx(
-        'inline-flex min-h-10 items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold transition-all',
+        'inline-flex min-h-10 items-center justify-center gap-2 px-4 text-sm font-semibold transition-all',
+        shape === 'pill' ? 'rounded-full' : 'rounded-lg',
         'active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40',
         VARIANTS[variant],
         full && 'w-full',
@@ -39,6 +42,48 @@ export function Button({ variant = 'primary', loading, full, className, children
 
 export function Panel({ className, children }: { className?: string; children: ReactNode }) {
   return <section className={clsx('rise border-b border-[var(--border)] pb-6 last:border-b-0 last:pb-0', className)}>{children}</section>
+}
+
+/** A bordered surface for grouped content such as the payment panel and analytics blocks. */
+export function Card({ className, children }: { className?: string; children: ReactNode }) {
+  return <section className={clsx('rise rounded-xl border border-[var(--border)] bg-[var(--surface)]', className)}>{children}</section>
+}
+
+/** One choice out of a few, shown as connected segments. Reads better than a row of loose chips. */
+export function Segmented<T extends string | number>({
+  value,
+  options,
+  onChange,
+  label,
+}: {
+  value: T
+  options: Array<{ value: T; label: string; disabled?: boolean }>
+  onChange: (value: T) => void
+  label: string
+}) {
+  return (
+    <div role="radiogroup" aria-label={label} className="grid auto-cols-fr grid-flow-col gap-1 rounded-lg bg-[var(--surface-muted)] p-1">
+      {options.map((option) => {
+        const active = option.value === value
+        return (
+          <button
+            key={option.value}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            disabled={option.disabled}
+            onClick={() => onChange(option.value)}
+            className={clsx(
+              'min-h-9 rounded-md px-2 text-sm font-medium tabular-nums transition-colors disabled:cursor-not-allowed disabled:opacity-35',
+              active ? 'bg-[#3d3d3d] text-[var(--ink)] shadow-sm' : 'text-[var(--muted)] hover:text-[var(--ink)]',
+            )}
+          >
+            {option.label}
+          </button>
+        )
+      })}
+    </div>
+  )
 }
 
 export function Chip({

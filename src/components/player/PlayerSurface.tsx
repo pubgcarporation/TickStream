@@ -1,5 +1,5 @@
 import { Loader2, Maximize2, Pause, Play, Volume2, VolumeX } from 'lucide-react'
-import { useRef, useState, type KeyboardEvent, type RefObject } from 'react'
+import { useRef, useState, type CSSProperties, type KeyboardEvent, type RefObject } from 'react'
 import { AnimatedAmount } from '@/components/ui/AnimatedAmount'
 import { thumbnailUrl } from '@/lib/api'
 import { formatDuration } from '@/lib/format'
@@ -87,10 +87,11 @@ export function PlayerSurface({ videoId, videoRef, view, viewer, durationSeconds
             </div>
           ) : (
             view.phase === 'idle' && (
-              <div className="absolute inset-0 flex items-center justify-center" aria-hidden>
-                <span className="flex size-16 items-center justify-center rounded-full bg-white/15 backdrop-blur ring-1 ring-white/25">
-                  <Play className="size-7 translate-x-0.5 fill-white text-white" />
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3" aria-hidden>
+                <span className="flex size-16 items-center justify-center rounded-full bg-white/90 shadow-lg shadow-black/40">
+                  <Play className="size-7 translate-x-0.5 fill-black text-black" />
                 </span>
+                <span className="rounded-md bg-black/60 px-3 py-1 text-xs font-medium text-white/90 backdrop-blur">Start a session to watch</span>
               </div>
             )
           )}
@@ -99,12 +100,12 @@ export function PlayerSurface({ videoId, videoRef, view, viewer, durationSeconds
       {active && viewer && view.session && <Watermark address={viewer} sessionId={view.session.id} />}
 
       {active && (
-        <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-2 rounded-full bg-black/60 px-3 py-1.5 backdrop-blur" aria-live="off">
+        <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-2 rounded-md bg-black/65 px-2.5 py-1.5 backdrop-blur" aria-live="off">
           <span className={`size-1.5 rounded-full ${metering ? 'bg-[var(--success)]' : 'bg-[var(--subtle)]'}`} aria-hidden />
-          <span className="mono text-[11px] tabular-nums text-white">
+          <span className="mono text-xs tabular-nums text-white">
             $<AnimatedAmount micro={costMicro} />
           </span>
-          {view.paying && <span className="mono text-[10px] text-[var(--accent)]">paying</span>}
+          {view.paying && <span className="text-[10px] font-medium uppercase tracking-wider text-[var(--accent)]">Paying</span>}
         </div>
       )}
 
@@ -114,20 +115,25 @@ export function PlayerSurface({ videoId, videoRef, view, viewer, durationSeconds
         </div>
       )}
       {view.phase === 'playing' && view.paused && (
-        <button onClick={onToggle} aria-label="Play" className="absolute inset-0 flex items-center justify-center">
-          <span className="flex size-16 items-center justify-center rounded-full bg-white/15 backdrop-blur ring-1 ring-white/25 transition-transform hover:scale-105">
-            <Play className="size-7 translate-x-0.5 fill-white text-white" />
+        <button onClick={onToggle} aria-label="Play" className="absolute inset-0 flex items-center justify-center bg-black/25">
+          <span className="flex size-16 items-center justify-center rounded-full bg-white/90 shadow-lg shadow-black/40 transition-transform hover:scale-105">
+            <Play className="size-7 translate-x-0.5 fill-black text-black" />
           </span>
         </button>
       )}
 
       {active && (
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent px-4 pb-3 pt-12 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
+        <div
+          className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent px-3 pb-2 pt-12 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 ${
+            view.paused ? 'opacity-100' : 'opacity-100 sm:opacity-0'
+          }`}
+        >
           <input
             type="range"
             min={0}
             max={Math.max(1, Math.floor(durationSeconds))}
             step={1}
+            style={{ '--pct': `${Math.min(100, (shown / Math.max(1, durationSeconds)) * 100)}%` } as CSSProperties}
             value={Math.floor(shown)}
             onChange={(event) => setScrub(Number(event.target.value))}
             onPointerUp={() => {
@@ -139,14 +145,14 @@ export function PlayerSurface({ videoId, videoRef, view, viewer, durationSeconds
               setScrub(null)
             }}
             aria-label="Seek"
-            className="h-1.5 w-full cursor-pointer accent-[var(--accent)]"
+            className="scrubber"
           />
-          <div className="mt-2 flex items-center gap-3 text-white">
+          <div className="mt-1 flex items-center gap-1 text-white">
             <button onClick={onToggle} aria-label={view.paused ? 'Play' : 'Pause'} className="flex size-11 items-center justify-center rounded-full hover:bg-white/15">
               {view.paused ? <Play className="size-5" /> : <Pause className="size-5" />}
             </button>
-            <span className="mono text-xs tabular-nums">
-              {formatDuration(shown)} / {formatDuration(durationSeconds)}
+            <span className="ml-1 text-xs font-medium tabular-nums">
+              {formatDuration(shown)} <span className="text-white/60">/ {formatDuration(durationSeconds)}</span>
             </span>
             <button
               onClick={() => setMuted((value) => !value)}

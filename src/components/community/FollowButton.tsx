@@ -35,7 +35,7 @@ export function FollowButton({ username, creatorAddress }: { username: string; c
 
   const following = data?.following ?? false
   return (
-    <Button variant={following ? 'secondary' : 'primary'} onClick={() => void toggle()} loading={busy} className="min-h-10 px-4">
+    <Button variant={following ? 'secondary' : 'primary'} shape="rect" onClick={() => void toggle()} loading={busy} className="min-h-10">
       {following ? <Check className="size-4" aria-hidden /> : <UserPlus className="size-4" aria-hidden />}
       {following ? 'Following' : 'Follow'}
       {data && <span className="tabular-nums opacity-70">· {data.followers}</span>}

@@ -1,6 +1,6 @@
 import { Wallet } from 'lucide-react'
 import { CHUNK_SECONDS_OPTIONS } from '@shared/constants'
-import { Button, Chip, Panel } from '@/components/ui/primitives'
+import { Button, Card, Segmented } from '@/components/ui/primitives'
 import { WalletConnect } from '@/components/wallet/WalletConnect'
 import { formatDuration, formatMicro, ratePerHour, ratePerMinute } from '@/lib/format'
 import { useAuth } from '@/providers/AuthProvider'
@@ -24,6 +24,15 @@ interface StartPanelProps {
   message: string | null
 }
 
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-4 py-2.5 text-sm">
+      <dt className="text-[var(--muted)]">{label}</dt>
+      <dd className="text-right font-medium tabular-nums">{value}</dd>
+    </div>
+  )
+}
+
 export function StartPanel({ priceMicro, durationSeconds, previewSeconds, resumeAt, onResumeAt, chunkSeconds, capMicro, onChunk, onCap, onStart, onAddFunds, starting, message }: StartPanelProps) {
   const { user, signIn, signingIn } = useAuth()
   const { balance, error: balanceError } = useSpendingWallet()
@@ -34,98 +43,115 @@ export function StartPanel({ priceMicro, durationSeconds, previewSeconds, resume
   const capOk = capMicro >= chunkCost && BigInt(capMicro) <= available
 
   return (
-    <Panel className="space-y-4 border-b-0">
-      <div>
-        <p className="text-xs font-medium text-[var(--subtle)]">Price</p>
-        <p className="mt-1 text-3xl font-semibold tabular-nums">
+    <Card className="overflow-hidden">
+      <div className="space-y-1 p-5 pb-4">
+        <p className="text-xs font-medium uppercase tracking-wider text-[var(--subtle)]">Pay per second</p>
+        <p className="text-3xl font-semibold tabular-nums">
           ${formatMicro(priceMicro)}
-          <span className="ml-1 text-lg font-medium text-[var(--subtle)]">/ second</span>
+          <span className="ml-1.5 text-base font-medium text-[var(--subtle)]">/ sec</span>
         </p>
-        <p className="mt-1 text-xs tabular-nums text-[var(--muted)]">
-          {ratePerMinute(priceMicro)} a minute, {ratePerHour(priceMicro)} an hour. Pausing stops the meter.
+        <p className="text-xs tabular-nums text-[var(--muted)]">
+          ${ratePerMinute(priceMicro)} per minute · ${ratePerHour(priceMicro)} per hour
         </p>
-        {durationSeconds ? (
-          <p className="mt-1 text-xs tabular-nums text-[var(--muted)]">
-            About <span className="font-semibold text-[var(--ink)]">${formatMicro(priceMicro * durationSeconds)}</span> to watch all {formatDuration(durationSeconds)}.
-          </p>
-        ) : null}
-        {previewSeconds > 0 && (
-          <p className="mt-2 text-xs font-semibold text-[var(--success)]">
-            First {previewSeconds} seconds are free
-          </p>
-        )}
       </div>
 
-      <div>
-        <p className="mb-1.5 text-xs font-medium text-[var(--muted)]">Spending cap for this session</p>
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Spending cap">
-          {CAP_CHOICES.map((cap) => (
-            <Chip key={cap} active={capMicro === cap} disabled={!affordable.includes(cap)} onClick={() => onCap(cap)}>
-              {formatMicro(cap)}
-            </Chip>
-          ))}
+      <dl className="divide-y divide-[var(--border)] border-y border-[var(--border)] px-5">
+        {durationSeconds ? <Row label={`Full video (${formatDuration(durationSeconds)})`} value={`$${formatMicro(priceMicro * durationSeconds)}`} /> : null}
+        {previewSeconds > 0 && <Row label="Free preview" value={`First ${previewSeconds}s`} />}
+        <Row label="Pausing" value="Stops charging" />
+      </dl>
+
+      <div className="space-y-5 p-5">
+        <div>
+          <div className="mb-2 flex items-baseline justify-between">
+            <p className="text-sm font-medium">Spending limit</p>
+            <p className="text-xs text-[var(--subtle)]">USDC, this session</p>
+          </div>
+          <Segmented
+            label="Spending limit"
+            value={capMicro}
+            onChange={onCap}
+            options={CAP_CHOICES.map((cap) => ({ value: cap, label: formatMicro(cap), disabled: !affordable.includes(cap) }))}
+          />
         </div>
-      </div>
 
-      <div>
-        <p className="mb-1.5 text-xs font-medium text-[var(--muted)]">Pay every</p>
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Payment interval">
-          {CHUNK_SECONDS_OPTIONS.map((seconds) => (
-            <Chip key={seconds} active={chunkSeconds === seconds} onClick={() => onChunk(seconds)}>
-              {seconds}s
-            </Chip>
-          ))}
+        <div>
+          <div className="mb-2 flex items-baseline justify-between">
+            <p className="text-sm font-medium">Payment interval</p>
+            <p className="text-xs text-[var(--subtle)]">${formatMicro(chunkCost)} each</p>
+          </div>
+          <Segmented
+            label="Payment interval"
+            value={chunkSeconds}
+            onChange={onChunk}
+            options={CHUNK_SECONDS_OPTIONS.map((seconds) => ({ value: seconds, label: `${seconds}s` }))}
+          />
+          <p className="mt-2 text-pretty text-xs text-[var(--subtle)]">
+            You pay ahead one interval at a time, so this is the most you can be charged for video you have not watched.
+          </p>
         </div>
-        <p className="mt-2 text-xs tabular-nums text-[var(--subtle)]">
-          Each payment is {formatMicro(chunkCost)} USDC. That is the most you can be charged for video you have not watched.
-        </p>
-      </div>
 
-      {message && <p className="text-pretty text-sm text-[var(--warn)]">{message}</p>}
-      {balanceError && <p className="text-xs text-[var(--danger)]">Could not read your spending balance: {balanceError}</p>}
+        {message && <p className="text-pretty rounded-lg bg-[var(--warn)]/10 px-3 py-2 text-sm text-[var(--warn)]">{message}</p>}
+        {balanceError && <p className="text-xs text-[var(--danger)]">Could not read your spending balance: {balanceError}</p>}
 
-      <WalletConnect>
-        {({ isConnected, show }) => {
-          if (!isConnected) {
-            return (
-              <Button full onClick={show}>
-                <Wallet className="size-4" aria-hidden /> Sign in to watch
-              </Button>
-            )
-          }
-          if (!user) {
-            return (
-              <Button full loading={signingIn} onClick={() => void signIn()}>
-                Sign in to watch
-              </Button>
-            )
-          }
-          if (!hasFunds) {
-            return (
-              <Button full onClick={onAddFunds}>
-                Add money to start
-              </Button>
-            )
-          }
-          return (
-            <div className="space-y-2">
-              {resumeAt > 0 && (
-                <Button full loading={starting} disabled={!capOk} onClick={() => onResumeAt(resumeAt)}>
-                  Resume at {formatDuration(resumeAt)}
+        <WalletConnect>
+          {({ isConnected, show }) => {
+            if (!isConnected) {
+              return (
+                <Button full shape="rect" className="min-h-12" onClick={show}>
+                  <Wallet className="size-4" aria-hidden /> Connect wallet
                 </Button>
-              )}
-              <Button full variant={resumeAt > 0 ? 'secondary' : 'primary'} loading={starting && resumeAt === 0} disabled={!capOk} onClick={onStart}>
-                {resumeAt > 0 ? 'Start from the beginning' : 'Start watching'}
-              </Button>
-            </div>
-          )
-        }}
-      </WalletConnect>
+              )
+            }
+            if (!user) {
+              return (
+                <Button full shape="rect" className="min-h-12" loading={signingIn} onClick={() => void signIn()}>
+                  Sign in to watch
+                </Button>
+              )
+            }
+            if (!hasFunds) {
+              return (
+                <Button full shape="rect" className="min-h-12" onClick={onAddFunds}>
+                  Add money to start
+                </Button>
+              )
+            }
+            return (
+              <div className="space-y-2">
+                {resumeAt > 0 && (
+                  <Button full shape="rect" className="min-h-12" loading={starting} disabled={!capOk} onClick={() => onResumeAt(resumeAt)}>
+                    Resume at {formatDuration(resumeAt)}
+                  </Button>
+                )}
+                <Button
+                  full
+                  shape="rect"
+                  className="min-h-12"
+                  variant={resumeAt > 0 ? 'secondary' : 'primary'}
+                  loading={starting && resumeAt === 0}
+                  disabled={!capOk}
+                  onClick={onStart}
+                >
+                  {resumeAt > 0 ? 'Start from the beginning' : 'Start watching'}
+                </Button>
+              </div>
+            )
+          }}
+        </WalletConnect>
+      </div>
+
       {balance && (
-        <p className="text-center text-xs tabular-nums text-[var(--subtle)]">
-          Spending balance {formatMicro(balance.available)} USDC
-        </p>
+        <div className="flex items-center justify-between border-t border-[var(--border)] bg-black/20 px-5 py-3 text-sm">
+          <span className="text-[var(--muted)]">Spending balance</span>
+          <span className="flex items-center gap-3">
+            <span className="font-medium tabular-nums">{formatMicro(balance.available)} USDC</span>
+            <button type="button" onClick={onAddFunds} className="text-xs font-semibold text-[var(--accent)] hover:underline">
+              Add funds
+            </button>
+          </span>
+        </div>
       )}
-    </Panel>
+    </Card>
   )
 }
