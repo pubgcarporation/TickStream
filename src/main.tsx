@@ -20,7 +20,7 @@ createRoot(document.getElementById('root')!).render(
         theme="dark"
         duration={3500}
         visibleToasts={3}
-        closeButton
+        swipeDirections={['left', 'right']}
         toastOptions={{
           style: {
             background: '#212121',
