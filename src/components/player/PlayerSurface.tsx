@@ -16,10 +16,15 @@ interface PlayerSurfaceProps {
   costMicro: number
   onToggle: () => void
   onSeek: (second: number) => void
+  /** Starts the session from the poster. Shown only when it can run right away. */
+  onStart?: () => void
+  /** Shown on the player when the balance runs out. */
+  onAddFunds?: () => void
+  onRetry?: () => void
   className?: string
 }
 
-export function PlayerSurface({ videoId, videoRef, view, viewer, durationSeconds, costMicro, onToggle, onSeek, className }: PlayerSurfaceProps) {
+export function PlayerSurface({ videoId, videoRef, view, viewer, durationSeconds, costMicro, onToggle, onSeek, onStart, onAddFunds, onRetry, className }: PlayerSurfaceProps) {
   const frame = useRef<HTMLDivElement | null>(null)
   const [muted, setMuted] = useState(false)
   const [scrub, setScrub] = useState<number | null>(null)
@@ -88,12 +93,20 @@ export function PlayerSurface({ videoId, videoRef, view, viewer, durationSeconds
             </div>
           ) : (
             view.phase === 'idle' && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3" aria-hidden>
-                <span className="flex size-16 items-center justify-center rounded-full bg-white/90 shadow-lg shadow-black/40">
+              <button
+                type="button"
+                onClick={onStart}
+                disabled={!onStart}
+                aria-label={onStart ? 'Start watching' : 'Start a session below to watch'}
+                className="absolute inset-0 flex flex-col items-center justify-center gap-3 disabled:cursor-default"
+              >
+                <span className="flex size-16 items-center justify-center rounded-full bg-white/90 shadow-lg shadow-black/40 transition-transform enabled:group-hover:scale-105">
                   <Play className="size-7 translate-x-0.5 fill-black text-black" />
                 </span>
-                <span className="rounded-md bg-black/60 px-3 py-1 text-xs font-medium text-white/90 backdrop-blur">Start a session to watch</span>
-              </div>
+                <span className="rounded-md bg-black/60 px-3 py-1 text-xs font-medium text-white/90 backdrop-blur">
+                  {onStart ? 'Start watching' : 'Start a session below to watch'}
+                </span>
+              </button>
             )
           )}
         </div>
@@ -110,6 +123,25 @@ export function PlayerSurface({ videoId, videoRef, view, viewer, durationSeconds
         </div>
       )}
 
+      {(view.phase === 'needs-funds' || view.phase === 'capped') && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/70 px-6 text-center backdrop-blur-sm">
+          <p className="max-w-sm text-pretty text-sm font-medium text-white">
+            {view.phase === 'capped' ? 'Your spending balance for this session is used up.' : 'Your spending balance is too low to keep going.'}
+          </p>
+          <div className="flex gap-2">
+            {onAddFunds && (
+              <button type="button" onClick={onAddFunds} className="min-h-10 rounded-lg bg-white px-4 text-sm font-semibold text-black hover:bg-white/90">
+                Add money
+              </button>
+            )}
+            {onRetry && (
+              <button type="button" onClick={onRetry} className="min-h-10 rounded-lg bg-white/15 px-4 text-sm font-semibold text-white hover:bg-white/25">
+                {view.phase === 'capped' ? 'Continue' : 'Retry'}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
       {view.phase === 'playing' && buffering && !view.paused && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <Loader2 className="size-10 animate-spin text-white/80" aria-label="Buffering" />

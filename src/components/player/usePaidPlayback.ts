@@ -136,7 +136,7 @@ export function usePaidPlayback(videoId: string, owner: string | undefined) {
   const classify = useCallback(
     (error: unknown) => {
       if (error instanceof ApiError && error.code === 'cap_reached') {
-        stopPlayback('capped', 'You reached the spending cap you set for this session.')
+        stopPlayback('capped', 'You have used the spending balance this session started with. Add money, then continue.')
       } else if (isFundsError(error)) {
         stopPlayback('needs-funds', 'Your spending balance is too low for the next payment. Add funds to continue.')
       } else if (error instanceof ApiError && error.status === 410) {

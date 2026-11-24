@@ -24,7 +24,8 @@ import { Link } from '@/lib/router'
 import { useAuth } from '@/providers/AuthProvider'
 import { useSpendingWallet } from '@/providers/SpendingWalletProvider'
 
-const DEFAULT_CAP = 1_000_000
+// The server accepts a session limit of up to 100 USDC. The viewer's spending balance is the real limit.
+const MAX_SESSION_MICRO = 100_000_000n
 const WIDE = '(min-width: 1280px)'
 
 function useWide(): boolean {
@@ -41,12 +42,11 @@ function useWide(): boolean {
 
 export function WatchPage({ videoId }: { videoId: string }) {
   const { address } = useAccount()
-  const { balance, unlock } = useSpendingWallet()
+  const { balance, spender, unlock } = useSpendingWallet()
   const { data, error, loading } = useApi<{ video: VideoSummary; error: string | null }>(`videos/${videoId}`)
   const { user } = useAuth()
   const progress = useApi<{ second: number }>(user ? `videos/${videoId}/progress` : null)
   const playback = usePaidPlayback(videoId, address)
-  const [capChoice, setCapChoice] = useState(DEFAULT_CAP)
   const [chunkSeconds, setChunkSeconds] = useState<number>(DEFAULT_CHUNK_SECONDS)
   const [depositOpen, setDepositOpen] = useState(false)
   const [tipOpen, setTipOpen] = useState(false)
@@ -67,9 +67,9 @@ export function WatchPage({ videoId }: { videoId: string }) {
   const { view } = playback
   const idle = view.phase === 'idle' || view.phase === 'starting' || !view.session
 
-  // Never pick a cap the viewer cannot cover.
+  // A session can spend at most what the viewer has in their spending balance.
   const available = balance?.available ?? 0n
-  const capMicro = BigInt(capChoice) <= available ? capChoice : Math.max(Number(available > 5_000_000n ? 5_000_000n : available), 0)
+  const capMicro = Number(available > MAX_SESSION_MICRO ? MAX_SESSION_MICRO : available)
 
   const start = (startSecond = 0, cap = capMicro) => {
     // The key must be unlocked before the first payment. The wallet may ask for a free signature once.
@@ -78,11 +78,19 @@ export function WatchPage({ videoId }: { videoId: string }) {
       .catch((error: unknown) => toast.error(error instanceof Error ? error.message : 'Could not unlock your spending wallet'))
   }
 
+  // The poster's play button starts right away only when nothing else is needed first.
+  const canStartNow = Boolean(user && spender && balance && video && balance.available >= BigInt(video.priceMicro * chunkSeconds))
+  const showPayment = () => document.getElementById('payment')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+
   if (loading && !video) {
     return (
-      <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
-        <Skeleton className="aspect-video rounded-2xl" />
-        <Skeleton className="h-96 rounded-2xl" />
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="space-y-4">
+          <Skeleton className="aspect-video rounded-xl max-sm:-mx-4 max-sm:rounded-none" />
+          <Skeleton className="h-14 w-full rounded-lg" />
+          <Skeleton className="h-7 w-2/3 rounded-md" />
+        </div>
+        <Skeleton className="hidden h-96 rounded-xl xl:block" />
       </div>
     )
   }
@@ -123,9 +131,39 @@ export function WatchPage({ videoId }: { videoId: string }) {
             costMicro={billedMicro(view, video.priceMicro)}
             onToggle={playback.togglePlay}
             onSeek={(second) => void playback.seek(second)}
+            onStart={canStartNow ? () => start() : showPayment}
+            onAddFunds={() => setDepositOpen(true)}
+            onRetry={() => (view.phase === 'capped' ? start(Math.floor(view.position)) : void playback.resume())}
           />
         </div>
-        <h1 className="order-2 text-balance text-lg font-semibold leading-snug sm:text-xl">{video.title}</h1>
+        <div className="order-2">
+        {idle ? (
+          <StartPanel
+            priceMicro={video.priceMicro}
+            durationSeconds={video.durationSeconds}
+            previewSeconds={video.previewSeconds}
+            resumeAt={resumeAt}
+            onResumeAt={(second) => start(second)}
+            chunkSeconds={chunkSeconds}
+            onChunk={setChunkSeconds}
+            onStart={() => start()}
+            onAddFunds={() => setDepositOpen(true)}
+            starting={view.phase === 'starting'}
+            message={view.message}
+          />
+        ) : (
+          <CostMeter
+            view={view}
+            priceMicro={video.priceMicro}
+            onToggle={playback.togglePlay}
+            onEnd={() => void playback.end()}
+            onAddFunds={() => setDepositOpen(true)}
+            onResume={() => void playback.resume()}
+            onContinue={() => start(Math.floor(view.position))}
+          />
+        )}
+        </div>
+        <h1 className="order-3 text-balance text-lg font-semibold leading-snug sm:text-xl">{video.title}</h1>
         <div className="order-4 flex flex-wrap items-center gap-x-4 gap-y-3">
           <Link to={`/profile/${video.creator.username}`} className="flex min-w-0 flex-1 items-center gap-3 sm:flex-none" aria-label={`${creatorName}'s profile`}>
             <Avatar name={creatorName} size={40} />
@@ -148,35 +186,7 @@ export function WatchPage({ videoId }: { videoId: string }) {
         </div>
       </div>
 
-      <aside className="order-3 space-y-6 xl:sticky xl:top-20 xl:order-none xl:col-start-2 xl:row-span-2 xl:row-start-1" aria-label="Payment">
-        {idle ? (
-          <StartPanel
-            priceMicro={video.priceMicro}
-            durationSeconds={video.durationSeconds}
-            previewSeconds={video.previewSeconds}
-            resumeAt={resumeAt}
-            onResumeAt={(second) => start(second)}
-            chunkSeconds={chunkSeconds}
-            capMicro={capMicro}
-            onChunk={setChunkSeconds}
-            onCap={setCapChoice}
-            onStart={() => start()}
-            onAddFunds={() => setDepositOpen(true)}
-            starting={view.phase === 'starting'}
-            message={view.message}
-          />
-        ) : (
-          <CostMeter
-            view={view}
-            priceMicro={video.priceMicro}
-            availableMicro={balance ? balance.available : null}
-            onToggle={playback.togglePlay}
-            onEnd={() => void playback.end()}
-            onAddFunds={() => setDepositOpen(true)}
-            onResume={() => void playback.resume()}
-            onRaiseCap={(cap) => start(Math.floor(view.position), cap)}
-          />
-        )}
+      <aside className="hidden xl:sticky xl:top-20 xl:block xl:col-start-2 xl:row-span-2 xl:row-start-1" aria-label="Related videos">
         {wide && <RelatedVideos videoId={video.id} />}
       </aside>
 

@@ -1,6 +1,6 @@
 import { Pause, Play, Square } from 'lucide-react'
 import { AnimatedAmount } from '@/components/ui/AnimatedAmount'
-import { Button, Card } from '@/components/ui/primitives'
+import { Button } from '@/components/ui/primitives'
 import { formatDuration, formatMicro } from '@/lib/format'
 import { billedMicro } from './billing'
 import { TimelineStrip } from './TimelineStrip'
@@ -13,27 +13,26 @@ interface CostMeterProps {
   onEnd: () => void
   onAddFunds: () => void
   onResume: () => void
-  onRaiseCap: (capMicro: number) => void
-  availableMicro: bigint | null
+  onContinue: () => void
 }
 
-const CAP_STEPS = [250_000, 1_000_000, 5_000_000]
-
-export function CostMeter({ view, priceMicro, onToggle, onEnd, onAddFunds, onResume, onRaiseCap, availableMicro }: CostMeterProps) {
+export function CostMeter({ view, priceMicro, onToggle, onEnd, onAddFunds, onResume, onContinue }: CostMeterProps) {
   const session = view.session
   if (!session) return null
   // The free preview is never billed, so only time past it counts toward the cost.
   const cost = billedMicro(view, priceMicro)
   const prepaid = Math.max(0, session.spentMicro - cost)
-  const capUsed = Math.min(1, session.spentMicro / session.capMicro)
   const live = view.phase === 'playing' && !view.paused
   const statusLabel = live ? 'Charging' : view.phase === 'playing' ? 'Paused' : view.phase === 'ended' ? 'Ended' : 'Stopped'
 
   return (
-    <Card className="overflow-hidden">
-      <div className="p-5 pb-4">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-medium uppercase tracking-wider text-[var(--subtle)]">Cost so far</span>
+    <section id="payment" aria-label="Payment" className="scroll-mt-32 border-y border-[var(--border)] py-3">
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+        <div className="flex items-center gap-3">
+          <p className="text-2xl font-semibold tabular-nums">
+            <AnimatedAmount micro={cost} />
+            <span className="ml-1.5 text-sm font-medium text-[var(--subtle)]">USDC</span>
+          </p>
           <span
             className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium ${
               live ? 'bg-[var(--success)]/12 text-[var(--success)]' : 'bg-white/5 text-[var(--muted)]'
@@ -43,94 +42,60 @@ export function CostMeter({ view, priceMicro, onToggle, onEnd, onAddFunds, onRes
             {statusLabel}
           </span>
         </div>
-        <p className="mt-2 text-4xl font-semibold tabular-nums">
-          <AnimatedAmount micro={cost} />
-          <span className="ml-2 text-base font-medium text-[var(--subtle)]">USDC</span>
-        </p>
-        <p className="mt-1 text-xs tabular-nums text-[var(--muted)]">
-          {formatDuration(view.playedSeconds)} watched at ${formatMicro(priceMicro)} per second
-        </p>
-        <div className="mt-4">
-          <TimelineStrip view={view} />
-        </div>
-      </div>
 
-      <dl className="divide-y divide-[var(--border)] border-t border-[var(--border)] px-5 text-sm">
-        <div className="flex justify-between py-2.5">
-          <dt className="text-[var(--muted)]">Paid ahead</dt>
-          <dd className="font-medium tabular-nums">{formatMicro(prepaid)}</dd>
-        </div>
-        <div className="flex justify-between py-2.5">
-          <dt className="text-[var(--muted)]">Paid in total</dt>
-          <dd className="font-medium tabular-nums">{formatMicro(session.spentMicro)}</dd>
-        </div>
-        <div className="py-2.5">
-          <div className="flex justify-between">
-            <dt className="text-[var(--muted)]">Spending limit</dt>
-            <dd className="font-medium tabular-nums">{formatMicro(session.capMicro)}</dd>
+        <dl className="flex flex-wrap gap-x-5 gap-y-1 text-xs tabular-nums">
+          <div>
+            <dt className="text-[var(--subtle)]">Watched</dt>
+            <dd className="text-sm font-medium">{formatDuration(view.playedSeconds)} at ${formatMicro(priceMicro)}/s</dd>
           </div>
-          <div
-            className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10"
-            role="progressbar"
-            aria-valuenow={Math.round(capUsed * 100)}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label="Spending limit used"
-          >
-            <div
-              className={`h-full rounded-full ${capUsed > 0.85 ? 'bg-[var(--warn)]' : 'bg-[var(--accent)]'}`}
-              style={{ width: `${capUsed * 100}%`, transition: 'width 0.4s' }}
-            />
+          <div>
+            <dt className="text-[var(--subtle)]">Paid ahead</dt>
+            <dd className="text-sm font-medium">{formatMicro(prepaid)}</dd>
           </div>
-        </div>
-      </dl>
+          <div>
+            <dt className="text-[var(--subtle)]">Paid in total</dt>
+            <dd className="text-sm font-medium">{formatMicro(session.spentMicro)}</dd>
+          </div>
+        </dl>
 
-      <div className="space-y-3 p-5 pt-4 empty:hidden">
-        {view.phase === 'needs-funds' && (
-          <>
-            <p className="text-pretty rounded-lg bg-[var(--warn)]/10 px-3 py-2 text-sm text-[var(--warn)]">{view.message}</p>
-            <div className="flex gap-2">
-              <Button shape="rect" onClick={onAddFunds} className="min-h-11 flex-1">
-                Add money
-              </Button>
-              <Button shape="rect" variant="secondary" onClick={onResume} className="min-h-11">
-                Retry
-              </Button>
-            </div>
-          </>
-        )}
-        {view.phase === 'capped' && (
-          <>
-            <p className="text-pretty rounded-lg bg-[var(--warn)]/10 px-3 py-2 text-sm text-[var(--warn)]">{view.message}</p>
-            <div className="flex flex-wrap gap-2">
-              {CAP_STEPS.filter((step) => step > session.capMicro && (availableMicro === null || BigInt(step) <= availableMicro)).map((step) => (
-                <Button key={step} shape="rect" variant="secondary" onClick={() => onRaiseCap(step)} className="min-h-10 flex-1 px-4">
-                  Raise to {formatMicro(step)}
-                </Button>
-              ))}
-            </div>
-          </>
-        )}
-        {(view.phase === 'ended' || view.phase === 'error') && view.message && (
-          <>
-            <p className={`text-pretty text-sm ${view.phase === 'error' ? 'text-[var(--danger)]' : 'text-[var(--muted)]'}`}>{view.message}</p>
-            <Button full shape="rect" onClick={onEnd} className="min-h-11">
-              Watch again
-            </Button>
-          </>
-        )}
         {view.phase === 'playing' && (
-          <div className="grid grid-cols-2 gap-2">
-            <Button shape="rect" variant="secondary" onClick={onToggle} className="min-h-11">
+          <div className="flex w-full gap-2 sm:ml-auto sm:w-auto">
+            <Button shape="rect" variant="secondary" onClick={onToggle} className="min-h-10 flex-1 sm:flex-none">
               {view.paused ? <Play className="size-4" aria-hidden /> : <Pause className="size-4" aria-hidden />}
               {view.paused ? 'Resume' : 'Pause'}
             </Button>
-            <Button shape="rect" variant="secondary" onClick={onEnd} className="min-h-11">
-              <Square className="size-4" aria-hidden /> End session
+            <Button shape="rect" variant="secondary" onClick={onEnd} className="min-h-10 flex-1 sm:flex-none">
+              <Square className="size-4" aria-hidden /> End
             </Button>
           </div>
         )}
       </div>
-    </Card>
+
+      <div className="mt-3">
+        <TimelineStrip view={view} />
+      </div>
+
+      {(view.phase === 'needs-funds' || view.phase === 'capped') && (
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+          <p className="min-w-0 flex-1 text-pretty text-sm text-[var(--warn)]">{view.message}</p>
+          <div className="flex w-full gap-2 sm:w-auto">
+            <Button shape="rect" onClick={onAddFunds} className="min-h-10 flex-1 sm:flex-none">
+              Add money
+            </Button>
+            <Button shape="rect" variant="secondary" onClick={view.phase === 'capped' ? onContinue : onResume} className="min-h-10 flex-1 sm:flex-none">
+              {view.phase === 'capped' ? 'Continue' : 'Retry'}
+            </Button>
+          </div>
+        </div>
+      )}
+      {(view.phase === 'ended' || view.phase === 'error') && view.message && (
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+          <p className={`min-w-0 flex-1 text-pretty text-sm ${view.phase === 'error' ? 'text-[var(--danger)]' : 'text-[var(--muted)]'}`}>{view.message}</p>
+          <Button shape="rect" onClick={onEnd} className="min-h-10 w-full sm:w-auto">
+            Watch again
+          </Button>
+        </div>
+      )}
+    </section>
   )
 }
