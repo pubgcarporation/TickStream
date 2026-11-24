@@ -42,15 +42,15 @@ function AccountArea() {
           return (
             <button
               onClick={show}
-              className="flex min-h-10 items-center gap-2 rounded-full border border-[var(--border)] px-4 text-sm font-semibold text-[var(--accent)] transition-colors hover:bg-[var(--accent)]/10"
+              className="flex min-h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-[var(--border)] px-3 text-sm font-semibold text-[var(--accent)] transition-colors hover:bg-[var(--accent)]/10 sm:px-4"
             >
-              <UserCircle className="size-5" aria-hidden /> Sign in
+              <UserCircle className="hidden size-5 sm:block" aria-hidden /> Sign in
             </button>
           )
         }
         if (!user) {
           return (
-            <Button onClick={() => void signIn()} loading={signingIn} className="min-h-10 rounded-full">
+            <Button onClick={() => void signIn()} loading={signingIn} className="min-h-10 shrink-0 whitespace-nowrap rounded-full px-4">
               Sign in
             </Button>
           )
@@ -84,7 +84,7 @@ export function Header() {
 
   return (
     <header className="fixed inset-x-0 top-0 z-40 flex h-14 items-center gap-1 bg-[var(--bg)] px-2 sm:gap-4 sm:px-4">
-      <div className="flex items-center gap-1 sm:gap-3">
+      <div className="flex shrink-0 items-center gap-1 sm:gap-3">
         <button onClick={toggle} aria-label="Toggle menu" className="flex size-11 items-center justify-center rounded-full hover:bg-white/10">
           <Menu className="size-6" />
         </button>
@@ -115,7 +115,7 @@ export function Header() {
         </button>
       </form>
 
-      <div className="ml-auto flex items-center gap-1.5 sm:ml-0 sm:gap-3">
+      <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:ml-0 sm:gap-3">
         <Link to="/explore" aria-label="Search" className="flex size-11 items-center justify-center rounded-full hover:bg-white/10 sm:hidden">
           <Search className="size-5" />
         </Link>
