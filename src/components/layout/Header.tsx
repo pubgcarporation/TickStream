@@ -57,7 +57,7 @@ function AccountArea() {
         }
         return (
           <button onClick={show} aria-label="Account" className="rounded-full transition-opacity hover:opacity-85">
-            <Avatar name={user.displayName ?? user.username} size={36} accent />
+            <Avatar name={user.displayName ?? user.username} size={36} accent username={user.username} version={user.avatarVersion} />
           </button>
         )
       }}

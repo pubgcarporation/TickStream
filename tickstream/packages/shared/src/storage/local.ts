@@ -8,6 +8,7 @@ const CONTENT_TYPES: Record<string, string> = {
   '.ts': 'video/mp2t',
   '.jpg': 'image/jpeg',
   '.png': 'image/png',
+  '.webp': 'image/webp',
   '.mp4': 'video/mp4',
   '.json': 'application/json',
 }

@@ -3,6 +3,7 @@ import { RequireAuth } from '@/components/creator/RequireAuth'
 import { Chip, EmptyState, Skeleton } from '@/components/ui/primitives'
 import { VideoGrid } from '@/components/video/VideoGrid'
 import { useApi } from '@/hooks/useApi'
+import { thumbnailUrl } from '@/lib/api'
 import { formatDuration, formatMicro, timeAgo } from '@/lib/format'
 import { Link, navigate, useLocation } from '@/lib/router'
 
@@ -16,6 +17,36 @@ interface HistoryItem {
   startedAt: string
   positionSecond: number
   durationSeconds: number | null
+}
+
+interface WatchedVideo extends HistoryItem {
+  /** What every session on this video cost together. */
+  totalMicro: number
+  sessions: number
+}
+
+/** One entry per video, newest first, with what all its sessions cost in total. */
+function byVideo(history: HistoryItem[]): WatchedVideo[] {
+  const seen = new Map<string, WatchedVideo>()
+  for (const item of history) {
+    const existing = seen.get(item.videoId)
+    if (existing) {
+      existing.totalMicro += item.spentMicro
+      existing.sessions += 1
+    } else {
+      seen.set(item.videoId, { ...item, totalMicro: item.spentMicro, sessions: 1 })
+    }
+  }
+  return [...seen.values()]
+}
+
+function dayLabel(iso: string): string {
+  const day = new Date(iso)
+  const start = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
+  const diff = Math.round((start(new Date()) - start(day)) / 86_400_000)
+  if (diff <= 0) return 'Today'
+  if (diff === 1) return 'Yesterday'
+  return day.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })
 }
 
 function History() {
@@ -34,34 +65,78 @@ function History() {
       />
     )
   }
+  const videos = byVideo(data.history)
   const total = data.history.reduce((sum, item) => sum + item.spentMicro, 0)
+  const groups = new Map<string, WatchedVideo[]>()
+  for (const video of videos) {
+    const label = dayLabel(video.startedAt)
+    groups.set(label, [...(groups.get(label) ?? []), video])
+  }
   return (
-    <div className="space-y-2">
+    <div className="space-y-6">
       <p className="text-sm tabular-nums text-[var(--muted)]">
-        {data.history.length} recent sessions, {formatMicro(total)} USDC in total.
+        {videos.length} {videos.length === 1 ? 'video' : 'videos'} watched recently, {formatMicro(total)} USDC in total.
       </p>
-      <ul className="divide-y divide-[var(--border)]">
-        {data.history.map((item) => (
-          <li key={item.id} className="flex items-center gap-4 py-3">
-            <div className="min-w-0 flex-1">
-              <Link to={`/watch/${item.videoId}`} className="block truncate font-semibold hover:underline">
-                {item.title}
-              </Link>
-              <p className="mt-1 text-xs tabular-nums text-[var(--subtle)]">
-                {item.creator} · {formatDuration(item.seconds)} paid for · {timeAgo(item.startedAt)}
-              </p>
-            </div>
-            {item.durationSeconds && item.positionSecond >= 10 && item.positionSecond < item.durationSeconds - 10 && (
-              <Link to={`/watch/${item.videoId}`} className="hidden text-xs font-semibold text-[var(--accent)] hover:underline sm:inline-block">
-                Resume at {formatDuration(item.positionSecond)}
-              </Link>
-            )}
-            <span className="font-semibold tabular-nums">
-              {formatMicro(item.spentMicro)} <span className="text-xs font-medium text-[var(--subtle)]">USDC</span>
-            </span>
-          </li>
-        ))}
-      </ul>
+      {[...groups.entries()].map(([label, items]) => (
+        <section key={label} aria-label={label}>
+          <h2 className="mb-2 text-sm font-semibold">{label}</h2>
+          <ul className="space-y-3">
+            {items.map((item) => {
+              const partial = item.durationSeconds ? item.positionSecond >= 10 && item.positionSecond < item.durationSeconds - 10 : false
+              const progress = item.durationSeconds ? Math.min(100, (item.positionSecond / item.durationSeconds) * 100) : 0
+              return (
+                <li key={item.videoId} className="flex gap-3 sm:gap-4">
+                  <Link to={`/watch/${item.videoId}`} className="relative block w-40 shrink-0 overflow-hidden rounded-lg bg-black sm:w-52" aria-label={`Watch ${item.title}`}>
+                    <div className="aspect-video">
+                      <img
+                        src={thumbnailUrl(item.videoId)}
+                        alt=""
+                        loading="lazy"
+                        className="size-full object-cover"
+                        onError={(event) => {
+                          event.currentTarget.style.display = 'none'
+                        }}
+                      />
+                    </div>
+                    {item.durationSeconds ? (
+                      <span className="absolute bottom-1.5 right-1.5 rounded bg-black/80 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums">{formatDuration(item.durationSeconds)}</span>
+                    ) : null}
+                    {progress > 0 && (
+                      <div className="absolute inset-x-0 bottom-0 h-1 bg-white/25" aria-hidden>
+                        <div className="h-full bg-[var(--accent)]" style={{ width: `${progress}%` }} />
+                      </div>
+                    )}
+                  </Link>
+                  <div className="min-w-0 flex-1 py-0.5">
+                    <Link to={`/watch/${item.videoId}`} className="line-clamp-2 text-pretty font-semibold leading-snug hover:underline">
+                      {item.title}
+                    </Link>
+                    <p className="mt-1 truncate text-sm text-[var(--muted)]">
+                      <Link to={`/profile/${item.creator}`} className="hover:text-[var(--ink)]">
+                        {item.creator}
+                      </Link>
+                    </p>
+                    <p className="mt-0.5 text-xs tabular-nums text-[var(--subtle)]">
+                      {timeAgo(item.startedAt)}
+                      {item.sessions > 1 ? ` · ${item.sessions} sessions` : ''}
+                    </p>
+                    <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs tabular-nums">
+                      <span className="font-semibold">
+                        {formatMicro(item.totalMicro)} <span className="font-medium text-[var(--subtle)]">USDC</span>
+                      </span>
+                      {partial && (
+                        <Link to={`/watch/${item.videoId}`} className="font-semibold text-[var(--accent)] hover:underline">
+                          Resume at {formatDuration(item.positionSecond)}
+                        </Link>
+                      )}
+                    </p>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+        </section>
+      ))}
     </div>
   )
 }

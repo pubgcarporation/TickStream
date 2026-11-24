@@ -25,4 +25,5 @@ export const storageKeys = {
   source: (videoId: string) => `sources/${videoId}/original`,
   segment: (videoId: string, name: string) => `videos/${videoId}/${name}`,
   thumbnail: (videoId: string) => `videos/${videoId}/thumbnail.jpg`,
+  avatar: (address: string, extension: 'jpg' | 'png' | 'webp') => `avatars/${address.toLowerCase()}.${extension}`,
 }

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { ProfilePicture } from '@/components/creator/ProfilePicture'
 import { Button, Panel, inputClass } from '@/components/ui/primitives'
 import { api } from '@/lib/api'
 import { useAuth } from '@/providers/AuthProvider'
@@ -26,6 +27,7 @@ export function StudioSettings() {
 
   return (
     <Panel className="max-w-xl space-y-4">
+      <ProfilePicture />
       <div>
         <label htmlFor="username" className="mb-1.5 block text-sm font-medium">
           Username

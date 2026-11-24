@@ -1,5 +1,6 @@
 import type { UserProfile, VideoSummary } from '@shared/types'
 import { FollowButton } from '@/components/community/FollowButton'
+import { Avatar } from '@/components/ui/Avatar'
 import { EmptyState, Skeleton } from '@/components/ui/primitives'
 import { VideoGrid } from '@/components/video/VideoGrid'
 import { useApi } from '@/hooks/useApi'
@@ -13,9 +14,7 @@ export function ProfilePage({ username }: { username: string }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <div className="display flex size-16 items-center justify-center rounded-full bg-[var(--accent)] text-2xl font-bold text-[var(--accent-ink)]" aria-hidden>
-          {(user.displayName ?? user.username).slice(0, 1).toUpperCase()}
-        </div>
+        <Avatar name={user.displayName ?? user.username} size={72} accent username={user.username} version={user.avatarVersion} />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-4">
             <h1 className="text-2xl font-bold">{user.displayName ?? user.username}</h1>

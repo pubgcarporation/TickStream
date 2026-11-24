@@ -79,6 +79,17 @@ export async function api<T>(path: string, options: Options = {}): Promise<T> {
   return (await response.json()) as T
 }
 
+export function avatarUrl(username: string, version: number): string {
+  // The version in the address means a changed picture is a new address, so browsers can keep each one for good.
+  return apiUrl(`users/${encodeURIComponent(username)}/avatar?v=${version}`)
+}
+
+/** Sends a profile picture (already cropped and shrunk by the page). */
+export async function putAvatar(picture: Blob): Promise<void> {
+  const response = await fetch(apiUrl('users/me/avatar'), { method: 'PUT', headers: { ...authHeaders(), 'Content-Type': picture.type }, body: picture })
+  if (!response.ok) throw await parseError(response)
+}
+
 export function thumbnailUrl(videoId: string): string {
   return apiUrl(`videos/${videoId}/thumbnail`)
 }

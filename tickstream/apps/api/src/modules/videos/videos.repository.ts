@@ -22,9 +22,10 @@ export interface VideoRow {
   created_at: Date
   username: string
   display_name: string | null
+  avatar_updated_at: Date | null
 }
 
-const SELECT = `select v.*, u.username, u.display_name from videos v join users u on u.address = v.creator`
+const SELECT = `select v.*, u.username, u.display_name, u.avatar_updated_at from videos v join users u on u.address = v.creator`
 
 export function mapVideo(row: VideoRow): VideoSummary {
   return {
@@ -38,7 +39,12 @@ export function mapVideo(row: VideoRow): VideoSummary {
     status: row.status,
     views: row.views,
     createdAt: row.created_at.toISOString(),
-    creator: { address: row.creator, username: row.username, displayName: row.display_name },
+    creator: {
+      address: row.creator,
+      username: row.username,
+      displayName: row.display_name,
+      avatarVersion: row.avatar_updated_at ? Math.floor(row.avatar_updated_at.getTime() / 1000) : null,
+    },
   }
 }
 

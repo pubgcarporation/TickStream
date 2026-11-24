@@ -14,11 +14,12 @@ interface CommentRow {
   author: string
   username: string
   display_name: string | null
+  avatar_updated_at: Date | null
   video_creator: string
 }
 
 const SELECT = `
-  select c.id, c.body, c.created_at, to_char(c.created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as cursor, c.author, u.username, u.display_name, v.creator as video_creator
+  select c.id, c.body, c.created_at, to_char(c.created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as cursor, c.author, u.username, u.display_name, u.avatar_updated_at, v.creator as video_creator
   from comments c
   join users u on u.address = c.author
   join videos v on v.id = c.video_id`
@@ -28,7 +29,12 @@ function mapComment(row: CommentRow, viewer: string | undefined): CommentItem {
     id: row.id,
     body: row.body,
     createdAt: row.created_at.toISOString(),
-    author: { address: row.author, username: row.username, displayName: row.display_name },
+    author: {
+      address: row.author,
+      username: row.username,
+      displayName: row.display_name,
+      avatarVersion: row.avatar_updated_at ? Math.floor(row.avatar_updated_at.getTime() / 1000) : null,
+    },
     canRemove: Boolean(viewer) && (viewer === row.author || viewer === row.video_creator || isAdmin(viewer)),
   }
 }

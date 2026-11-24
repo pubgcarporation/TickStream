@@ -67,7 +67,7 @@ export function VideoCard({ video, index = 0 }: { video: VideoSummary; index?: n
       </Link>
       <div className="mt-2.5 flex gap-3 sm:mt-3">
         <Link to={`/profile/${video.creator.username}`} aria-label={`${name}'s profile`} className="shrink-0">
-          <Avatar name={name} size={40} />
+          <Avatar name={name} size={40} username={video.creator.username} version={video.creator.avatarVersion} />
         </Link>
         <div className="min-w-0 flex-1">
           <Link to={`/watch/${video.id}`} className="line-clamp-2 text-pretty text-base font-semibold leading-snug">

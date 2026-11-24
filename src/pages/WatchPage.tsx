@@ -165,7 +165,7 @@ export function WatchPage({ videoId }: { videoId: string }) {
         <h1 className="order-3 text-balance text-lg font-semibold leading-snug sm:text-xl">{video.title}</h1>
         <div className="order-4 flex flex-wrap items-center gap-x-4 gap-y-3">
           <Link to={`/profile/${video.creator.username}`} className="flex min-w-0 flex-1 items-center gap-3 sm:flex-none" aria-label={`${creatorName}'s profile`}>
-            <Avatar name={creatorName} size={40} />
+            <Avatar name={creatorName} size={40} username={video.creator.username} version={video.creator.avatarVersion} />
             <span className="min-w-0 truncate font-semibold hover:underline">{creatorName}</span>
           </Link>
           <FollowButton username={video.creator.username} creatorAddress={video.creator.address} />

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { COMMENT_MAX_LENGTH } from '@shared/constants'
 import type { CommentItem } from '@shared/types'
+import { Avatar } from '@/components/ui/Avatar'
 import { Button, inputClass } from '@/components/ui/primitives'
 import { api } from '@/lib/api'
 import { timeAgo } from '@/lib/format'
@@ -108,9 +109,7 @@ export function CommentsSection({ videoId }: { videoId: string }) {
         <ul className="space-y-4">
           {comments.map((comment) => (
             <li key={comment.id} className="flex gap-3">
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-sm font-semibold" aria-hidden>
-                {(comment.author.displayName ?? comment.author.username).slice(0, 1).toUpperCase()}
-              </div>
+              <Avatar name={comment.author.displayName ?? comment.author.username} size={36} username={comment.author.username} version={comment.author.avatarVersion} />
               <div className="min-w-0 flex-1">
                 <p className="text-xs text-[var(--subtle)]">
                   <Link to={`/profile/${comment.author.username}`} className="font-semibold text-[var(--ink)] hover:underline">

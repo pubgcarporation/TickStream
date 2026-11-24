@@ -17,7 +17,7 @@ export interface VideoSummary {
   status: VideoStatus
   views: number
   createdAt: string
-  creator: { address: string; username: string; displayName: string | null }
+  creator: { address: string; username: string; displayName: string | null; avatarVersion: number | null }
 }
 
 export interface UserProfile {
@@ -25,6 +25,8 @@ export interface UserProfile {
   username: string
   displayName: string | null
   bio: string | null
+  /** Changes whenever the profile picture changes. Null when there is none. */
+  avatarVersion: number | null
   createdAt: string
 }
 
@@ -81,7 +83,7 @@ export interface CommentItem {
   id: string
   body: string
   createdAt: string
-  author: { address: string; username: string; displayName: string | null }
+  author: { address: string; username: string; displayName: string | null; avatarVersion: number | null }
   canRemove: boolean
 }
 
