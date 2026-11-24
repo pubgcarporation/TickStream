@@ -27,6 +27,19 @@
   box-sizing: border-box;
 }
 
+/* Phones: 16px fields stop iOS from zooming the page on focus, and text never inflates after a rotation. */
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+@media (max-width: 639px) {
+  input:not([type='range']):not([type='checkbox']):not([type='radio']),
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
 html {
   color-scheme: dark;
   scroll-behavior: smooth;
@@ -34,6 +47,7 @@ html {
 
 body {
   margin: 0;
+  overflow-x: clip;
   min-height: 100dvh;
   background: var(--bg);
   background-image: var(--bg-gradient);

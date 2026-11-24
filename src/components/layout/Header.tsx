@@ -24,11 +24,11 @@ function RatePill() {
     <Link
       to="/wallet"
       title={playing ? 'Price per second of the video you are watching' : 'Spending balance'}
-      className="hidden min-h-10 items-center gap-2 rounded-full border border-[var(--border)] bg-[#181818] px-3 text-sm font-semibold tabular-nums transition-colors hover:bg-[#272727] md:flex"
+      className="flex min-h-10 items-center gap-1.5 rounded-full border border-[var(--border)] bg-[#181818] px-2.5 text-xs font-semibold tabular-nums transition-colors hover:bg-[#272727] md:gap-2 md:px-3 md:text-sm"
     >
-      <TokenUSDC variant="branded" size={22} aria-hidden />
+      <TokenUSDC variant="branded" size={20} aria-hidden />
       {text}
-      <ChevronDown className="size-4 text-[var(--accent)]" aria-hidden />
+      <ChevronDown className="hidden size-4 text-[var(--accent)] md:block" aria-hidden />
     </Link>
   )
 }
@@ -83,13 +83,13 @@ export function Header() {
   }, [])
 
   return (
-    <header className="fixed inset-x-0 top-0 z-40 flex h-14 items-center gap-2 bg-[var(--bg)] px-3 sm:gap-4 sm:px-4">
+    <header className="fixed inset-x-0 top-0 z-40 flex h-14 items-center gap-1 bg-[var(--bg)] px-2 sm:gap-4 sm:px-4">
       <div className="flex items-center gap-1 sm:gap-3">
         <button onClick={toggle} aria-label="Toggle menu" className="flex size-11 items-center justify-center rounded-full hover:bg-white/10">
           <Menu className="size-6" />
         </button>
         <Link to="/" aria-label="TickStream home">
-          <Wordmark />
+          <Wordmark compact />
         </Link>
       </div>
 
@@ -115,7 +115,7 @@ export function Header() {
         </button>
       </form>
 
-      <div className="ml-auto flex items-center gap-2 sm:ml-0 sm:gap-3">
+      <div className="ml-auto flex items-center gap-1.5 sm:ml-0 sm:gap-3">
         <Link to="/explore" aria-label="Search" className="flex size-11 items-center justify-center rounded-full hover:bg-white/10 sm:hidden">
           <Search className="size-5" />
         </Link>

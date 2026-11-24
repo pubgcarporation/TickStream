@@ -166,7 +166,7 @@ export function Sheet({
         >
           <div className="absolute inset-0 bg-black/55 backdrop-blur-sm" />
           <motion.section
-            className="relative w-full max-w-md rounded-t-2xl border border-[var(--border)] p-5 sm:rounded-xl"
+            className="relative max-h-[92dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-2xl border border-[var(--border)] p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:rounded-xl"
             style={{ background: '#212121' }}
             initial={{ y: 40, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}

@@ -1,4 +1,4 @@
-import { Wallet } from 'lucide-react'
+import { ChevronDown, Wallet } from 'lucide-react'
 import { CHUNK_SECONDS_OPTIONS } from '@shared/constants'
 import { Button, Card, Segmented } from '@/components/ui/primitives'
 import { WalletConnect } from '@/components/wallet/WalletConnect'
@@ -24,13 +24,10 @@ interface StartPanelProps {
   message: string | null
 }
 
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-baseline justify-between gap-4 py-2.5 text-sm">
-      <dt className="text-[var(--muted)]">{label}</dt>
-      <dd className="text-right font-medium tabular-nums">{value}</dd>
-    </div>
-  )
+function watchTime(capMicro: number, priceMicro: number, durationSeconds: number | null): string {
+  const seconds = Math.floor(capMicro / Math.max(1, priceMicro))
+  if (durationSeconds && seconds >= durationSeconds) return 'Whole video'
+  return `About ${formatDuration(seconds)}`
 }
 
 export function StartPanel({ priceMicro, durationSeconds, previewSeconds, resumeAt, onResumeAt, chunkSeconds, capMicro, onChunk, onCap, onStart, onAddFunds, starting, message }: StartPanelProps) {
@@ -44,52 +41,81 @@ export function StartPanel({ priceMicro, durationSeconds, previewSeconds, resume
 
   return (
     <Card className="overflow-hidden">
-      <div className="space-y-1 p-5 pb-4">
-        <p className="text-xs font-medium uppercase tracking-wider text-[var(--subtle)]">Pay per second</p>
-        <p className="text-3xl font-semibold tabular-nums">
-          ${formatMicro(priceMicro)}
-          <span className="ml-1.5 text-base font-medium text-[var(--subtle)]">/ sec</span>
-        </p>
-        <p className="text-xs tabular-nums text-[var(--muted)]">
-          ${ratePerMinute(priceMicro)} per minute · ${ratePerHour(priceMicro)} per hour
-        </p>
-      </div>
-
-      <dl className="divide-y divide-[var(--border)] border-y border-[var(--border)] px-5">
-        {durationSeconds ? <Row label={`Full video (${formatDuration(durationSeconds)})`} value={`$${formatMicro(priceMicro * durationSeconds)}`} /> : null}
-        {previewSeconds > 0 && <Row label="Free preview" value={`First ${previewSeconds}s`} />}
-        <Row label="Pausing" value="Stops charging" />
-      </dl>
-
-      <div className="space-y-5 p-5">
-        <div>
-          <div className="mb-2 flex items-baseline justify-between">
-            <p className="text-sm font-medium">Spending limit</p>
-            <p className="text-xs text-[var(--subtle)]">USDC, this session</p>
+      <div className="p-5">
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wider text-[var(--subtle)]">Price</p>
+            <p className="mt-1 text-3xl font-semibold tabular-nums">
+              ${formatMicro(priceMicro)}
+              <span className="ml-1.5 text-base font-medium text-[var(--subtle)]">/ sec</span>
+            </p>
           </div>
-          <Segmented
-            label="Spending limit"
-            value={capMicro}
-            onChange={onCap}
-            options={CAP_CHOICES.map((cap) => ({ value: cap, label: formatMicro(cap), disabled: !affordable.includes(cap) }))}
-          />
-        </div>
-
-        <div>
-          <div className="mb-2 flex items-baseline justify-between">
-            <p className="text-sm font-medium">Payment interval</p>
-            <p className="text-xs text-[var(--subtle)]">${formatMicro(chunkCost)} each</p>
-          </div>
-          <Segmented
-            label="Payment interval"
-            value={chunkSeconds}
-            onChange={onChunk}
-            options={CHUNK_SECONDS_OPTIONS.map((seconds) => ({ value: seconds, label: `${seconds}s` }))}
-          />
-          <p className="mt-2 text-pretty text-xs text-[var(--subtle)]">
-            You pay ahead one interval at a time, so this is the most you can be charged for video you have not watched.
+          <p className="pb-1 text-right text-xs tabular-nums text-[var(--muted)]">
+            ${ratePerMinute(priceMicro)} / min
+            <br />${ratePerHour(priceMicro)} / hour
           </p>
         </div>
+        <p className="mt-3 text-sm text-[var(--muted)]">
+          You only pay for the seconds that play. Pause or close the tab and the meter stops.
+          {previewSeconds > 0 && <span className="font-medium text-[var(--success)]"> First {previewSeconds}s are free.</span>}
+        </p>
+        {durationSeconds ? (
+          <p className="mt-1 text-xs tabular-nums text-[var(--subtle)]">
+            Watching all {formatDuration(durationSeconds)} would cost ${formatMicro(priceMicro * durationSeconds)}.
+          </p>
+        ) : null}
+      </div>
+
+      <div className="space-y-4 border-t border-[var(--border)] p-5">
+        <div>
+          <p className="text-sm font-semibold">Set a budget for this session</p>
+          <p className="mt-0.5 text-xs text-[var(--muted)]">The most you can be charged. You can raise it later while watching.</p>
+        </div>
+        <div role="radiogroup" aria-label="Session budget" className="grid grid-cols-2 gap-2">
+          {CAP_CHOICES.map((cap) => {
+            const active = capMicro === cap
+            const disabled = !affordable.includes(cap)
+            return (
+              <button
+                key={cap}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                disabled={disabled}
+                onClick={() => onCap(cap)}
+                className={`rounded-lg border px-3 py-2.5 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                  active ? 'border-[var(--accent)] bg-[var(--accent)]/10' : 'border-[var(--border)] hover:bg-white/5'
+                }`}
+              >
+                <span className="block text-base font-semibold tabular-nums">
+                  {formatMicro(cap)} <span className="text-xs font-medium text-[var(--subtle)]">USDC</span>
+                </span>
+                <span className="mt-0.5 block text-xs text-[var(--muted)]">{watchTime(cap, priceMicro, durationSeconds)}</span>
+              </button>
+            )
+          })}
+        </div>
+
+        <details className="group rounded-lg border border-[var(--border)]">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5 text-sm [&::-webkit-details-marker]:hidden">
+            <span>
+              <span className="font-medium">Billing steps</span>
+              <span className="ml-2 text-[var(--muted)]">Every {chunkSeconds}s</span>
+            </span>
+            <ChevronDown className="size-4 text-[var(--subtle)] transition-transform group-open:rotate-180" aria-hidden />
+          </summary>
+          <div className="space-y-2 border-t border-[var(--border)] p-3">
+            <Segmented
+              label="Billing step"
+              value={chunkSeconds}
+              onChange={onChunk}
+              options={CHUNK_SECONDS_OPTIONS.map((seconds) => ({ value: seconds, label: `${seconds}s` }))}
+            />
+            <p className="text-pretty text-xs text-[var(--muted)]">
+              You are charged ${formatMicro(chunkCost)} each {chunkSeconds} seconds, paid just ahead of playback. Shorter steps mean less paid in advance.
+            </p>
+          </div>
+        </details>
 
         {message && <p className="text-pretty rounded-lg bg-[var(--warn)]/10 px-3 py-2 text-sm text-[var(--warn)]">{message}</p>}
         {balanceError && <p className="text-xs text-[var(--danger)]">Could not read your spending balance: {balanceError}</p>}

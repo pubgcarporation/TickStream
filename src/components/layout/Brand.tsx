@@ -10,11 +10,12 @@ export function BrandMark({ size = 30 }: { size?: number }) {
   )
 }
 
-export function Wordmark() {
+/** `compact` drops the name on very narrow phones so the header never crowds. */
+export function Wordmark({ compact }: { compact?: boolean }) {
   return (
     <span className="flex items-center gap-2">
       <BrandMark />
-      <span className="display text-xl font-bold tracking-tight">
+      <span className={`display text-xl font-bold tracking-tight${compact ? ' max-[389px]:hidden' : ''}`}>
         Tick<span className="text-[var(--accent)]">Stream</span>
       </span>
     </span>

@@ -30,7 +30,7 @@ export function StudioNav() {
           </Link>
         )}
       </div>
-      <nav className="flex gap-1 overflow-x-auto border-b border-[var(--border)]" aria-label="Studio sections">
+      <nav className="-mx-4 flex gap-1 overflow-x-auto border-b border-[var(--border)] px-2 [scrollbar-width:none] sm:mx-0 sm:px-0" aria-label="Studio sections">
         {TABS.map((tab) => {
           const active = path === tab.to
           return (

@@ -2,8 +2,8 @@ import type { VideoSummary } from '@shared/types'
 import { Skeleton } from '@/components/ui/primitives'
 import { VideoCard } from './VideoCard'
 
-const GRID = 'grid grid-cols-[repeat(auto-fill,minmax(270px,1fr))] gap-x-4 gap-y-9'
-const LEAD_GRID = 'grid gap-x-4 gap-y-9 sm:grid-cols-2 xl:grid-cols-3'
+const GRID = 'grid grid-cols-[repeat(auto-fill,minmax(270px,1fr))] gap-x-4 gap-y-7 sm:gap-y-9'
+const LEAD_GRID = 'grid gap-x-4 gap-y-7 sm:gap-y-9 sm:grid-cols-2 xl:grid-cols-3'
 
 function CardSkeleton() {
   return (
@@ -35,7 +35,7 @@ export function VideoGrid({ videos, loading, lead }: { videos: VideoSummary[] | 
     const top = videos.slice(0, 3)
     const rest = videos.slice(3)
     return (
-      <div className="space-y-9">
+      <div className="space-y-7 sm:space-y-9">
         <div className={LEAD_GRID}>
           {top.map((video, index) => (
             <VideoCard key={video.id} video={video} index={index} />

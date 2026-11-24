@@ -31,7 +31,7 @@ function CopyLinkButton({ path }: { path: string }) {
       }}
       aria-label="Copy link"
       title="Copy link"
-      className="-mr-2 flex size-8 shrink-0 items-center justify-center rounded-full text-[var(--ink)] opacity-0 transition-opacity hover:bg-white/10 focus-visible:opacity-100 group-hover:opacity-100 disabled:hidden max-lg:opacity-100"
+      className="-mr-2 flex size-8 shrink-0 items-center justify-center rounded-full text-[var(--ink)] opacity-0 transition-opacity hover:bg-white/10 focus-visible:opacity-100 group-hover:opacity-100 disabled:hidden max-lg:size-10 max-lg:opacity-100"
     >
       <MoreVertical className="size-5" aria-hidden />
     </button>
@@ -45,8 +45,8 @@ export function VideoCard({ video, index = 0 }: { video: VideoSummary; index?: n
   const fullCost = video.durationSeconds ? video.priceMicro * video.durationSeconds : null
   return (
     <article className="group rise" style={{ ['--i' as string]: Math.min(index, 8) }}>
-      <Link to={`/watch/${video.id}`} className="block" aria-label={`Watch ${video.title}`}>
-        <div className="relative aspect-video overflow-hidden rounded-xl bg-[#272727] transition-[border-radius] duration-200 group-hover:rounded-none">
+      <Link to={`/watch/${video.id}`} className="block max-[559px]:-mx-4" aria-label={`Watch ${video.title}`}>
+        <div className="relative aspect-video overflow-hidden rounded-xl bg-[#272727] transition-[border-radius] duration-200 group-hover:rounded-none max-[559px]:rounded-none">
           {failed ? (
             <div className="flex size-full items-center justify-center text-xs text-[var(--subtle)]">No preview</div>
           ) : (
@@ -65,7 +65,7 @@ export function VideoCard({ video, index = 0 }: { video: VideoSummary; index?: n
           </span>
         </div>
       </Link>
-      <div className="mt-3 flex gap-3">
+      <div className="mt-2.5 flex gap-3 sm:mt-3">
         <Link to={`/profile/${video.creator.username}`} aria-label={`${name}'s profile`} className="shrink-0">
           <Avatar name={name} size={40} />
         </Link>

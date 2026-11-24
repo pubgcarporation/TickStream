@@ -16,9 +16,10 @@ interface PlayerSurfaceProps {
   costMicro: number
   onToggle: () => void
   onSeek: (second: number) => void
+  className?: string
 }
 
-export function PlayerSurface({ videoId, videoRef, view, viewer, durationSeconds, costMicro, onToggle, onSeek }: PlayerSurfaceProps) {
+export function PlayerSurface({ videoId, videoRef, view, viewer, durationSeconds, costMicro, onToggle, onSeek, className }: PlayerSurfaceProps) {
   const frame = useRef<HTMLDivElement | null>(null)
   const [muted, setMuted] = useState(false)
   const [scrub, setScrub] = useState<number | null>(null)
@@ -54,7 +55,7 @@ export function PlayerSurface({ videoId, videoRef, view, viewer, durationSeconds
       tabIndex={0}
       onKeyDown={onKeyDown}
       aria-label="Video player. Space plays or pauses, arrow keys skip ten seconds."
-      className="group relative aspect-video overflow-hidden rounded-xl bg-black focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+      className={`group relative aspect-video overflow-hidden rounded-xl bg-black focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${className ?? ''}`}
     >
       <video
         ref={videoRef}

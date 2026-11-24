@@ -92,41 +92,47 @@ export function WatchPage({ videoId }: { videoId: string }) {
     toast.success('Link copied')
   }
 
+  // On phones every block is its own grid item so the payment panel can sit right under the title and the player can stay pinned.
   return (
-    <div className="grid items-start gap-x-6 gap-y-5 xl:grid-cols-[minmax(0,1fr)_380px]">
-      <div className="space-y-4 xl:col-start-1 xl:row-start-1">
-        <PlayerSurface
-          videoId={video.id}
-          videoRef={playback.videoRef}
-          view={view}
-          viewer={address}
-          durationSeconds={video.durationSeconds ?? 0}
-          costMicro={billedMicro(view, video.priceMicro)}
-          onToggle={playback.togglePlay}
-          onSeek={(second) => void playback.seek(second)}
-        />
-        <h1 className="text-balance text-xl font-semibold leading-snug">{video.title}</h1>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-          <Link to={`/profile/${video.creator.username}`} className="flex min-w-0 items-center gap-3" aria-label={`${creatorName}'s profile`}>
+    <div className="grid items-start gap-x-6 gap-y-4 xl:grid-cols-[minmax(0,1fr)_380px] xl:gap-y-5">
+      <div className="contents xl:col-start-1 xl:row-start-1 xl:block xl:space-y-4">
+        <div className={`order-1 -mx-4 sm:mx-0 xl:static ${idle ? '' : 'sticky top-14 z-30 shadow-lg shadow-black/50 sm:static sm:shadow-none'}`}>
+          <PlayerSurface
+            className="max-sm:rounded-none"
+            videoId={video.id}
+            videoRef={playback.videoRef}
+            view={view}
+            viewer={address}
+            durationSeconds={video.durationSeconds ?? 0}
+            costMicro={billedMicro(view, video.priceMicro)}
+            onToggle={playback.togglePlay}
+            onSeek={(second) => void playback.seek(second)}
+          />
+        </div>
+        <h1 className="order-2 text-balance text-lg font-semibold leading-snug sm:text-xl">{video.title}</h1>
+        <div className="order-4 flex flex-wrap items-center gap-x-4 gap-y-3">
+          <Link to={`/profile/${video.creator.username}`} className="flex min-w-0 flex-1 items-center gap-3 sm:flex-none" aria-label={`${creatorName}'s profile`}>
             <Avatar name={creatorName} size={40} />
             <span className="min-w-0 truncate font-semibold hover:underline">{creatorName}</span>
           </Link>
           <FollowButton username={video.creator.username} creatorAddress={video.creator.address} />
-          <div className="ml-auto flex gap-2">
+          <div className="grid w-full auto-cols-fr grid-flow-col gap-2 sm:ml-auto sm:flex sm:w-auto">
             {user?.address !== video.creator.address && (
-              <Button shape="rect" onClick={() => setTipOpen(true)}>
+              <Button shape="rect" onClick={() => setTipOpen(true)} className="min-h-11 sm:min-h-10">
                 <HandCoins className="size-4" aria-hidden /> Tip
               </Button>
             )}
-            <Button variant="secondary" shape="rect" onClick={() => void copyLink()} disabled={!shareUrl}>
+            <Button variant="secondary" shape="rect" onClick={() => void copyLink()} disabled={!shareUrl} className="min-h-11 sm:min-h-10">
               <Share2 className="size-4" aria-hidden /> Share
             </Button>
           </div>
         </div>
-        <VideoDescription views={video.views} createdAt={video.createdAt} category={category} description={video.description} />
+        <div className="order-5">
+          <VideoDescription views={video.views} createdAt={video.createdAt} category={category} description={video.description} />
+        </div>
       </div>
 
-      <aside className="space-y-6 xl:sticky xl:top-20 xl:col-start-2 xl:row-span-2 xl:row-start-1" aria-label="Payment">
+      <aside className="order-3 space-y-6 xl:sticky xl:top-20 xl:order-none xl:col-start-2 xl:row-span-2 xl:row-start-1" aria-label="Payment">
         {idle ? (
           <StartPanel
             priceMicro={video.priceMicro}
@@ -158,7 +164,7 @@ export function WatchPage({ videoId }: { videoId: string }) {
         <RelatedVideos videoId={video.id} />
       </aside>
 
-      <div className="xl:col-start-1 xl:row-start-2">
+      <div className="order-6 xl:order-none xl:col-start-1 xl:row-start-2">
         <CommentsSection videoId={video.id} />
       </div>
       <TipSheet open={tipOpen} onClose={() => setTipOpen(false)} videoId={video.id} creatorName={creatorName} onAddFunds={() => setDepositOpen(true)} />
