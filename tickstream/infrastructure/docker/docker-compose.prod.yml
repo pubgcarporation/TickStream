@@ -1,6 +1,6 @@
 # Production stack for a single VPS: the API, both workers, Postgres, Redis and the video files.
-# The website is hosted separately (for example on Vercel) and calls this API over HTTPS.
-# Only the proxy container is published (ports 80 and 443). Postgres, Redis and the API stay private.
+# The website is served by the same server, on the same address as the API (/api).
+# Only the web container is published (ports 80 and 443). Postgres, Redis and the API stay private.
 #
 #   cp .env.example .env     # then fill it in
 #   docker compose -f docker-compose.prod.yml up -d --build
@@ -21,7 +21,7 @@ x-app-env: &app-env
   STORAGE_DRIVER: local
   ADMIN_ADDRESSES: ${ADMIN_ADDRESSES:-}
   TRUST_PROXY: "1"
-  CORS_ORIGINS: ${CORS_ORIGINS:?Set CORS_ORIGINS in .env}
+  CORS_ORIGINS: ${CORS_ORIGINS:-}
 
 services:
   # Gives the app user (uid 1000) write access to the shared video folder.
@@ -99,13 +99,17 @@ services:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
 
-  # HTTPS in front of the API. The website itself is hosted elsewhere (for example Vercel).
-  proxy:
-    image: caddy:2-alpine
+  # Serves the website and forwards /api to the API. HTTPS is automatic when SITE_ADDRESS is a domain.
+  web:
+    build:
+      context: ../../..
+      dockerfile: tickstream/infrastructure/docker/web.Dockerfile
+      args:
+        VITE_PRIVY_APP_ID: ${VITE_PRIVY_APP_ID:-}
     restart: unless-stopped
     logging: *logging
     environment:
-      API_ADDRESS: ${API_DOMAIN:-:80}
+      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
     ports:
       - "80:80"
       - "443:443"
