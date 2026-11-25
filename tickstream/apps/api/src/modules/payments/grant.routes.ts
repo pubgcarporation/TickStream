@@ -1,5 +1,5 @@
 import { query } from '@shared/db'
-import { chunkSecondsFor, chunkSegments, secondsAmount } from '@shared/pricing'
+import { chunkSecondsFor, secondsAmount } from '@shared/pricing'
 import { acquireLock, getRedis, keys } from '@shared/redis'
 import { getArcNetwork } from '../../../../../packages/arc-sdk/src/client'
 import {
@@ -40,9 +40,10 @@ export function registerGrantRoutes(router: Router): void {
       }
       const body = await readJson<{ payment?: unknown }>(ctx.req, 32 * 1024)
 
-      const segments = Math.min(chunkSegments(session.chunkSeconds), session.segCount - session.authEnd)
+      // One payment unlocks exactly one segment.
+      const segments = Math.min(1, session.segCount - session.authEnd)
       // The last chunk of a video may be shorter than a full chunk, and it is billed for the video that is really there.
-      const seconds = chunkSecondsFor(session.authEnd, segments, session.segCount, session.durationSeconds)
+      const seconds = chunkSecondsFor(session.authEnd, segments, session.segCount, session.durationSeconds, session.segSeconds)
       const amountMicro = secondsAmount(session.priceMicro, seconds)
       if (session.spentMicro + amountMicro > session.capMicro) {
         throw new HttpError(409, 'Your spending cap for this session has been reached', 'cap_reached', {
@@ -112,8 +113,8 @@ export function registerGrantRoutes(router: Router): void {
 
       // Hand back the price of the following payment so the player can sign it straight away, with one request.
       // The server still builds and checks the requirements again when that payment arrives.
-      const nextSegments = Math.min(chunkSegments(next.chunkSeconds), next.segCount - next.authEnd)
-      const nextSeconds = nextSegments > 0 ? chunkSecondsFor(next.authEnd, nextSegments, next.segCount, next.durationSeconds) : 0
+      const nextSegments = Math.min(1, next.segCount - next.authEnd)
+      const nextSeconds = nextSegments > 0 ? chunkSecondsFor(next.authEnd, nextSegments, next.segCount, next.durationSeconds, next.segSeconds) : 0
       const nextAmount = nextSegments > 0 ? secondsAmount(next.priceMicro, nextSeconds) : 0
       const nextPaymentRequired =
         nextSegments > 0 && next.spentMicro + nextAmount <= next.capMicro

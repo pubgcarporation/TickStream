@@ -3,7 +3,7 @@
 1. A creator creates the video record, then uploads the file with `PUT /videos/:id/source`. The file is streamed to
    private storage and a job is queued in Redis.
 2. The media worker downloads the source, probes it, and rejects files with no video or an unsupported length.
-3. ffmpeg re-encodes to H.264 and AAC (720p at most) and cuts 2-second MPEG-TS segments, encrypted with AES-128 using a
+3. ffmpeg re-encodes to H.264 and AAC (720p at most) and cuts 1-second MPEG-TS segments, encrypted with AES-128 using a
    fresh key and IV per video.
 4. Segments and a thumbnail are written to storage. The segment list, IV and key are saved on the video record.
 5. The video is marked `ready` and appears in Explore.

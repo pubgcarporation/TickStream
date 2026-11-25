@@ -1,5 +1,6 @@
 import Hls, { type ErrorData, type FragChangedData } from 'hls.js'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { PAID_AHEAD_SEGMENTS } from '@shared/constants'
 import type { SessionInfo } from '@shared/types'
 import { api, ApiError, apiUrl, getToken } from '@/lib/api'
 import { createPaymentScheme } from '@/lib/spending-wallet'
@@ -9,7 +10,6 @@ export type Phase = 'idle' | 'starting' | 'playing' | 'needs-funds' | 'capped' |
 
 export interface StartOptions {
   capMicro: number
-  chunkSeconds: number
   startSecond?: number
 }
 
@@ -26,14 +26,25 @@ export interface PlaybackView {
 }
 
 const TICK_MS = 1000
+/** How often the player checks whether a new second has started and needs paying for. Short, so a payment goes out right at the boundary. */
+const PAY_CHECK_MS = 100
 
 /**
- * When to pay for the next interval, as seconds of paid video still left in front of the playhead. Short (2 second)
- * intervals keep about three intervals paid ahead so a payment that takes half a second never shows. Longer intervals
- * pay when half an interval is left.
+ * True when the viewer has not yet paid for the second after the one that is playing. Playback starts with the first
+ * second and the next one paid. When the second after that begins, the one following it is paid, and so on, so exactly
+ * one second is always paid ahead of the one being watched.
  */
-function payAheadSeconds(chunkSeconds: number): number {
-  return chunkSeconds <= 2 ? chunkSeconds * 3 : Math.max(2, chunkSeconds * 0.5)
+function owesPayment(session: SessionInfo, here: number): boolean {
+  if (session.complete) return false
+  const seg = session.segmentSeconds
+  const wantedEnd = (Math.floor(here / seg) + 1 + PAID_AHEAD_SEGMENTS) * seg
+  return session.authorizedEndSecond < wantedEnd - 1e-6
+}
+
+/** Asks the player to fetch the playlist again now, so a second that was just paid for is known without waiting for the next poll. */
+function refreshPlaylist(hls: Hls | null): void {
+  const controller = (hls as unknown as { levelController?: { startLoad?: () => void } } | null)?.levelController
+  controller?.startLoad?.()
 }
 const HEARTBEAT_MS = 20_000
 /** Waits (ms) before each retry of a payment that failed for a reason that usually clears up on its own. */
@@ -47,8 +58,8 @@ function isTransient(error: unknown): boolean {
 const MAX_RECOVERIES = 3
 
 /**
- * Drives paid playback. The server decides what is unlocked; this hook only asks for the next chunk
- * when the viewer is about to run out of paid video, and never while paused.
+ * Drives paid playback. The server decides what is unlocked; this hook only pays for the next second
+ * when a new second starts, and never while paused.
  */
 export function usePaidPlayback(videoId: string, owner: string | undefined) {
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -112,8 +123,9 @@ export function usePaidPlayback(videoId: string, owner: string | undefined) {
         startPosition: 0,
         liveSyncDurationCount: 100,
         liveMaxLatencyDurationCount: Number.POSITIVE_INFINITY,
-        maxBufferLength: 12,
-        maxMaxBufferLength: 20,
+        // Only paid seconds are ever available, so there is nothing to buffer far ahead.
+        maxBufferLength: 4,
+        maxMaxBufferLength: 6,
         backBufferLength: 30,
         xhrSetup: (xhr) => {
           const token = getToken()
@@ -177,6 +189,7 @@ export function usePaidPlayback(videoId: string, owner: string | undefined) {
         try {
           const result = await payNextChunk(session.id, createPaymentScheme(owner))
           patch({ session: result.session })
+          refreshPlaylist(hlsRef.current)
           return result.session
         } catch (error) {
           const delay = PAYMENT_RETRY_DELAYS[attempt]
@@ -194,6 +207,21 @@ export function usePaidPlayback(videoId: string, owner: string | undefined) {
     }
   }, [owner, patch, classify])
 
+  /** Pays until the second being played and the one after it are covered. Returns the session, or undefined if a payment failed. */
+  const topUp = useCallback(
+    async (from: SessionInfo, here: number): Promise<SessionInfo | undefined> => {
+      let current = from
+      // Two payments at most are ever missing: the second being played and the one after it.
+      for (let step = 0; step < 1 + PAID_AHEAD_SEGMENTS && owesPayment(current, here); step += 1) {
+        const next = await payNext()
+        if (!next) return undefined
+        current = next
+      }
+      return current
+    },
+    [payNext],
+  )
+
   const start = useCallback(
     async (options: StartOptions, payer: string) => {
       if (!owner) return
@@ -206,11 +234,12 @@ export function usePaidPlayback(videoId: string, owner: string | undefined) {
       try {
         const created = await api<{ session: SessionInfo }>(`videos/${videoId}/sessions`, {
           method: 'POST',
-          body: { payer, capMicro: options.capMicro, chunkSeconds: options.chunkSeconds, startSecond: options.startSecond ?? 0 },
+          body: { payer, capMicro: options.capMicro, startSecond: options.startSecond ?? 0 },
         })
         patch({ session: created.session, freeSeconds: created.session.authorizedSeconds })
-        // A creator's free preview is already unlocked; otherwise the first interval is paid before playback.
-        const paid = created.session.authorizedSeconds > 0 ? created.session : await payNext()
+        // A creator's free preview is already unlocked. Otherwise the first second and the one after it are paid
+        // before playback starts.
+        const paid = await topUp(created.session, options.startSecond ?? 0)
         if (!paid) return
         patch({ phase: 'playing' })
         loadPlaylist(paid)
@@ -218,7 +247,7 @@ export function usePaidPlayback(videoId: string, owner: string | undefined) {
         classify(error)
       }
     },
-    [owner, videoId, patch, payNext, loadPlaylist, classify],
+    [owner, videoId, patch, topUp, loadPlaylist, classify],
   )
 
   const resume = useCallback(async () => {
@@ -227,14 +256,12 @@ export function usePaidPlayback(videoId: string, owner: string | undefined) {
     patch({ phase: 'playing', message: null })
     // Pausing never costs anything, and resuming only pays when the paid video is running low, so repeated
     // pause and resume cannot pile up payments.
-    const lead = session.authorizedEndSecond - position()
-    const needsPayment = !session.complete && lead <= payAheadSeconds(session.chunkSeconds)
-    const next = needsPayment ? await payNext() : session
+    const next = await topUp(session, position())
     if (next) {
       if (!hlsRef.current) loadPlaylist(next)
       videoRef.current?.play().catch(() => undefined)
     }
-  }, [patch, payNext, loadPlaylist, position])
+  }, [patch, topUp, loadPlaylist, position])
 
   const seek = useCallback(
     async (second: number) => {
@@ -251,13 +278,13 @@ export function usePaidPlayback(videoId: string, owner: string | undefined) {
       try {
         const moved = await seekSession(session.id, second)
         patch({ session: moved.session, position: second })
-        const paid = moved.session.authorizedEndSecond > second ? moved.session : await payNext()
+        const paid = await topUp(moved.session, second)
         if (paid) loadPlaylist(paid)
       } catch (error) {
         classify(error)
       }
     },
-    [patch, payNext, loadPlaylist, classify],
+    [patch, topUp, loadPlaylist, classify],
   )
 
   const togglePlay = useCallback(() => {
@@ -281,7 +308,7 @@ export function usePaidPlayback(videoId: string, owner: string | undefined) {
     [patch, teardownPlayer, position],
   )
 
-  // Once a second: count what actually played, update the position, and pay ahead only when needed.
+  // Once a second: count what actually played and update the position.
   useEffect(() => {
     const timer = setInterval(() => {
       const session = sessionRef.current
@@ -302,13 +329,20 @@ export function usePaidPlayback(videoId: string, owner: string | undefined) {
         void api(`sessions/${session.id}`, { method: 'DELETE', body: { second: 0 } }).catch(() => undefined)
         return
       }
-      const lead = session.authorizedEndSecond - here
-      if (!session.complete && !video.paused && !payingRef.current && lead <= payAheadSeconds(session.chunkSeconds)) {
-        void payNext()
-      }
     }, TICK_MS)
     return () => clearInterval(timer)
-  }, [position, payNext, stopPlayback])
+  }, [position, stopPlayback])
+
+  // Several times a second: when a new second has started, pay for the one after the next. Never while paused.
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const session = sessionRef.current
+      const video = videoRef.current
+      if (!session || !video || phaseRef.current !== 'playing' || video.paused || video.seeking || payingRef.current) return
+      if (owesPayment(session, position())) void payNext()
+    }, PAY_CHECK_MS)
+    return () => clearInterval(timer)
+  }, [position, payNext])
 
   // Keep the session alive while the tab is open and notice if another tab took over.
   useEffect(() => {

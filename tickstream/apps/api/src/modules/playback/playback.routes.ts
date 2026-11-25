@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { pipeline } from 'node:stream/promises'
-import { CHUNK_SECONDS_OPTIONS, SEGMENT_LOOKAHEAD } from '@shared/constants'
+import { PAID_AHEAD_SEGMENTS } from '@shared/constants'
 import { query } from '@shared/db'
-import { chunkSegments, segmentsAmount } from '@shared/pricing'
+import { segmentsAmount } from '@shared/pricing'
 import { acquireLockWait, getRedis, keys } from '@shared/redis'
 import { getStorage, storageKeys } from '@shared/storage'
 import { HttpError, readJson, requireUser, sendJson, type Router } from '../../http'
@@ -40,10 +40,6 @@ export function registerPlaybackRoutes(router: Router): void {
     const body = await readJson(ctx.req)
     const payer = address(body.payer, 'payer')
     const capMicro = int(body.capMicro, 'capMicro', 1, MAX_CAP_MICRO)
-    const chunkSeconds = int(body.chunkSeconds, 'chunkSeconds', 1, 120)
-    if (!(CHUNK_SECONDS_OPTIONS as readonly number[]).includes(chunkSeconds)) {
-      throw new HttpError(400, 'Pick one of the offered payment intervals', 'invalid_request')
-    }
     const video = await getVideoRow(uuid(ctx.params.id ?? ''))
     if (!video || video.status !== 'ready' || !video.segments) throw new HttpError(404, 'Video not found', 'not_found')
 
@@ -51,8 +47,9 @@ export function registerPlaybackRoutes(router: Router): void {
     const segSeconds = video.segment_seconds
     const startSecond = body.startSecond === undefined ? 0 : int(body.startSecond, 'startSecond', 0, 10 * 24 * 3600)
     const startSeg = Math.min(Math.floor(startSecond / segSeconds), segCount - 1)
-    if (capMicro < segmentsAmount(video.price_micro, chunkSegments(chunkSeconds))) {
-      throw new HttpError(400, 'Your spending cap is lower than one payment interval', 'cap_too_low')
+    // Playback starts with the first segment and the next one paid, so the cap must cover both.
+    if (capMicro < segmentsAmount(video.price_micro, 1 + PAID_AHEAD_SEGMENTS, segSeconds)) {
+      throw new HttpError(400, 'Your spending cap is lower than the first two seconds', 'cap_too_low')
     }
 
     // One active session per wallet: a second tab or device ends the first.
@@ -70,7 +67,7 @@ export function registerPlaybackRoutes(router: Router): void {
     await query(
       `insert into playback_sessions (id, video_id, viewer, payer, cap_micro, chunk_seconds, segments_authorized, last_position)
        values ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [id, video.id, viewer, payer, capMicro, chunkSeconds, previewSegs, startSeg * segSeconds],
+      [id, video.id, viewer, payer, capMicro, segSeconds, previewSegs, startSeg * segSeconds],
     )
     await query('update videos set views = views + 1 where id = $1', [video.id])
 
@@ -81,7 +78,8 @@ export function registerPlaybackRoutes(router: Router): void {
       payer,
       creator: video.creator,
       priceMicro: video.price_micro,
-      chunkSeconds,
+      // Every payment buys exactly one segment, so the payment interval is the segment length.
+      chunkSeconds: segSeconds,
       capMicro,
       spentMicro: 0,
       startSeg,
@@ -207,12 +205,10 @@ export function registerPlaybackRoutes(router: Router): void {
     const session = await requireSession(uuid(ctx.params.id ?? ''), viewer)
     const n = Number(ctx.params.n)
     if (!Number.isInteger(n) || n < 0 || n >= session.segCount) throw new HttpError(404, 'No such segment', 'not_found')
-    // Server-authorized delivery: only paid segments inside the current window, and no running far ahead.
+    // Server-authorized delivery: only paid segments inside the current window. Nothing unpaid is ever served, so
+    // how far ahead a viewer can fetch is exactly how far ahead they have paid.
     if (n < session.startSeg || n >= session.authEnd) {
       throw new HttpError(402, 'That segment has not been paid for', 'payment_required')
-    }
-    if (n > session.served + SEGMENT_LOOKAHEAD) {
-      throw new HttpError(429, 'Requested too far ahead of playback', 'too_far_ahead')
     }
     const manifest = await getManifest(session.videoId)
     const segment = manifest.segments[n]

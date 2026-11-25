@@ -53,7 +53,7 @@ export function CostMeter({ view, priceMicro, onEnd, onAddFunds, onResume, onCon
         {view.phase === 'playing' && (
           <div className="flex w-full items-center gap-3 sm:ml-auto sm:w-auto">
             <span className="text-xs text-[var(--muted)]" aria-live="polite">
-              {view.paying ? 'Paying next step' : live ? 'Paid as it plays' : 'Paused, not charging'}
+              {view.paying ? 'Paying next second' : live ? 'Paid as it plays' : 'Paused, not charging'}
             </span>
             <Button shape="rect" variant="secondary" onClick={onEnd} className="min-h-10 flex-1 sm:flex-none">
               <Square className="size-4" aria-hidden /> End session

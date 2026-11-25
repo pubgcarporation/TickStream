@@ -37,13 +37,13 @@ run('TickStream API', () => {
 
   const headers = () => ({ 'content-type': 'application/json', authorization: `Bearer ${token}` })
 
-  async function createVideo(durationSeconds: number, priceMicro: number): Promise<string> {
-    const count = Math.ceil(durationSeconds / 2)
-    const segments = Array.from({ length: count }, (_, i) => ({ name: `seg_${i}.ts`, duration: i === count - 1 ? durationSeconds - 2 * (count - 1) : 2 }))
+  async function createVideo(durationSeconds: number, priceMicro: number, segSeconds = 2): Promise<string> {
+    const count = Math.ceil(durationSeconds / segSeconds)
+    const segments = Array.from({ length: count }, (_, i) => ({ name: `seg_${i}.ts`, duration: i === count - 1 ? durationSeconds - segSeconds * (count - 1) : segSeconds }))
     const result = await pool.query(
       `insert into videos (creator, title, price_micro, status, duration_seconds, segment_seconds, segments, iv, key_hex, preview_seconds)
-       values ($1, 'test', $2, 'ready', $3, 2, $4, '00112233445566778899aabbccddeeff', '00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff', 0) returning id`,
-      [creator.address.toLowerCase(), priceMicro, durationSeconds, JSON.stringify(segments)],
+       values ($1, 'test', $2, 'ready', $3, $5, $4, '00112233445566778899aabbccddeeff', '00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff', 0) returning id`,
+      [creator.address.toLowerCase(), priceMicro, durationSeconds, JSON.stringify(segments), segSeconds],
     )
     return result.rows[0].id as string
   }
@@ -134,6 +134,26 @@ run('TickStream API', () => {
     const mine = settled.slice(before)
     expect(mine).toHaveLength(5)
     expect(mine.every((s) => s.to.toLowerCase() === creator.address.toLowerCase() && s.value === '200')).toBe(true)
+  })
+
+  test('a 1-second video is paid one second at a time, with no limit on how far paid video can be fetched', async () => {
+    const video = await createVideo(20, 100, 1)
+    // The first second and the one after it must be affordable.
+    await expect(startSession(video, 1, 199)).rejects.toMatchObject({ code: 'cap_too_low' })
+    const id = await startSession(video, 1)
+    const before = settled.length
+    for (let i = 0; i < 10; i += 1) {
+      const result = await payments.payNextChunk(id, scheme)
+      expect(result.amountMicro).toBe(100)
+      expect(result.session.segmentSeconds).toBe(1)
+    }
+    expect(settled.slice(before).every((item) => item.value === '100')).toBe(true)
+    const token = client.getToken() ?? ''
+    const fetchSegment = (n: number) => fetch(`${API}/play/${id}/seg/${n}`, { headers: { authorization: `Bearer ${token}` } })
+    // Paid segments are never refused for being too far ahead. Unpaid ones are refused for payment.
+    expect((await fetchSegment(9)).status).not.toBe(429)
+    expect((await fetchSegment(9)).status).not.toBe(402)
+    expect((await fetchSegment(10)).status).toBe(402)
   })
 
   test('the last payment covers only the video that is left', async () => {

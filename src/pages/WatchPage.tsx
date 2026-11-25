@@ -2,7 +2,7 @@ import { HandCoins, Share2 } from 'lucide-react'
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useAccount } from 'wagmi'
 import { toast } from 'sonner'
-import { CATEGORIES, DEFAULT_CHUNK_SECONDS } from '@shared/constants'
+import { CATEGORIES, PAID_AHEAD_SEGMENTS, SEGMENT_SECONDS } from '@shared/constants'
 import type { VideoSummary } from '@shared/types'
 import { CommentsSection } from '@/components/community/CommentsSection'
 import { FollowButton } from '@/components/community/FollowButton'
@@ -48,7 +48,6 @@ export function WatchPage({ videoId }: { videoId: string }) {
   const { user } = useAuth()
   const progress = useApi<{ second: number }>(user ? `videos/${videoId}/progress` : null)
   const playback = usePaidPlayback(videoId, address)
-  const [chunkSeconds, setChunkSeconds] = useState<number>(DEFAULT_CHUNK_SECONDS)
   const [depositOpen, setDepositOpen] = useState(false)
   const [tipOpen, setTipOpen] = useState(false)
   const shareUrl = useShareLink(`/watch/${videoId}`)
@@ -85,12 +84,12 @@ export function WatchPage({ videoId }: { videoId: string }) {
   const start = (startSecond = 0, cap = capMicro) => {
     // The key must be unlocked before the first payment. The wallet may ask for a free signature once.
     void unlock()
-      .then((payer) => playback.start({ capMicro: cap, chunkSeconds, startSecond }, payer))
+      .then((payer) => playback.start({ capMicro: cap, startSecond }, payer))
       .catch((error: unknown) => toast.error(error instanceof Error ? error.message : 'Could not unlock your spending wallet'))
   }
 
   // The poster's play button starts right away only when nothing else is needed first.
-  const canStartNow = Boolean(user && spender && balance && video && balance.available >= BigInt(video.priceMicro * chunkSeconds))
+  const canStartNow = Boolean(user && spender && balance && video && balance.available >= BigInt(video.priceMicro * SEGMENT_SECONDS * (1 + PAID_AHEAD_SEGMENTS)))
   const showPayment = () => document.getElementById('payment')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
 
   if (loading && !video) {
@@ -155,8 +154,6 @@ export function WatchPage({ videoId }: { videoId: string }) {
             previewSeconds={video.previewSeconds}
             resumeAt={resumeAt}
             onResumeAt={(second) => start(second)}
-            chunkSeconds={chunkSeconds}
-            onChunk={setChunkSeconds}
             onStart={() => start()}
             onAddFunds={() => setDepositOpen(true)}
             starting={view.phase === 'starting'}

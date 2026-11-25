@@ -45,7 +45,7 @@ earnings and analytics.
 ## Uploading a video
 
 1. The creator creates the video, then uploads the file to private storage.
-2. The media worker checks the file, re-encodes it to H.264 and AAC (720p at most), cuts it into 2-second segments, and
+2. The media worker checks the file, re-encodes it to H.264 and AAC (720p at most), cuts it into 1-second segments, and
    encrypts them with a fresh key per video. It also makes a thumbnail.
 3. The video is marked Live and appears on Home and Explore.
 

@@ -8,7 +8,7 @@
 | Edited page code | Amounts owed, caps and unlocked segments live only on the server. |
 | Replayed payment | Each signed authorization has a unique nonce, stored with a unique constraint. |
 | Several tabs | One active session per wallet. A new session ends the previous one. |
-| Downloading ahead | Segments unlock one interval at a time, and requests far ahead of playback are refused. |
+| Downloading ahead | Segments unlock one at a time as they are paid, and an unpaid segment is never served. |
 | Payment failure | When a payment is rejected, no new segments are unlocked and playback stops. |
 | Extracting segments | Segments are AES-128 encrypted. The key is only served to a paying session. |
 | Screen recording | Cannot be prevented. A moving label with the viewer's wallet and session id makes leaks traceable. |

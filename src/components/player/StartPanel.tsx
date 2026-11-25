@@ -1,8 +1,8 @@
 import { KeyRound, Wallet } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { CHUNK_SECONDS_OPTIONS } from '@shared/constants'
-import { Button, Segmented } from '@/components/ui/primitives'
+import { PAID_AHEAD_SEGMENTS, SEGMENT_SECONDS } from '@shared/constants'
+import { Button } from '@/components/ui/primitives'
 import { WalletConnect } from '@/components/wallet/WalletConnect'
 import { formatDuration, formatMicro, ratePerHour, ratePerMinute } from '@/lib/format'
 import { useAuth } from '@/providers/AuthProvider'
@@ -14,21 +14,21 @@ interface StartPanelProps {
   previewSeconds: number
   resumeAt: number
   onResumeAt: (second: number) => void
-  chunkSeconds: number
-  onChunk: (seconds: number) => void
   onStart: () => void
   onAddFunds: () => void
   starting: boolean
   message: string | null
 }
 
-export function StartPanel({ priceMicro, durationSeconds, previewSeconds, resumeAt, onResumeAt, chunkSeconds, onChunk, onStart, onAddFunds, starting, message }: StartPanelProps) {
+export function StartPanel({ priceMicro, durationSeconds, previewSeconds, resumeAt, onResumeAt, onStart, onAddFunds, starting, message }: StartPanelProps) {
   const { user, signIn, signingIn } = useAuth()
   const { balance, spender, unlock, error: balanceError } = useSpendingWallet()
   const [unlocking, setUnlocking] = useState(false)
-  const chunkCost = priceMicro * chunkSeconds
+  // Playback starts with the first second and the one after it paid, then one more second is paid as each new one starts.
+  const firstCost = priceMicro * SEGMENT_SECONDS * (1 + PAID_AHEAD_SEGMENTS)
+  const secondCost = priceMicro * SEGMENT_SECONDS
   const available = balance?.available ?? 0n
-  const hasFunds = available >= BigInt(chunkCost)
+  const hasFunds = available >= BigInt(firstCost)
 
   const action = (
     <WalletConnect>
@@ -106,16 +106,6 @@ export function StartPanel({ priceMicro, durationSeconds, previewSeconds, resume
           </p>
         </div>
 
-        <div className="flex items-center gap-2 text-sm text-[var(--muted)]">
-          <span>Pay every</span>
-          <Segmented
-            label="Billing step"
-            value={chunkSeconds}
-            onChange={onChunk}
-            options={CHUNK_SECONDS_OPTIONS.map((seconds) => ({ value: seconds, label: `${seconds}s` }))}
-          />
-        </div>
-
         <div className="flex w-full flex-wrap items-center gap-x-4 gap-y-2 sm:ml-auto sm:w-auto">
           {balance && !hasFunds && (
             <p className="text-sm tabular-nums text-[var(--muted)]">
@@ -130,7 +120,7 @@ export function StartPanel({ priceMicro, durationSeconds, previewSeconds, resume
       </div>
 
       <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[var(--muted)]">
-        <span className="tabular-nums">${formatMicro(chunkCost)} every {chunkSeconds}s, paid a few seconds ahead of playback. Payments are final</span>
+        <span className="tabular-nums">${formatMicro(secondCost)} every second, paid one second ahead of playback. Payments are final</span>
         <span aria-hidden>·</span>
         <span>Pause or leave and payments stop</span>
         {previewSeconds > 0 && (

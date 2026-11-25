@@ -6,7 +6,7 @@ price per second, upload a video, and get paid as viewers watch.
 ## What it does
 
 - Browse and search videos, each with a clear price per second.
-- Watch with a live cost meter, a spending cap you choose, and a payment interval you choose. Pausing stops the meter.
+- Watch with a live cost meter, a spending cap you choose, and payment one second at a time with one second paid ahead. Pausing stops the meter.
 - Add money to a spending balance from your wallet and move unused money back.
 - Creators upload videos, set prices, and see earnings and payments in a studio.
 - Videos are encrypted, delivered only after payment, and limited to one active viewing session per wallet.
