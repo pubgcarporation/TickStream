@@ -141,20 +141,3 @@ TEST_REDIS_URL=redis://127.0.0.1:56379/15 bun run test:api
 
 The test database is wiped and Redis database 15 is flushed. Never point these at real data. Without the two
 variables the tests are skipped.
-
-## Add a demo catalog
-
-`seed:catalog` fills the library with ten generated clips from six made-up creators (game news, AI lessons and music).
-Each creator has their own wallet and picture. The clips are made with ffmpeg: synthetic visuals and tones, no game,
-film or music footage. Running it twice adds nothing twice.
-
-On the VPS, run it inside a media worker container, from `tickstream/infrastructure/docker`:
-
-```bash
-docker compose -f docker-compose.prod.yml exec media-worker bun run tickstream/apps/media-worker/src/seed-catalog.ts
-```
-
-Locally: `bun run seed:catalog` (needs the stack from `bun run stack:up`).
-
-The creators' wallet keys are saved in the data volume as `demo-catalog-wallets.json` and never printed. Any USDC a
-viewer pays these creators goes to those addresses, so back that file up if you want to withdraw it.
