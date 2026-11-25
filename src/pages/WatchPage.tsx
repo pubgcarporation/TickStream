@@ -2,7 +2,7 @@ import { HandCoins, Share2 } from 'lucide-react'
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useAccount } from 'wagmi'
 import { toast } from 'sonner'
-import { CATEGORIES, PAID_AHEAD_SEGMENTS, SEGMENT_SECONDS } from '@shared/constants'
+import { CATEGORIES, PAY_BLOCK_SECONDS } from '@shared/constants'
 import type { VideoSummary } from '@shared/types'
 import { CommentsSection } from '@/components/community/CommentsSection'
 import { FollowButton, useFollowState } from '@/components/community/FollowButton'
@@ -81,7 +81,7 @@ export function WatchPage({ videoId }: { videoId: string }) {
   }
 
   // The poster's play button starts right away only when nothing else is needed first.
-  const canStartNow = Boolean(user && spender && balance && video && balance.available >= BigInt(video.priceMicro * SEGMENT_SECONDS * (1 + PAID_AHEAD_SEGMENTS)))
+  const canStartNow = Boolean(user && spender && balance && video && balance.available >= BigInt(video.priceMicro * PAY_BLOCK_SECONDS * 2))
   const showPayment = () => document.getElementById('payment')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
 
   if (loading && !video) {

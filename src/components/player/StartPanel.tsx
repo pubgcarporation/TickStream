@@ -2,7 +2,7 @@ import { TokenUSDC } from '@web3icons/react'
 import { KeyRound, Wallet } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { PAID_AHEAD_SEGMENTS, SEGMENT_SECONDS } from '@shared/constants'
+import { PAY_BLOCK_SECONDS } from '@shared/constants'
 import { Button } from '@/components/ui/primitives'
 import { WalletConnect } from '@/components/wallet/WalletConnect'
 import { formatDuration, formatMicro } from '@/lib/format'
@@ -25,9 +25,9 @@ export function StartPanel({ priceMicro, durationSeconds, previewSeconds, resume
   const { user, signIn, signingIn } = useAuth()
   const { balance, spender, unlock, error: balanceError } = useSpendingWallet()
   const [unlocking, setUnlocking] = useState(false)
-  // Playback starts with the first second and the one after it paid, then one more second is paid as each new one starts.
-  const firstCost = priceMicro * SEGMENT_SECONDS * (1 + PAID_AHEAD_SEGMENTS)
-  const secondCost = priceMicro * SEGMENT_SECONDS
+  // Playback starts with the first 2 seconds paid and the next 2 paid right after, then 2 more as each block starts.
+  const firstCost = priceMicro * PAY_BLOCK_SECONDS * 2
+  const blockCost = priceMicro * PAY_BLOCK_SECONDS
   const available = balance?.available ?? 0n
   const hasFunds = available >= BigInt(firstCost)
 
@@ -121,7 +121,7 @@ export function StartPanel({ priceMicro, durationSeconds, previewSeconds, resume
         </div>
       </div>
       <p className="text-xs leading-[18px] text-[var(--muted)]">
-        <span className="tabular-nums">{formatMicro(secondCost)} USDC per second, paid one second ahead.</span> Pause or leave and payments stop.
+        <span className="tabular-nums">{formatMicro(blockCost)} USDC every {PAY_BLOCK_SECONDS} seconds, always paid {PAY_BLOCK_SECONDS} seconds ahead.</span> Pause or leave and payments stop.
         {previewSeconds > 0 && <span className="ml-1 font-medium text-[var(--success)]">First {previewSeconds}s free.</span>}
       </p>
       {!spender && user && <p className="text-xs text-[var(--subtle)]">Your wallet asks for a free signature, twice the first time. It sends no money and costs no gas.</p>}

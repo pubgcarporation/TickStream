@@ -4,8 +4,11 @@ import { ffmpegPath, run } from '../config/binaries'
 import { ffmpegThreads } from '../config/concurrency'
 import type { ProbeResult } from './probe'
 
-/** Re-encodes to H.264 + AAC and cuts into AES-128 encrypted MPEG-TS segments of SEGMENT_SECONDS. */
-export async function transcodeToHls(input: string, hlsDir: string, keyInfoFile: string, info: ProbeResult): Promise<string> {
+/**
+ * Re-encodes to H.264 + AAC and cuts into AES-128 encrypted MPEG-TS segments of SEGMENT_SECONDS. `prefix` names the
+ * segment files, so a re-encode can write new files next to the old ones without touching them.
+ */
+export async function transcodeToHls(input: string, hlsDir: string, keyInfoFile: string, info: ProbeResult, prefix = 'seg'): Promise<string> {
   const playlist = path.join(hlsDir, 'index.m3u8')
   const threads = ffmpegThreads()
   const args = [
@@ -44,7 +47,7 @@ export async function transcodeToHls(input: string, hlsDir: string, keyInfoFile:
     '-hls_key_info_file',
     keyInfoFile,
     '-hls_segment_filename',
-    path.join(hlsDir, 'seg_%05d.ts'),
+    path.join(hlsDir, `${prefix}_%05d.ts`),
     playlist,
   ]
   await run(ffmpegPath, args)

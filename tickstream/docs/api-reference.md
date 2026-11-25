@@ -37,9 +37,9 @@ are shown without the prefix. Send the sign-in token as `Authorization: Bearer <
 
 | Method and path | Purpose |
 | --- | --- |
-| `POST /videos/:id/sessions` | Start a session: `payer`, `capMicro`, optional `startSecond`. The cap must cover the first two seconds. Every payment buys exactly one video segment (1 second for new videos). |
+| `POST /videos/:id/sessions` | Start a session: `payer`, `capMicro`, optional `startSecond`. The cap must cover the first two payments (4 seconds). Every payment buys exactly one video segment (2 seconds). |
 | `GET /sessions/:id` | Session state; also a heartbeat. |
-| `POST /sessions/:id/grant` | x402 payment for the next segment (one second of video for new videos). Optional `segments` (1 to 6) buys several at once for slow connections. The server lowers it to fit the spending cap and the end of the video. Returns 402 with the price, then 200 after payment. The 200 also carries `nextPaymentRequired`, the price of the following payment, so the player can pay with one request. |
+| `POST /sessions/:id/grant` | x402 payment for the next segment (2 seconds of video). Returns 402 with the price, then 200 after payment. The 200 also carries `nextPaymentRequired`, the price of the following payment, so the player can pay with one request. |
 | `POST /sessions/:id/seek` | Jump to a second that is not unlocked yet. |
 | `DELETE /sessions/:id` | End the session. |
 | `GET /play/:id/playlist.m3u8`, `/play/:id/key`, `/play/:id/seg/:n` | Paid, session-bound playback. |

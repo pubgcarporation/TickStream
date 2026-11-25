@@ -12,6 +12,7 @@
     "worker:media": "bun run ./tickstream/apps/media-worker/src/index.ts",
     "worker:settlement": "bun run ./tickstream/apps/settlement-worker/src/index.ts",
     "seed": "bun run ./tickstream/infrastructure/scripts/seed-demo.ts",
+    "videos:reencode": "bun run ./tickstream/apps/media-worker/src/reencode.ts",
     "deploy:self": "bun run ./scripts/self-deploy.ts",
     "compass:deploy": "bun run ./scripts/compass-deploy.ts",
     "fetch:abi": "bun run ./scripts/fetch-abi.ts",

@@ -2,8 +2,7 @@ import { SEGMENT_SECONDS } from './constants'
 
 /**
  * All amounts are integers in USDC base units (the ERC-20 view, 6 decimals). One payment unlocks exactly one segment.
- * A video's segment length comes from the video itself: new videos use SEGMENT_SECONDS, older ones keep what they
- * were encoded with.
+ * A video's segment length comes from the video itself. Videos not yet re-encoded may still have 1-second segments.
  */
 
 /** Amount owed for `segments` whole segments of `segSeconds` each at `priceMicro` per second. */

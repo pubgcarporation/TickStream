@@ -136,10 +136,10 @@ run('TickStream API', () => {
     expect(mine.every((s) => s.to.toLowerCase() === creator.address.toLowerCase() && s.value === '200')).toBe(true)
   })
 
-  test('a 1-second video is paid one second at a time, with no limit on how far paid video can be fetched', async () => {
+  test('a video that still has 1-second segments is paid one segment at a time, with no limit on how far paid video can be fetched', async () => {
     const video = await createVideo(20, 100, 1)
-    // The first second and the one after it must be affordable.
-    await expect(startSession(video, 1, 199)).rejects.toMatchObject({ code: 'cap_too_low' })
+    // The first two 2-second blocks (4 seconds here, so 4 segments) must be affordable.
+    await expect(startSession(video, 1, 399)).rejects.toMatchObject({ code: 'cap_too_low' })
     const id = await startSession(video, 1)
     const before = settled.length
     for (let i = 0; i < 10; i += 1) {
@@ -154,27 +154,6 @@ run('TickStream API', () => {
     expect((await fetchSegment(9)).status).not.toBe(429)
     expect((await fetchSegment(9)).status).not.toBe(402)
     expect((await fetchSegment(10)).status).toBe(402)
-  })
-
-  test('a slow connection can pay for several seconds in one payment, never past the cap or the end', async () => {
-    const video = await createVideo(5, 100, 1)
-    const id = await startSession(video, 1, 450)
-    const before = settled.length
-    const three = await payments.payNextChunk(id, scheme, 3)
-    expect(three.amountMicro).toBe(300)
-    expect(three.session.authorizedEndSecond).toBe(3)
-    // 150 left under the cap, so a request for four seconds is cut down to one.
-    const capped = await payments.payNextChunk(id, scheme, 4)
-    expect(capped.amountMicro).toBe(100)
-    expect(capped.session.authorizedEndSecond).toBe(4)
-    expect(settled.slice(before).map((item) => item.value)).toEqual(['300', '100'])
-    await expect(client.api(`sessions/${id}/grant`, { method: 'POST', body: { segments: 99 } })).rejects.toMatchObject({ status: 400 })
-    // Near the end the payment covers only what is left.
-    const id2 = await startSession(video, 1)
-    await payments.payNextChunk(id2, scheme, 4)
-    const last = await payments.payNextChunk(id2, scheme, 6)
-    expect(last.amountMicro).toBe(100)
-    expect(last.session.complete).toBe(true)
   })
 
   test('the last payment covers only the video that is left', async () => {

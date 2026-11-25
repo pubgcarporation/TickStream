@@ -1,5 +1,4 @@
 import { query } from '@shared/db'
-import { MAX_PAYMENT_SEGMENTS } from '@shared/constants'
 import { chunkSecondsFor, secondsAmount } from '@shared/pricing'
 import { acquireLock, getRedis, keys } from '@shared/redis'
 import { getArcNetwork } from '../../../../../packages/arc-sdk/src/client'
@@ -13,7 +12,7 @@ import {
 } from '../../../../../packages/payment-sdk/src/x402-server'
 import { HttpError, readJson, requireUser, sendJson, type Router } from '../../http'
 import { rateLimit } from '../../middleware/rate-limit'
-import { int, uuid } from '../../middleware/request-validation'
+import { uuid } from '../../middleware/request-validation'
 import { getManifest, paidKey, requireSession } from '../playback/playback.service'
 import { patchSession, toSessionInfo } from '../playback/session-store'
 
@@ -39,21 +38,13 @@ export function registerGrantRoutes(router: Router): void {
         sendJson(ctx.res, 200, { session: toSessionInfo(session), amountMicro: 0, transferId: null, complete: true })
         return
       }
-      const body = await readJson<{ payment?: unknown; segments?: unknown }>(ctx.req, 32 * 1024)
-      // A slow connection can pay for several seconds in one payment, so a payment never takes longer than the video it buys.
-      const requested = body.segments === undefined ? 1 : int(body.segments, 'segments', 1, MAX_PAYMENT_SEGMENTS)
+      const body = await readJson<{ payment?: unknown }>(ctx.req, 32 * 1024)
 
-      // A payment unlocks one segment, or a few when the player asks for them. It never goes past the end of the
-      // video or the viewer's spending cap: the count shrinks until it fits.
-      let segments = Math.min(requested, session.segCount - session.authEnd)
-      // The last chunk of a video may be shorter than a full chunk, and it is billed for the video that is really there.
-      let seconds = chunkSecondsFor(session.authEnd, segments, session.segCount, session.durationSeconds, session.segSeconds)
-      let amountMicro = secondsAmount(session.priceMicro, seconds)
-      while (segments > 1 && session.spentMicro + amountMicro > session.capMicro) {
-        segments -= 1
-        seconds = chunkSecondsFor(session.authEnd, segments, session.segCount, session.durationSeconds, session.segSeconds)
-        amountMicro = secondsAmount(session.priceMicro, seconds)
-      }
+      // One payment unlocks exactly one segment. The last chunk of a video may be shorter than a full segment, and it
+      // is billed for the video that is really there.
+      const segments = Math.min(1, session.segCount - session.authEnd)
+      const seconds = chunkSecondsFor(session.authEnd, segments, session.segCount, session.durationSeconds, session.segSeconds)
+      const amountMicro = secondsAmount(session.priceMicro, seconds)
       if (session.spentMicro + amountMicro > session.capMicro) {
         throw new HttpError(409, 'Your spending cap for this session has been reached', 'cap_reached', {
           session: toSessionInfo(session),
@@ -122,7 +113,7 @@ export function registerGrantRoutes(router: Router): void {
 
       // Hand back the price of the following payment so the player can sign it straight away, with one request.
       // The server still builds and checks the requirements again when that payment arrives.
-      const nextSegments = Math.min(requested, next.segCount - next.authEnd)
+      const nextSegments = Math.min(1, next.segCount - next.authEnd)
       const nextSeconds = nextSegments > 0 ? chunkSecondsFor(next.authEnd, nextSegments, next.segCount, next.durationSeconds, next.segSeconds) : 0
       const nextAmount = nextSegments > 0 ? secondsAmount(next.priceMicro, nextSeconds) : 0
       const nextPaymentRequired =
@@ -137,7 +128,7 @@ export function registerGrantRoutes(router: Router): void {
       sendJson(
         ctx.res,
         200,
-        { session: toSessionInfo(next), amountMicro, segments, transferId: outcome.transaction, network: arc.caip2, nextPaymentRequired },
+        { session: toSessionInfo(next), amountMicro, transferId: outcome.transaction, network: arc.caip2, nextPaymentRequired },
         {
           'PAYMENT-RESPONSE': encodeBase64Json({
             success: true,

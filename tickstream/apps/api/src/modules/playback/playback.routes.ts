@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { pipeline } from 'node:stream/promises'
-import { PAID_AHEAD_SEGMENTS } from '@shared/constants'
+import { PAY_BLOCK_SECONDS } from '@shared/constants'
 import { query } from '@shared/db'
 import { segmentsAmount } from '@shared/pricing'
 import { acquireLockWait, getRedis, keys } from '@shared/redis'
@@ -47,9 +47,9 @@ export function registerPlaybackRoutes(router: Router): void {
     const segSeconds = video.segment_seconds
     const startSecond = body.startSecond === undefined ? 0 : int(body.startSecond, 'startSecond', 0, 10 * 24 * 3600)
     const startSeg = Math.min(Math.floor(startSecond / segSeconds), segCount - 1)
-    // Playback starts with the first segment and the next one paid, so the cap must cover both.
-    if (capMicro < segmentsAmount(video.price_micro, 1 + PAID_AHEAD_SEGMENTS, segSeconds)) {
-      throw new HttpError(400, 'Your spending cap is lower than the first two seconds', 'cap_too_low')
+    // Playback starts with the first block paid and the next one paid right after, so the cap must cover both.
+    if (capMicro < segmentsAmount(video.price_micro, Math.ceil((2 * PAY_BLOCK_SECONDS) / segSeconds), segSeconds)) {
+      throw new HttpError(400, 'Your spending cap is lower than the first two payments', 'cap_too_low')
     }
 
     // One active session per wallet: a second tab or device ends the first.

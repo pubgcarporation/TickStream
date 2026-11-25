@@ -12,8 +12,6 @@ interface PaymentRequired {
 export interface GrantResponse {
   session: SessionInfo
   amountMicro: number
-  /** How many segments this payment bought. */
-  segments?: number
   transferId: string | null
   complete?: boolean
   /** The price of the following payment. Lets the next payment go out as one request. */
@@ -21,22 +19,22 @@ export interface GrantResponse {
 }
 
 /** The next payment's price per session, from the last successful payment. Used once, then replaced. */
-const nextRequired = new Map<string, { required: PaymentRequired; segments: number }>()
+const nextRequired = new Map<string, PaymentRequired>()
 
 export function forgetNextPayment(sessionId: string): void {
   nextRequired.delete(sessionId)
 }
 
-async function signAndSend(sessionId: string, scheme: BatchEvmScheme, required: PaymentRequired, segments: number): Promise<Response> {
+async function signAndSend(sessionId: string, scheme: BatchEvmScheme, required: PaymentRequired): Promise<Response> {
   const option = required.accepts[0]
   if (!option) throw new Error('The server did not return a payment option')
   const payload = await scheme.createPaymentPayload(2, option)
   const payment = btoa(JSON.stringify({ ...payload, resource: required.resource, accepted: option }))
-  return apiRaw(`sessions/${sessionId}/grant`, { method: 'POST', body: { payment, segments } })
+  return apiRaw(`sessions/${sessionId}/grant`, { method: 'POST', body: { payment } })
 }
 
-function remember(sessionId: string, result: GrantResponse, segments: number): GrantResponse {
-  if (result.nextPaymentRequired) nextRequired.set(sessionId, { required: result.nextPaymentRequired, segments })
+function remember(sessionId: string, result: GrantResponse): GrantResponse {
+  if (result.nextPaymentRequired) nextRequired.set(sessionId, result.nextPaymentRequired)
   else nextRequired.delete(sessionId)
   return result
 }
@@ -47,28 +45,26 @@ function remember(sessionId: string, result: GrantResponse, segments: number): G
  * Otherwise: ask for the chunk, the server answers 402 with the exact price and recipient, then sign and send.
  * Either way the server checks the amount, recipient and payer itself and settles with Gateway before unlocking.
  */
-export async function payNextChunk(sessionId: string, scheme: BatchEvmScheme, segments = 1): Promise<GrantResponse> {
-  // The saved price only fits a payment of the same size, so a different size asks the server again.
-  const saved = nextRequired.get(sessionId)
+export async function payNextChunk(sessionId: string, scheme: BatchEvmScheme): Promise<GrantResponse> {
+  const cached = nextRequired.get(sessionId)
   nextRequired.delete(sessionId)
-  const cached = saved && saved.segments === segments ? saved.required : undefined
   if (cached) {
-    const fast = await signAndSend(sessionId, scheme, cached, segments)
-    if (fast.ok) return remember(sessionId, (await fast.json()) as GrantResponse, segments)
+    const fast = await signAndSend(sessionId, scheme, cached)
+    if (fast.ok) return remember(sessionId, (await fast.json()) as GrantResponse)
     const failure = await parseError(fast)
     // Only a price that changed (for example after a seek) is retried. Nothing was settled in that case.
     if (failure.code !== 'amount_mismatch') throw failure
   }
 
-  const first = await apiRaw(`sessions/${sessionId}/grant`, { method: 'POST', body: { segments } })
-  if (first.ok) return remember(sessionId, (await first.json()) as GrantResponse, segments)
+  const first = await apiRaw(`sessions/${sessionId}/grant`, { method: 'POST', body: {} })
+  if (first.ok) return remember(sessionId, (await first.json()) as GrantResponse)
   if (first.status !== 402) throw await parseError(first)
 
   const body = (await first.json()) as { paymentRequired?: PaymentRequired }
   if (!body.paymentRequired) throw new Error('The server did not return a payment option')
-  const second = await signAndSend(sessionId, scheme, body.paymentRequired, segments)
+  const second = await signAndSend(sessionId, scheme, body.paymentRequired)
   if (!second.ok) throw await parseError(second)
-  return remember(sessionId, (await second.json()) as GrantResponse, segments)
+  return remember(sessionId, (await second.json()) as GrantResponse)
 }
 
 export function isFundsError(error: unknown): boolean {

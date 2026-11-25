@@ -6,7 +6,7 @@ import { useApi } from '@/hooks/useApi'
 
 const STEPS = [
   { icon: Timer, title: 'Pay by the second', body: 'Each video shows its price per second. You are charged only for the seconds that play.' },
-  { icon: Pause, title: 'Pause and the meter stops', body: 'Close the tab or hit pause and nothing more is charged. The most at risk is about one second.' },
+  { icon: Pause, title: 'Pause and the meter stops', body: 'Close the tab or hit pause and nothing more is charged. The most at risk is about 4 seconds.' },
   { icon: ShieldCheck, title: 'Capped by you', body: 'Set a spending cap before you press play. The server enforces it, not the page.' },
 ]
 
