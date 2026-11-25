@@ -33,7 +33,8 @@ export function StartPanel({ priceMicro, durationSeconds, previewSeconds, resume
 
   const action = (
     <WalletConnect>
-      {({ isConnected, show }) => {
+      {({ isConnected, show, loading }) => {
+        if (loading) return <span className="skeleton block h-9 w-32 rounded-full" aria-hidden />
         if (!isConnected) {
           return (
             <Button shape="rect" className="!min-h-9 px-4" onClick={show}>

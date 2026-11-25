@@ -15,8 +15,10 @@ export function RequireAuth({ title, body, children }: { title: string; body: st
       body={body}
       action={
         <WalletConnect>
-          {({ isConnected, show }) =>
-            isConnected ? (
+          {({ isConnected, show, loading }) =>
+            loading ? (
+              <span className="skeleton block h-10 w-28 rounded-full" aria-hidden />
+            ) : isConnected ? (
               <Button loading={signingIn} onClick={() => void signIn()}>
                 Sign in
               </Button>

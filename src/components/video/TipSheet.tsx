@@ -137,7 +137,8 @@ function TipForm({ onClose, videoId, creatorName, onAddFunds }: Omit<TipSheetPro
           {error && <p className="rounded-lg bg-[var(--danger)]/10 px-3 py-2 text-sm text-[var(--danger)]">{error}</p>}
 
           <WalletConnect>
-            {({ isConnected, show }) => {
+            {({ isConnected, show, loading }) => {
+              if (loading) return <span className="skeleton block h-12 w-full rounded-lg" aria-hidden />
               if (!isConnected) {
                 return (
                   <Button full shape="rect" className="min-h-12" onClick={show}>

@@ -32,10 +32,13 @@ function RatePill() {
 }
 
 function AccountArea() {
-  const { user, signIn, signingIn } = useAuth()
+  const { user, ready, signIn, signingIn } = useAuth()
   return (
     <WalletConnect>
-      {({ isConnected, show }) => {
+      {({ isConnected, show, loading }) => {
+        // After a refresh the wallet and the saved sign-in come back one after the other. A quiet placeholder avoids
+        // flashing "Sign in" at someone who is already signed in.
+        if (loading || !ready) return <span className="skeleton block size-9 rounded-full" aria-hidden />
         if (!isConnected) {
           return (
             <button

@@ -1,7 +1,7 @@
 import { usePrivy } from '@privy-io/react-auth'
 import { ConnectKitButton } from 'connectkit'
 import { Copy, LogOut } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import { useAccount } from 'wagmi'
 import { Button, Sheet } from '@/components/ui/primitives'
@@ -14,12 +14,16 @@ export interface ConnectState {
   /** Opens the sign-in dialog, or the account menu once connected. */
   show: () => void
   address?: string
+  /** True while the wallet is still reconnecting after a page load. Show a placeholder, not "Sign in". */
+  loading: boolean
 }
 
 type Props = { children: (state: ConnectState) => ReactNode }
 
 function KitConnect({ children }: Props) {
-  return <ConnectKitButton.Custom>{({ isConnected, show, address }) => children({ isConnected, show: show ?? (() => {}), address })}</ConnectKitButton.Custom>
+  const { status } = useAccount()
+  const loading = status === 'connecting' || status === 'reconnecting'
+  return <ConnectKitButton.Custom>{({ isConnected, show, address }) => children({ isConnected, show: show ?? (() => {}), address, loading })}</ConnectKitButton.Custom>
 }
 
 function AccountSheet({ open, onClose, address }: { open: boolean; onClose: () => void; address?: string }) {
@@ -59,9 +63,17 @@ function AccountSheet({ open, onClose, address }: { open: boolean; onClose: () =
 
 function PrivyConnect({ children }: Props) {
   const { ready, authenticated, login } = usePrivy()
-  const { address, isConnected } = useAccount()
+  const { address, isConnected, status } = useAccount()
   const [menu, setMenu] = useState(false)
   const connected = authenticated && isConnected
+  // Privy and the wallet both take a moment to come back after a refresh. Until they do, the person is not signed out.
+  // The wait is capped, so a wallet that never comes back shows the sign-in button instead of a placeholder for ever.
+  const [grace, setGrace] = useState(true)
+  useEffect(() => {
+    const timer = setTimeout(() => setGrace(false), 4000)
+    return () => clearTimeout(timer)
+  }, [])
+  const loading = !ready || (grace && authenticated && (status === 'connecting' || status === 'reconnecting' || !isConnected))
   const show = () => {
     if (!ready) return
     if (!authenticated) login()
@@ -69,7 +81,7 @@ function PrivyConnect({ children }: Props) {
   }
   return (
     <>
-      {children({ isConnected: connected, show, address })}
+      {children({ isConnected: connected, show, address, loading })}
       <AccountSheet open={menu} onClose={() => setMenu(false)} address={address} />
     </>
   )

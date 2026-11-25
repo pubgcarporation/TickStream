@@ -3,7 +3,7 @@ import { useAccount, useSignMessage } from 'wagmi'
 import { toast } from 'sonner'
 import type { UserProfile } from '@shared/types'
 import { useWalletDisconnect } from '@/hooks/useWalletDisconnect'
-import { api, getToken, onTokenChange, setToken } from '@/lib/api'
+import { api, ApiError, getToken, onTokenChange, setToken } from '@/lib/api'
 
 interface AuthState {
   user: UserProfile | null
@@ -42,16 +42,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setReady(true)
       return
     }
-    try {
-      const result = await api<{ user: UserProfile; isAdmin: boolean }>('auth/me')
-      setUser(result.user)
-      setIsAdmin(result.isAdmin)
-    } catch {
-      setUser(null)
-      setIsAdmin(false)
-    } finally {
-      setReady(true)
+    // A slow or briefly unreachable server is not a sign-out. Only a refused token (401, which also drops it) is.
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        const result = await api<{ user: UserProfile; isAdmin: boolean }>('auth/me')
+        setUser(result.user)
+        setIsAdmin(result.isAdmin)
+        break
+      } catch (error) {
+        const refused = error instanceof ApiError && error.status >= 400 && error.status < 500
+        if (refused || attempt === 2) {
+          setUser(null)
+          setIsAdmin(false)
+          break
+        }
+        await new Promise((resolve) => setTimeout(resolve, 1200))
+      }
     }
+    setReady(true)
   }, [])
 
   useEffect(() => {
