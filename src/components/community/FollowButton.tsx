@@ -1,20 +1,34 @@
-import { Check, UserPlus } from 'lucide-react'
+import { Check } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import type { FollowState } from '@shared/types'
-import { Button } from '@/components/ui/primitives'
 import { useApi } from '@/hooks/useApi'
 import { api } from '@/lib/api'
 import { useAuth } from '@/providers/AuthProvider'
 
-export function FollowButton({ username, creatorAddress }: { username: string; creatorAddress: string }) {
+/** Follower count and whether the signed-in viewer follows this creator. Shared by the button and the channel row. */
+export function useFollowState(username: string | null) {
+  const { user } = useAuth()
+  return useApi<FollowState>(username ? `creators/${encodeURIComponent(username)}/follow?as=${user?.address ?? 'guest'}` : null)
+}
+
+/** A pill like a video site's subscribe button: light when you can follow, grey with a check once you do. */
+export function FollowButton({
+  username,
+  creatorAddress,
+  state,
+  onChanged,
+}: {
+  username: string
+  creatorAddress: string
+  state: FollowState | null
+  onChanged: () => void
+}) {
   const { user, signIn } = useAuth()
-  const { data, reload } = useApi<FollowState>(`creators/${encodeURIComponent(username)}/follow?as=${user?.address ?? 'guest'}`)
   const [busy, setBusy] = useState(false)
-  const isSelf = user?.address === creatorAddress
+  if (user?.address === creatorAddress) return null
 
-  if (isSelf) return null
-
+  const following = state?.following ?? false
   const toggle = async () => {
     if (!user) {
       await signIn()
@@ -22,10 +36,9 @@ export function FollowButton({ username, creatorAddress }: { username: string; c
     }
     setBusy(true)
     try {
-      const wasFollowing = data?.following ?? false
-      await api(`creators/${encodeURIComponent(username)}/follow`, { method: wasFollowing ? 'DELETE' : 'PUT' })
-      toast.success(wasFollowing ? `Unfollowed ${username}` : `Following ${username}`)
-      reload()
+      await api(`creators/${encodeURIComponent(username)}/follow`, { method: following ? 'DELETE' : 'PUT' })
+      toast.success(following ? `Unfollowed ${username}` : `Following ${username}`)
+      onChanged()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Could not update')
     } finally {
@@ -33,12 +46,18 @@ export function FollowButton({ username, creatorAddress }: { username: string; c
     }
   }
 
-  const following = data?.following ?? false
   return (
-    <Button variant={following ? 'secondary' : 'primary'} shape="rect" onClick={() => void toggle()} loading={busy} className="min-h-10">
-      {following ? <Check className="size-4" aria-hidden /> : <UserPlus className="size-4" aria-hidden />}
+    <button
+      type="button"
+      onClick={() => void toggle()}
+      disabled={busy}
+      aria-pressed={following}
+      className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-4 text-sm font-medium transition-colors disabled:opacity-60 ${
+        following ? 'bg-white/10 text-[var(--ink)] hover:bg-white/15' : 'bg-[#f1f1f1] text-[#0f0f0f] hover:bg-white'
+      }`}
+    >
+      {following && <Check className="size-4" aria-hidden />}
       {following ? 'Following' : 'Follow'}
-      {data && <span className="tabular-nums opacity-70">· {data.followers}</span>}
-    </Button>
+    </button>
   )
 }

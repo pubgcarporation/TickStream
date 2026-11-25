@@ -53,7 +53,9 @@ export function registerCommentRoutes(router: Router): void {
       [videoId, parsedBefore],
     )
     const page = rows.slice(0, 30)
+    const [counted] = await query<{ total: number }>('select count(*)::int as total from comments where video_id = $1 and not removed', [videoId])
     sendJson(ctx.res, 200, {
+      total: counted?.total ?? page.length,
       comments: page.map((row) => mapComment(row, ctx.user)),
       nextBefore: rows.length > 30 ? (page[page.length - 1]?.cursor ?? null) : null,
     })

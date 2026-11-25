@@ -8,15 +8,15 @@ export function RelatedVideos({ videoId }: { videoId: string }) {
   const { data } = useApi<{ videos: VideoSummary[] }>(`videos/${videoId}/related`)
   if (!data || data.videos.length === 0) return null
   return (
-    <section aria-labelledby="related-title" className="space-y-3">
-      <h2 id="related-title" className="text-base font-semibold">
+    <section aria-labelledby="related-title" className="space-y-2">
+      <h2 id="related-title" className="text-base font-bold">
         Up next
       </h2>
-      <ul className="space-y-2">
+      <ul className="space-y-2.5">
         {data.videos.map((video) => (
           <li key={video.id}>
             <Link to={`/watch/${video.id}`} className="group flex gap-2">
-              <div className="thumb relative aspect-video w-[168px] shrink-0 overflow-hidden rounded-lg bg-[#2a2a2a]">
+              <div className="thumb relative aspect-video w-40 shrink-0 sm:w-[168px] overflow-hidden rounded-lg bg-[#2a2a2a]">
                 <img src={thumbnailUrl(video.id)} alt="" loading="lazy" className="size-full object-cover" />
                 {video.durationSeconds ? (
                   <span className="absolute bottom-1 right-1 rounded bg-black/80 px-1 py-0.5 text-[11px] font-medium tabular-nums">{formatDuration(video.durationSeconds)}</span>

@@ -3,6 +3,7 @@ import { ErrorState, Skeleton } from '@/components/ui/primitives'
 import { VideoCard } from './VideoCard'
 
 const GRID = 'grid grid-cols-[repeat(auto-fill,minmax(270px,1fr))] gap-x-4 gap-y-7 sm:gap-y-9'
+const DENSE_GRID = 'grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-x-3 gap-y-5'
 const LEAD_GRID = 'grid gap-x-4 gap-y-7 sm:gap-y-9 sm:grid-cols-2 xl:grid-cols-3'
 
 function CardSkeleton() {
@@ -25,12 +26,17 @@ export function VideoGrid({
   videos,
   loading,
   lead,
+  dense,
+  hideCreator,
   error,
   onRetry,
 }: {
   videos: VideoSummary[] | null
   loading?: boolean
   lead?: boolean
+  /** Tighter columns and gaps, for a channel page. */
+  dense?: boolean
+  hideCreator?: boolean
   /** When set and nothing loaded, shows a message with a retry button instead of placeholders. */
   error?: Error | null
   onRetry?: () => void
@@ -66,9 +72,9 @@ export function VideoGrid({
     )
   }
   return (
-    <div className={GRID}>
+    <div className={dense ? DENSE_GRID : GRID}>
       {videos.map((video, index) => (
-        <VideoCard key={video.id} video={video} index={index} />
+        <VideoCard key={video.id} video={video} index={index} hideCreator={hideCreator} />
       ))}
     </div>
   )

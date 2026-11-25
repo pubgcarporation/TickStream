@@ -1,6 +1,5 @@
 import { Loader2, Maximize2, Pause, Play, Volume2, VolumeX } from 'lucide-react'
 import { useRef, useState, type CSSProperties, type KeyboardEvent, type RefObject } from 'react'
-import { AnimatedAmount } from '@/components/ui/AnimatedAmount'
 import { thumbnailUrl } from '@/lib/api'
 import { formatDuration } from '@/lib/format'
 import type { PlaybackView } from './usePaidPlayback'
@@ -12,8 +11,6 @@ interface PlayerSurfaceProps {
   view: PlaybackView
   viewer: string | undefined
   durationSeconds: number
-  /** Cost of what has been watched so far, in USDC base units. */
-  costMicro: number
   onToggle: () => void
   onSeek: (second: number) => void
   /** Starts the session from the poster. Shown only when it can run right away. */
@@ -24,7 +21,7 @@ interface PlayerSurfaceProps {
   className?: string
 }
 
-export function PlayerSurface({ videoId, videoRef, view, viewer, durationSeconds, costMicro, onToggle, onSeek, onStart, onAddFunds, onRetry, className }: PlayerSurfaceProps) {
+export function PlayerSurface({ videoId, videoRef, view, viewer, durationSeconds, onToggle, onSeek, onStart, onAddFunds, onRetry, className }: PlayerSurfaceProps) {
   const frame = useRef<HTMLDivElement | null>(null)
   const [muted, setMuted] = useState(false)
   const [scrub, setScrub] = useState<number | null>(null)
@@ -32,7 +29,6 @@ export function PlayerSurface({ videoId, videoRef, view, viewer, durationSeconds
   const active = view.phase === 'playing' || view.phase === 'needs-funds' || view.phase === 'capped'
   const showPoster = view.phase === 'idle' || view.phase === 'starting' || view.phase === 'ended' || view.phase === 'error'
   const shown = scrub ?? view.position
-  const metering = view.phase === 'playing' && !view.paused
 
   const fullscreen = () => {
     const element = frame.current
@@ -112,16 +108,6 @@ export function PlayerSurface({ videoId, videoRef, view, viewer, durationSeconds
         </div>
       )}
       {active && viewer && view.session && <Watermark address={viewer} sessionId={view.session.id} />}
-
-      {active && (
-        <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-2 sm:hidden rounded-md bg-black/65 px-2.5 py-1.5 backdrop-blur" aria-live="off">
-          <span className={`size-1.5 rounded-full ${metering ? 'bg-[var(--success)]' : 'bg-[var(--subtle)]'}`} aria-hidden />
-          <span className="mono text-xs tabular-nums text-white">
-            $<AnimatedAmount micro={costMicro} />
-          </span>
-          {view.paying && <span className="text-[10px] font-medium uppercase tracking-wider text-[var(--accent)]">Paying</span>}
-        </div>
-      )}
 
       {(view.phase === 'needs-funds' || view.phase === 'capped') && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/70 px-6 text-center backdrop-blur-sm">

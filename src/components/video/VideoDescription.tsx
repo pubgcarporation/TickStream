@@ -1,33 +1,26 @@
 import { useState } from 'react'
 import { timeAgoLong, viewsLabel } from '@/lib/format'
 
-/** Views, age, category and description. Long descriptions fold until expanded. */
+const CARD = 'block w-full rounded-xl bg-white/[0.06] px-3 py-2 text-left text-[13px] leading-[18px]'
+
+/**
+ * The grey description card under a video: views, age and category on top, the text folded to two lines. Tapping
+ * the card opens or folds it, as on a video site.
+ */
 export function VideoDescription({ views, createdAt, category, description }: { views: number; createdAt: string; category: string; description: string }) {
   const [open, setOpen] = useState(false)
-  const long = description.length > 180 || description.split('\n').length > 3
-
+  const long = description.length > 110 || description.split('\n').length > 2
+  const stats = (
+    <span className="block font-semibold tabular-nums">
+      {viewsLabel(views)} <span className="ml-1">{timeAgoLong(createdAt)}</span> <span className="ml-1 font-medium text-[var(--muted)]">#{category.toLowerCase()}</span>
+    </span>
+  )
+  if (!description) return <div className={CARD}>{stats}</div>
   return (
-    <div className="border-t border-[var(--border)] pt-3 text-sm">
-      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 font-semibold tabular-nums">
-        <span>{viewsLabel(views)}</span>
-        <span className="text-[var(--subtle)]" aria-hidden>
-          &bull;
-        </span>
-        <span>{timeAgoLong(createdAt)}</span>
-        <span className="ml-1 rounded-md bg-white/10 px-2 py-0.5 text-xs font-medium text-[var(--ink-2)]">{category}</span>
-      </p>
-      {description ? (
-        <>
-          <p className={`mt-2 max-w-3xl whitespace-pre-wrap text-pretty text-[var(--ink-2)] ${open ? '' : 'line-clamp-3'}`}>{description}</p>
-          {long && (
-            <button type="button" onClick={() => setOpen((value) => !value)} aria-expanded={open} className="mt-2 text-xs font-semibold text-[var(--ink)] hover:underline">
-              {open ? 'Show less' : 'Show more'}
-            </button>
-          )}
-        </>
-      ) : (
-        <p className="mt-2 text-[var(--subtle)]">No description.</p>
-      )}
-    </div>
+    <button type="button" onClick={() => setOpen((value) => !value)} aria-expanded={open} className={`${CARD} transition-colors hover:bg-white/10`}>
+      {stats}
+      <span className={`mt-1 block whitespace-pre-wrap text-pretty text-[var(--ink-2)] ${open ? '' : 'line-clamp-2'}`}>{description}</span>
+      {long && <span className="mt-0.5 block font-semibold text-[var(--ink)]">{open ? 'Show less' : '...more'}</span>}
+    </button>
   )
 }

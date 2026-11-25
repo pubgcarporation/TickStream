@@ -35,14 +35,14 @@ export function StartPanel({ priceMicro, durationSeconds, previewSeconds, resume
       {({ isConnected, show }) => {
         if (!isConnected) {
           return (
-            <Button shape="rect" className="min-h-10 w-full sm:w-auto" onClick={show}>
+            <Button shape="rect" className="!min-h-9 px-4" onClick={show}>
               <Wallet className="size-4" aria-hidden /> Connect wallet
             </Button>
           )
         }
         if (!user) {
           return (
-            <Button shape="rect" className="min-h-10 w-full sm:w-auto" loading={signingIn} onClick={() => void signIn()}>
+            <Button shape="rect" className="!min-h-9 px-4" loading={signingIn} onClick={() => void signIn()}>
               Sign in to watch
             </Button>
           )
@@ -51,7 +51,7 @@ export function StartPanel({ priceMicro, durationSeconds, previewSeconds, resume
           return (
             <Button
               shape="rect"
-              className="min-h-10 w-full sm:w-auto"
+              className="!min-h-9 px-4"
               loading={unlocking}
               onClick={() => {
                 setUnlocking(true)
@@ -66,21 +66,21 @@ export function StartPanel({ priceMicro, durationSeconds, previewSeconds, resume
         }
         if (!hasFunds) {
           return (
-            <Button shape="rect" className="min-h-10 w-full sm:w-auto" onClick={onAddFunds}>
+            <Button shape="rect" className="!min-h-9 px-4" onClick={onAddFunds}>
               Add money to start
             </Button>
           )
         }
         return (
-          <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+          <div className="flex flex-wrap gap-2">
             {resumeAt > 0 && (
-              <Button shape="rect" className="min-h-10 flex-1 sm:flex-none" loading={starting} onClick={() => onResumeAt(resumeAt)}>
+              <Button shape="rect" className="!min-h-9 px-4" loading={starting} onClick={() => onResumeAt(resumeAt)}>
                 Resume at {formatDuration(resumeAt)}
               </Button>
             )}
             <Button
               shape="rect"
-              className="min-h-10 flex-1 sm:flex-none sm:px-6"
+              className="!min-h-9 px-4"
               variant={resumeAt > 0 ? 'secondary' : 'primary'}
               loading={starting && resumeAt === 0}
               onClick={onStart}
@@ -94,51 +94,34 @@ export function StartPanel({ priceMicro, durationSeconds, previewSeconds, resume
   )
 
   return (
-    <section id="payment" aria-label="Payment" className="scroll-mt-32 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3.5 sm:p-4">
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-        <div className="flex items-baseline gap-3">
-          <p className="text-2xl font-semibold tabular-nums">
+    <section id="payment" aria-label="Payment" className="scroll-mt-32 space-y-1 px-4 py-2 sm:px-0">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <p className="flex min-w-0 items-baseline gap-2 tabular-nums">
+          <span className="text-base font-semibold">
             ${formatMicro(priceMicro)}
-            <span className="ml-1 text-sm font-medium text-[var(--subtle)]">/ sec</span>
-          </p>
-          <p className="text-xs tabular-nums text-[var(--muted)]">
+            <span className="ml-0.5 text-xs font-medium text-[var(--subtle)]">/ sec</span>
+          </span>
+          <span className="truncate text-xs text-[var(--muted)]">
             ${ratePerMinute(priceMicro)} / min · ${ratePerHour(priceMicro)} / hour
-          </p>
-        </div>
-
-        <div className="flex w-full flex-wrap items-center gap-x-4 gap-y-2 sm:ml-auto sm:w-auto">
+          </span>
+        </p>
+        <div className="flex items-center gap-3">
           {balance && !hasFunds && (
-            <p className="text-sm tabular-nums text-[var(--muted)]">
-              Balance <span className="font-medium text-[var(--ink)]">{formatMicro(balance.available)}</span> USDC{' '}
-              <button type="button" onClick={onAddFunds} className="ml-1 text-xs font-semibold text-[var(--accent)] hover:underline">
-                Add funds
-              </button>
+            <p className="text-xs tabular-nums text-[var(--muted)]">
+              Balance <span className="font-medium text-[var(--ink)]">{formatMicro(balance.available)}</span> USDC
             </p>
           )}
           {action}
         </div>
       </div>
-
-      <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[var(--muted)]">
-        <span className="tabular-nums">${formatMicro(secondCost)} every second, paid one second ahead of playback. Payments are final</span>
-        <span aria-hidden>·</span>
-        <span>Pause or leave and payments stop</span>
-        {previewSeconds > 0 && (
-          <>
-            <span aria-hidden>·</span>
-            <span className="font-medium text-[var(--success)]">First {previewSeconds}s free</span>
-          </>
-        )}
-        {durationSeconds ? (
-          <>
-            <span aria-hidden>·</span>
-            <span className="tabular-nums">Whole video ${formatMicro(priceMicro * durationSeconds)}</span>
-          </>
-        ) : null}
+      <p className="text-xs leading-[18px] text-[var(--muted)]">
+        <span className="tabular-nums">${formatMicro(secondCost)} per second, paid one second ahead.</span> Pause or leave and payments stop.
+        {previewSeconds > 0 && <span className="ml-1 font-medium text-[var(--success)]">First {previewSeconds}s free.</span>}
+        {durationSeconds ? <span className="ml-1 tabular-nums">Whole video ${formatMicro(priceMicro * durationSeconds)}.</span> : null}
       </p>
-      {!spender && user && <p className="mt-1 text-xs text-[var(--subtle)]">Your wallet asks for a free signature, twice the first time. It sends no money and costs no gas.</p>}
-      {message && <p className="mt-2 text-pretty text-sm text-[var(--warn)]">{message}</p>}
-      {balanceError && <p className="mt-2 text-xs text-[var(--danger)]">Could not read your spending balance: {balanceError}</p>}
+      {!spender && user && <p className="text-xs text-[var(--subtle)]">Your wallet asks for a free signature, twice the first time. It sends no money and costs no gas.</p>}
+      {message && <p className="text-pretty text-sm text-[var(--warn)]">{message}</p>}
+      {balanceError && <p className="text-xs text-[var(--danger)]">Could not read your spending balance: {balanceError}</p>}
     </section>
   )
 }

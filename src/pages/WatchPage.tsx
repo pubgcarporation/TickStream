@@ -5,21 +5,20 @@ import { toast } from 'sonner'
 import { CATEGORIES, PAID_AHEAD_SEGMENTS, SEGMENT_SECONDS } from '@shared/constants'
 import type { VideoSummary } from '@shared/types'
 import { CommentsSection } from '@/components/community/CommentsSection'
-import { FollowButton } from '@/components/community/FollowButton'
-import { billedMicro } from '@/components/player/billing'
+import { FollowButton, useFollowState } from '@/components/community/FollowButton'
 import { CostMeter } from '@/components/player/CostMeter'
 import { PlayerSurface } from '@/components/player/PlayerSurface'
 import { StartPanel } from '@/components/player/StartPanel'
 import { usePaidPlayback } from '@/components/player/usePaidPlayback'
 import { Avatar } from '@/components/ui/Avatar'
-import { Button, EmptyState, Skeleton } from '@/components/ui/primitives'
+import { EmptyState, Skeleton } from '@/components/ui/primitives'
 import { RelatedVideos } from '@/components/video/RelatedVideos'
 import { TipSheet } from '@/components/video/TipSheet'
 import { VideoDescription } from '@/components/video/VideoDescription'
 import { DepositSheet } from '@/components/wallet/DepositSheet'
 import { useApi } from '@/hooks/useApi'
 import { useShareLink } from '@/hooks/useShareLink'
-import { creatorLabel } from '@/lib/format'
+import { compactNumber, creatorLabel } from '@/lib/format'
 import { setActivePlayback } from '@/lib/playback-store'
 import { Link } from '@/lib/router'
 import { useAuth } from '@/providers/AuthProvider'
@@ -48,6 +47,7 @@ export function WatchPage({ videoId }: { videoId: string }) {
   const { user } = useAuth()
   const progress = useApi<{ second: number }>(user ? `videos/${videoId}/progress` : null)
   const playback = usePaidPlayback(videoId, address)
+  const follow = useFollowState(data?.video.creator.username ?? null)
   const [depositOpen, setDepositOpen] = useState(false)
   const [tipOpen, setTipOpen] = useState(false)
   const shareUrl = useShareLink(`/watch/${videoId}`)
@@ -94,13 +94,13 @@ export function WatchPage({ videoId }: { videoId: string }) {
 
   if (loading && !video) {
     return (
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
-        <div className="space-y-4">
-          <Skeleton className="aspect-video rounded-xl max-sm:-mx-4 max-sm:rounded-none" />
-          <Skeleton className="h-14 w-full rounded-lg" />
-          <Skeleton className="h-7 w-2/3 rounded-md" />
+      <div className="-mt-4 grid gap-x-6 xl:grid-cols-[minmax(0,1fr)_402px]">
+        <div className="space-y-3">
+          <Skeleton className="aspect-video !rounded-xl max-sm:-mx-4 max-sm:!rounded-none" />
+          <Skeleton className="h-6 w-2/3 !rounded-md" />
+          <Skeleton className="h-10 w-full !rounded-lg" />
         </div>
-        <Skeleton className="hidden h-96 rounded-xl xl:block" />
+        <Skeleton className="mt-3 hidden h-96 !rounded-xl xl:block" />
       </div>
     )
   }
@@ -126,11 +126,15 @@ export function WatchPage({ videoId }: { videoId: string }) {
     toast.success('Link copied')
   }
 
-  // On phones every block is its own grid item so the payment panel can sit right under the title and the player can stay pinned.
+  const pill = 'inline-flex h-9 shrink-0 items-center gap-2 rounded-full bg-white/10 px-4 text-sm font-medium transition-colors hover:bg-white/15 disabled:opacity-50'
+  const followers = follow.data?.followers
+
+  // Laid out like a video site's phone page: the player pinned on top with one flat pay line under it, then the title,
+  // channel row, action chips, the grey description card, comments, and the next videos.
   return (
-    <div className="-mt-4 grid items-start gap-x-6 gap-y-4 sm:-mt-3 xl:grid-cols-[minmax(0,1fr)_380px] xl:gap-y-5">
-      <div className="contents xl:col-start-1 xl:row-start-1 xl:block xl:space-y-4">
-        <div className={`order-1 -mx-4 sm:mx-0 xl:static ${idle ? '' : 'sticky top-14 z-30 shadow-lg shadow-black/50 sm:static sm:shadow-none'}`}>
+    <div className="-mt-4 grid items-start gap-x-6 gap-y-2.5 sm:-mt-3 xl:grid-cols-[minmax(0,1fr)_402px]">
+      <div className="contents xl:col-start-1 xl:row-start-1 xl:block xl:space-y-2.5">
+        <div className={`order-1 -mx-4 sm:mx-0 xl:static ${idle ? '' : 'sticky top-14 z-30 bg-[var(--bg)] shadow-lg shadow-black/50 sm:static sm:shadow-none'}`}>
           <PlayerSurface
             className="max-sm:rounded-none"
             videoId={video.id}
@@ -138,54 +142,60 @@ export function WatchPage({ videoId }: { videoId: string }) {
             view={view}
             viewer={address}
             durationSeconds={video.durationSeconds ?? 0}
-            costMicro={billedMicro(view, video.priceMicro)}
             onToggle={playback.togglePlay}
             onSeek={(second) => void playback.seek(second)}
             onStart={canStartNow ? () => start() : showPayment}
             onAddFunds={() => setDepositOpen(true)}
             onRetry={() => (view.phase === 'capped' ? start(Math.floor(view.position)) : void playback.resume())}
           />
+          {idle ? (
+            <StartPanel
+              priceMicro={video.priceMicro}
+              durationSeconds={video.durationSeconds}
+              previewSeconds={video.previewSeconds}
+              resumeAt={resumeAt}
+              onResumeAt={(second) => start(second)}
+              onStart={() => start()}
+              onAddFunds={() => setDepositOpen(true)}
+              starting={view.phase === 'starting'}
+              message={view.message}
+            />
+          ) : (
+            <CostMeter
+              view={view}
+              priceMicro={video.priceMicro}
+              onEnd={() => void playback.end()}
+              onAddFunds={() => setDepositOpen(true)}
+              onResume={() => void playback.resume()}
+              onContinue={() => start(Math.floor(view.position))}
+            />
+          )}
         </div>
-        <div className="order-2">
-        {idle ? (
-          <StartPanel
-            priceMicro={video.priceMicro}
-            durationSeconds={video.durationSeconds}
-            previewSeconds={video.previewSeconds}
-            resumeAt={resumeAt}
-            onResumeAt={(second) => start(second)}
-            onStart={() => start()}
-            onAddFunds={() => setDepositOpen(true)}
-            starting={view.phase === 'starting'}
-            message={view.message}
-          />
-        ) : (
-          <CostMeter
-            view={view}
-            priceMicro={video.priceMicro}
-            onEnd={() => void playback.end()}
-            onAddFunds={() => setDepositOpen(true)}
-            onResume={() => void playback.resume()}
-            onContinue={() => start(Math.floor(view.position))}
-          />
-        )}
-        </div>
-        <h1 className="order-3 text-balance text-lg font-semibold leading-snug sm:text-xl">{video.title}</h1>
-        <div className="order-4 flex flex-wrap items-center gap-x-4 gap-y-3">
-          <Link to={`/profile/${video.creator.username}`} className="flex min-w-0 flex-1 items-center gap-3 sm:flex-none" aria-label={`${creatorName}'s profile`}>
-            <Avatar name={creatorName} size={40} username={video.creator.username} version={video.creator.avatarVersion} />
-            <span className="min-w-0 truncate font-semibold hover:underline">{creatorName}</span>
-          </Link>
-          <FollowButton username={video.creator.username} creatorAddress={video.creator.address} />
-          <div className="grid w-full auto-cols-fr grid-flow-col gap-2 sm:ml-auto sm:flex sm:w-auto">
+        <h1 className="order-3 text-balance text-[17px] font-semibold leading-6 sm:text-xl">{video.title}</h1>
+        <div className="order-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2.5">
+          <div className="flex min-w-0 flex-1 items-center gap-3 sm:flex-none">
+            <Link to={`/profile/${video.creator.username}`} aria-label={`${creatorName}'s channel`} className="shrink-0">
+              <Avatar name={creatorName} size={40} username={video.creator.username} version={video.creator.avatarVersion} />
+            </Link>
+            <Link to={`/profile/${video.creator.username}`} className="min-w-0 flex-1 leading-tight sm:pr-3">
+              <span className="block truncate text-[15px] font-semibold hover:underline">{creatorName}</span>
+              {followers !== undefined && (
+                <span className="block text-xs tabular-nums text-[var(--muted)]">
+                  {compactNumber(followers)} {followers === 1 ? 'follower' : 'followers'}
+                </span>
+              )}
+            </Link>
+            <FollowButton username={video.creator.username} creatorAddress={video.creator.address} state={follow.data} onChanged={follow.reload} />
+          </div>
+          <div className="-mx-4 flex w-[calc(100%+2rem)] gap-2 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:w-auto sm:px-0">
             {user?.address !== video.creator.address && (
-              <Button shape="rect" onClick={() => setTipOpen(true)} className="min-h-11 sm:min-h-10">
+              <button type="button" onClick={() => setTipOpen(true)} className={pill}>
                 <HandCoins className="size-4" aria-hidden /> Tip
-              </Button>
+              </button>
             )}
-            <Button variant="secondary" shape="rect" onClick={() => void copyLink()} disabled={!shareUrl} className="min-h-11 sm:min-h-10">
+            <button type="button" onClick={() => void copyLink()} disabled={!shareUrl} className={pill}>
               <Share2 className="size-4" aria-hidden /> Share
-            </Button>
+            </button>
           </div>
         </div>
         <div className="order-5">
@@ -197,12 +207,12 @@ export function WatchPage({ videoId }: { videoId: string }) {
         {wide && <RelatedVideos videoId={video.id} />}
       </aside>
 
-      <div className="order-6 xl:order-none xl:col-start-1 xl:row-start-2">
+      <div className="order-6 mt-1 xl:order-none xl:col-start-1 xl:row-start-2">
         {/* Keyed by viewer, so signing in or out reloads the list with the right remove buttons. */}
         <CommentsSection key={`${video.id}:${user?.address ?? ''}`} videoId={video.id} />
       </div>
       {!wide && (
-        <div className="order-7">
+        <div className="order-7 mt-1">
           <RelatedVideos videoId={video.id} />
         </div>
       )}

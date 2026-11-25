@@ -42,7 +42,7 @@ function CopyLinkButton({ path }: { path: string }) {
  * picture beside the title, the creator's name, and "views, age". The price per second and any free preview sit on
  * the thumbnail, since that is the one thing here a video site would not have.
  */
-export function VideoCard({ video, index = 0 }: { video: VideoSummary; index?: number }) {
+export function VideoCard({ video, index = 0, hideCreator = false }: { video: VideoSummary; index?: number; /** On a channel page every video is the channel's, so the picture and name are left out. */ hideCreator?: boolean }) {
   const [failed, setFailed] = useState(false)
   const name = creatorLabel(video.creator)
   return (
@@ -78,18 +78,22 @@ export function VideoCard({ video, index = 0 }: { video: VideoSummary; index?: n
           ) : null}
         </div>
       </Link>
-      <div className="mt-3 flex gap-3">
-        <Link to={`/profile/${video.creator.username}`} aria-label={`${name}'s profile`} className="shrink-0">
-          <Avatar name={name} size={36} username={video.creator.username} version={video.creator.avatarVersion} />
-        </Link>
+      <div className={`flex gap-3 ${hideCreator ? 'mt-2 max-[559px]:px-0' : 'mt-3'}`}>
+        {!hideCreator && (
+          <Link to={`/profile/${video.creator.username}`} aria-label={`${name}'s profile`} className="shrink-0">
+            <Avatar name={name} size={36} username={video.creator.username} version={video.creator.avatarVersion} />
+          </Link>
+        )}
         <div className="min-w-0 flex-1">
           <Link to={`/watch/${video.id}`} className="line-clamp-2 text-pretty text-base font-medium leading-[22px]">
             {video.title}
           </Link>
-          <Link to={`/profile/${video.creator.username}`} className="mt-1 block truncate text-sm text-[var(--muted)] hover:text-[var(--ink)]">
-            {name}
-          </Link>
-          <p className="truncate text-sm tabular-nums text-[var(--muted)]">
+          {!hideCreator && (
+            <Link to={`/profile/${video.creator.username}`} className="mt-1 block truncate text-sm text-[var(--muted)] hover:text-[var(--ink)]">
+              {name}
+            </Link>
+          )}
+          <p className={`truncate text-sm tabular-nums text-[var(--muted)] ${hideCreator ? 'mt-0.5' : ''}`}>
             {viewsLabel(video.views)} <span aria-hidden>&bull;</span> {timeAgoLong(video.createdAt)}
           </p>
         </div>
