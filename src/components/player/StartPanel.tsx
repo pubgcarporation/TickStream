@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import { PAID_AHEAD_SEGMENTS, SEGMENT_SECONDS } from '@shared/constants'
 import { Button } from '@/components/ui/primitives'
 import { WalletConnect } from '@/components/wallet/WalletConnect'
-import { formatDuration, formatMicro, ratePerHour, ratePerMinute } from '@/lib/format'
+import { formatDuration, formatMicro } from '@/lib/format'
 import { useAuth } from '@/providers/AuthProvider'
 import { useSpendingWallet } from '@/providers/SpendingWalletProvider'
 
@@ -104,9 +104,12 @@ export function StartPanel({ priceMicro, durationSeconds, previewSeconds, resume
             {formatMicro(priceMicro)}
             <span className="ml-0.5 text-xs font-medium text-[var(--subtle)]">/ sec</span>
           </span>
-          <span className="truncate text-xs text-[var(--muted)]">
-            {ratePerMinute(priceMicro)} / min · {ratePerHour(priceMicro)} / hour
-          </span>
+          {durationSeconds ? (
+            <span className="flex min-w-0 items-center gap-1 truncate text-xs text-[var(--muted)]" title="Cost to watch the whole video">
+              <TokenUSDC variant="branded" size={14} aria-hidden />
+              {formatMicro(priceMicro * durationSeconds)} full video
+            </span>
+          ) : null}
         </p>
         <div className="flex items-center gap-3">
           {balance && !hasFunds && (
@@ -120,7 +123,6 @@ export function StartPanel({ priceMicro, durationSeconds, previewSeconds, resume
       <p className="text-xs leading-[18px] text-[var(--muted)]">
         <span className="tabular-nums">{formatMicro(secondCost)} USDC per second, paid one second ahead.</span> Pause or leave and payments stop.
         {previewSeconds > 0 && <span className="ml-1 font-medium text-[var(--success)]">First {previewSeconds}s free.</span>}
-        {durationSeconds ? <span className="ml-1 tabular-nums">Whole video {formatMicro(priceMicro * durationSeconds)} USDC.</span> : null}
       </p>
       {!spender && user && <p className="text-xs text-[var(--subtle)]">Your wallet asks for a free signature, twice the first time. It sends no money and costs no gas.</p>}
       {message && <p className="text-pretty text-sm text-[var(--warn)]">{message}</p>}

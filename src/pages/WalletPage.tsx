@@ -3,19 +3,21 @@ import { useState } from 'react'
 import { useAccount } from 'wagmi'
 import { toast } from 'sonner'
 import { RequireAuth } from '@/components/creator/RequireAuth'
-import { AnimatedAmount } from '@/components/ui/AnimatedAmount'
 import { Button, PageHeader } from '@/components/ui/primitives'
 import { DepositSheet } from '@/components/wallet/DepositSheet'
 import { ActivityList } from '@/components/wallet/ActivityList'
+import { SpendingCard } from '@/components/wallet/SpendingCard'
 import { WithdrawSheet } from '@/components/wallet/WithdrawSheet'
 import { addressLink, ARC } from '@/lib/arc'
 import { formatMicro, shortAddress } from '@/lib/format'
 import { legacyKeyOf } from '@/lib/spending-wallet'
 import { useChainData } from '@/hooks/useChainData'
+import { useAuth } from '@/providers/AuthProvider'
 import { useSpendingWallet } from '@/providers/SpendingWalletProvider'
 
 function WalletContent() {
   const { address } = useAccount()
+  const { user } = useAuth()
   const { spender, keyMode, unlocked, unlock, balance, loading, error } = useSpendingWallet()
   const [unlocking, setUnlocking] = useState(false)
   const [deposit, setDeposit] = useState(false)
@@ -45,20 +47,21 @@ function WalletContent() {
 
   return (
     <div className="max-w-2xl space-y-2">
-      <section className="hero-card p-5 sm:p-6">
-        <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-[var(--subtle)]">Spending balance</p>
-        <p className="mt-1 text-5xl font-semibold tabular-nums">
-          {balance ? <AnimatedAmount micro={Number(balance.available)} /> : loading ? '...' : '0.00'}
-          <span className="ml-2 text-lg font-medium text-[var(--subtle)]">USDC</span>
-        </p>
-        <p className="mt-2 text-sm text-[var(--muted)]">Videos are paid from this. It sits in Circle Gateway on {ARC.name}, so payments cost no network fees.</p>
-        {error && <p className="mt-2 text-sm text-[var(--danger)]">Could not read the balance: {error}</p>}
-        <div className="mt-5 flex flex-wrap gap-2">
+      <section className="space-y-3">
+        <SpendingCard
+          available={balance?.available}
+          loading={loading}
+          spender={spender}
+          holder={user?.displayName ?? user?.username ?? 'Your wallet'}
+        />
+        <div className="flex flex-wrap gap-2">
           <Button onClick={() => setDeposit(true)}>Add money</Button>
           <Button variant="secondary" onClick={() => setWithdraw(true)} disabled={!balance || balance.available === 0n}>
             Move back to wallet
           </Button>
         </div>
+        <p className="text-pretty text-sm text-[var(--muted)]">Videos are paid from this card. It sits in Circle Gateway on {ARC.name}, so payments cost no network fees.</p>
+        {error && <p className="text-sm text-[var(--danger)]">Could not read the balance: {error}</p>}
       </section>
 
       <section className="divide-y-0 border-b border-[var(--border)] px-1 py-5">

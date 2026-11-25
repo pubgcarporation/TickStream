@@ -1,5 +1,4 @@
 import { TokenUSDC } from '@web3icons/react'
-import { Loader2 } from 'lucide-react'
 import { AnimatedAmount } from '@/components/ui/AnimatedAmount'
 import { formatMicro } from '@/lib/format'
 import { billedMicro } from './billing'
@@ -38,7 +37,7 @@ export function CostMeter({ view, priceMicro, onEnd, onAddFunds, onResume, onCon
           <span className="min-w-0 truncate text-[var(--subtle)]" title="Paid in advance for video you have not watched yet. Payments cannot be refunded.">
             {formatMicro(prepaid)} ahead
           </span>
-          {view.paying && <Loader2 className="size-3.5 shrink-0 animate-spin text-[var(--accent)]" aria-label="Paying" />}
+          {view.paying && <span className="shrink-0 text-[11px] font-medium text-[var(--accent)]">paying</span>}
         </p>
         {view.phase === 'playing' && (
           <button type="button" onClick={onEnd} className={`${SMALL} bg-white/10 hover:bg-white/15`}>
