@@ -19,7 +19,6 @@ import { DepositSheet } from '@/components/wallet/DepositSheet'
 import { useApi } from '@/hooks/useApi'
 import { useShareLink } from '@/hooks/useShareLink'
 import { compactNumber, creatorLabel } from '@/lib/format'
-import { setActivePlayback } from '@/lib/playback-store'
 import { Link } from '@/lib/router'
 import { useAuth } from '@/providers/AuthProvider'
 import { useSpendingWallet } from '@/providers/SpendingWalletProvider'
@@ -55,13 +54,6 @@ export function WatchPage({ videoId }: { videoId: string }) {
 
   const video = data?.video
   const phase = playback.view.phase
-  const price = video?.priceMicro
-  // The header shows this video's rate while it plays.
-  useEffect(() => {
-    if (phase === 'playing' && price !== undefined) setActivePlayback({ videoId, priceMicro: price })
-    else setActivePlayback(null)
-    return () => setActivePlayback(null)
-  }, [phase, price, videoId])
   // After a session ends, ask the server where the viewer stopped, so "Resume at" is never out of date.
   const reloadProgress = progress.reload
   const wasActive = useRef(false)

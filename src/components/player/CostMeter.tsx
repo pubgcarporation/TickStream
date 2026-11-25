@@ -1,3 +1,5 @@
+import { TokenUSDC } from '@web3icons/react'
+import { Loader2 } from 'lucide-react'
 import { AnimatedAmount } from '@/components/ui/AnimatedAmount'
 import { formatMicro } from '@/lib/format'
 import { billedMicro } from './billing'
@@ -28,15 +30,15 @@ export function CostMeter({ view, priceMicro, onEnd, onAddFunds, onResume, onCon
     <section id="payment" aria-label="Payment" className="scroll-mt-32 bg-[var(--bg)] px-4 py-1.5 sm:px-0">
       <div className="flex items-center gap-x-3 text-[13px] tabular-nums">
         <span className="live-dot shrink-0" data-idle={!live} aria-hidden />
-        <p className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2" aria-live="off">
-          <span className="font-semibold">
-            $<AnimatedAmount micro={cost} />
+        <p className="flex min-w-0 flex-1 flex-nowrap items-center gap-x-2 whitespace-nowrap" aria-live="off">
+          <span className="flex shrink-0 items-center gap-1 font-semibold" title={`USDC for what you have watched${live ? '' : view.phase === 'playing' ? ' (paused)' : ''}`}>
+            <TokenUSDC variant="branded" size={16} aria-hidden />
+            <AnimatedAmount micro={cost} />
           </span>
-          <span className="text-[var(--muted)]">{live ? 'watched' : view.phase === 'playing' ? 'paused' : 'session'}</span>
-          <span className="text-[var(--subtle)]" title="Paid in advance for video you have not watched yet. Payments cannot be refunded.">
+          <span className="min-w-0 truncate text-[var(--subtle)]" title="Paid in advance for video you have not watched yet. Payments cannot be refunded.">
             {formatMicro(prepaid)} ahead
           </span>
-          {view.paying && <span className="text-[11px] font-medium text-[var(--accent)]">paying</span>}
+          {view.paying && <Loader2 className="size-3.5 shrink-0 animate-spin text-[var(--accent)]" aria-label="Paying" />}
         </p>
         {view.phase === 'playing' && (
           <button type="button" onClick={onEnd} className={`${SMALL} bg-white/10 hover:bg-white/15`}>

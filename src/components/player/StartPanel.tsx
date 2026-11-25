@@ -1,3 +1,4 @@
+import { TokenUSDC } from '@web3icons/react'
 import { KeyRound, Wallet } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -97,12 +98,13 @@ export function StartPanel({ priceMicro, durationSeconds, previewSeconds, resume
     <section id="payment" aria-label="Payment" className="scroll-mt-32 space-y-1 px-4 py-2 sm:px-0">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <p className="flex min-w-0 items-baseline gap-2 tabular-nums">
-          <span className="text-base font-semibold">
-            ${formatMicro(priceMicro)}
+          <span className="flex shrink-0 items-center gap-1 text-base font-semibold">
+            <TokenUSDC variant="branded" size={18} aria-hidden />
+            {formatMicro(priceMicro)}
             <span className="ml-0.5 text-xs font-medium text-[var(--subtle)]">/ sec</span>
           </span>
           <span className="truncate text-xs text-[var(--muted)]">
-            ${ratePerMinute(priceMicro)} / min · ${ratePerHour(priceMicro)} / hour
+            {ratePerMinute(priceMicro)} / min · {ratePerHour(priceMicro)} / hour
           </span>
         </p>
         <div className="flex items-center gap-3">
@@ -115,9 +117,9 @@ export function StartPanel({ priceMicro, durationSeconds, previewSeconds, resume
         </div>
       </div>
       <p className="text-xs leading-[18px] text-[var(--muted)]">
-        <span className="tabular-nums">${formatMicro(secondCost)} per second, paid one second ahead.</span> Pause or leave and payments stop.
+        <span className="tabular-nums">{formatMicro(secondCost)} USDC per second, paid one second ahead.</span> Pause or leave and payments stop.
         {previewSeconds > 0 && <span className="ml-1 font-medium text-[var(--success)]">First {previewSeconds}s free.</span>}
-        {durationSeconds ? <span className="ml-1 tabular-nums">Whole video ${formatMicro(priceMicro * durationSeconds)}.</span> : null}
+        {durationSeconds ? <span className="ml-1 tabular-nums">Whole video {formatMicro(priceMicro * durationSeconds)} USDC.</span> : null}
       </p>
       {!spender && user && <p className="text-xs text-[var(--subtle)]">Your wallet asks for a free signature, twice the first time. It sends no money and costs no gas.</p>}
       {message && <p className="text-pretty text-sm text-[var(--warn)]">{message}</p>}

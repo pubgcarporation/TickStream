@@ -6,24 +6,22 @@ import { Avatar } from '@/components/ui/Avatar'
 import { WalletConnect } from '@/components/wallet/WalletConnect'
 import { Button } from '@/components/ui/primitives'
 import { formatMicro } from '@/lib/format'
-import { useActivePlayback } from '@/lib/playback-store'
 import { Link, navigate } from '@/lib/router'
 import { useAuth } from '@/providers/AuthProvider'
 import { useSpendingWallet } from '@/providers/SpendingWalletProvider'
 import { Wordmark } from './Brand'
 import { useSidebar } from './Sidebar'
 
-/** The live rate while a video plays, otherwise the spending balance. Both are real values. */
+/** The spending balance, on every page including while a video plays. The video's own price is shown under the player. */
 function RatePill() {
   const { user } = useAuth()
   const { balance, spender } = useSpendingWallet()
-  const playing = useActivePlayback()
   if (!user) return null
-  const text = playing ? `$${formatMicro(playing.priceMicro)} / sec` : balance ? `$${formatMicro(balance.available)}` : spender ? '...' : 'Set up'
+  const text = balance ? formatMicro(balance.available) : spender ? '...' : 'Set up'
   return (
     <Link
       to="/wallet"
-      title={playing ? 'Price per second of the video you are watching' : 'Spending balance'}
+      title="Spending balance in USDC"
       className="flex min-h-10 items-center gap-1.5 rounded-full px-2.5 text-xs font-semibold tabular-nums transition-colors hover:bg-white/10 md:gap-2 md:px-3 md:text-sm"
     >
       <TokenUSDC variant="branded" size={20} aria-hidden />
