@@ -156,6 +156,27 @@ run('TickStream API', () => {
     expect((await fetchSegment(10)).status).toBe(402)
   })
 
+  test('a slow connection can pay for several seconds in one payment, never past the cap or the end', async () => {
+    const video = await createVideo(5, 100, 1)
+    const id = await startSession(video, 1, 450)
+    const before = settled.length
+    const three = await payments.payNextChunk(id, scheme, 3)
+    expect(three.amountMicro).toBe(300)
+    expect(three.session.authorizedEndSecond).toBe(3)
+    // 150 left under the cap, so a request for four seconds is cut down to one.
+    const capped = await payments.payNextChunk(id, scheme, 4)
+    expect(capped.amountMicro).toBe(100)
+    expect(capped.session.authorizedEndSecond).toBe(4)
+    expect(settled.slice(before).map((item) => item.value)).toEqual(['300', '100'])
+    await expect(client.api(`sessions/${id}/grant`, { method: 'POST', body: { segments: 99 } })).rejects.toMatchObject({ status: 400 })
+    // Near the end the payment covers only what is left.
+    const id2 = await startSession(video, 1)
+    await payments.payNextChunk(id2, scheme, 4)
+    const last = await payments.payNextChunk(id2, scheme, 6)
+    expect(last.amountMicro).toBe(100)
+    expect(last.session.complete).toBe(true)
+  })
+
   test('the last payment covers only the video that is left', async () => {
     const video = await createVideo(59.3, 100)
     const id = await startSession(video, 2)

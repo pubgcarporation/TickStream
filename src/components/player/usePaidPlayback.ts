@@ -1,6 +1,6 @@
 import Hls, { type ErrorData, type FragChangedData } from 'hls.js'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { PAID_AHEAD_SEGMENTS } from '@shared/constants'
+import { MAX_PAYMENT_SEGMENTS, PAID_AHEAD_SEGMENTS } from '@shared/constants'
 import type { SessionInfo } from '@shared/types'
 import { api, ApiError, apiUrl, getToken } from '@/lib/api'
 import { createPaymentScheme } from '@/lib/spending-wallet'
@@ -32,13 +32,26 @@ const PAY_CHECK_MS = 100
 /**
  * True when the viewer has not yet paid for the second after the one that is playing. Playback starts with the first
  * second and the next one paid. When the second after that begins, the one following it is paid, and so on, so exactly
- * one second is always paid ahead of the one being watched.
+ * one second is always paid ahead of the one being watched. When payments are slow on this connection, `ahead` grows
+ * (see `pacing`) so a payment still lands before the video it buys is needed.
  */
-function owesPayment(session: SessionInfo, here: number): boolean {
+function owesPayment(session: SessionInfo, here: number, ahead: number): boolean {
   if (session.complete) return false
   const seg = session.segmentSeconds
-  const wantedEnd = (Math.floor(here / seg) + 1 + PAID_AHEAD_SEGMENTS) * seg
+  const wantedEnd = (Math.floor(here / seg) + 1 + ahead) * seg
   return session.authorizedEndSecond < wantedEnd - 1e-6
+}
+
+/**
+ * How far to pay ahead, and how many seconds to buy per payment, from how long payments have been taking.
+ * A fast connection keeps the plain design: one second ahead, one second per payment. A slow one pays further ahead
+ * and buys several seconds at once, so one payment still covers the time the next one takes.
+ */
+function pacing(paymentMs: number, segmentSeconds: number): { ahead: number; batch: number } {
+  const segmentMs = segmentSeconds * 1000
+  const ahead = Math.min(MAX_PAYMENT_SEGMENTS, Math.max(PAID_AHEAD_SEGMENTS, Math.ceil((paymentMs * 1.3 + 250) / segmentMs)))
+  const batch = Math.min(MAX_PAYMENT_SEGMENTS, Math.max(1, Math.ceil((paymentMs * 1.2) / segmentMs)))
+  return { ahead, batch }
 }
 
 /** Asks the player to fetch the playlist again now, so a second that was just paid for is known without waiting for the next poll. */
@@ -72,6 +85,8 @@ export function usePaidPlayback(videoId: string, owner: string | undefined) {
   const lastTimeRef = useRef(0)
   const recoveriesRef = useRef(0)
   const optionsRef = useRef<StartOptions | null>(null)
+  /** A running average of how long a payment takes on this connection, in ms. Zero until the first one finishes. */
+  const paymentMsRef = useRef(0)
 
   const [view, setView] = useState<PlaybackView>({
     phase: 'idle',
@@ -187,7 +202,18 @@ export function usePaidPlayback(videoId: string, owner: string | undefined) {
     try {
       for (let attempt = 0; ; attempt += 1) {
         try {
-          const result = await payNextChunk(session.id, createPaymentScheme(owner))
+          const { batch } = pacing(paymentMsRef.current, session.segmentSeconds)
+          const began = performance.now()
+          let result
+          try {
+            result = await payNextChunk(session.id, createPaymentScheme(owner), batch)
+          } catch (error) {
+            // A balance that covers one second may not cover a bigger payment, so try the small one before giving up.
+            if (batch > 1 && isFundsError(error)) result = await payNextChunk(session.id, createPaymentScheme(owner), 1)
+            else throw error
+          }
+          const took = performance.now() - began
+          paymentMsRef.current = paymentMsRef.current === 0 ? took : paymentMsRef.current * 0.5 + took * 0.5
           patch({ session: result.session })
           refreshPlaylist(hlsRef.current)
           return result.session
@@ -211,8 +237,9 @@ export function usePaidPlayback(videoId: string, owner: string | undefined) {
   const topUp = useCallback(
     async (from: SessionInfo, here: number): Promise<SessionInfo | undefined> => {
       let current = from
-      // Two payments at most are ever missing: the second being played and the one after it.
-      for (let step = 0; step < 1 + PAID_AHEAD_SEGMENTS && owesPayment(current, here); step += 1) {
+      // Only a few payments are ever missing: the second being played and the ones ahead of it.
+      const { ahead } = pacing(paymentMsRef.current, current.segmentSeconds)
+      for (let step = 0; step < 1 + ahead && owesPayment(current, here, ahead); step += 1) {
         const next = await payNext()
         if (!next) return undefined
         current = next
@@ -230,6 +257,7 @@ export function usePaidPlayback(videoId: string, owner: string | undefined) {
       if (sessionRef.current) forgetNextPayment(sessionRef.current.id)
       playedRef.current = 0
       lastTimeRef.current = 0
+      paymentMsRef.current = 0
       patch({ phase: 'starting', message: null, playedSeconds: 0, freeSeconds: 0, position: options.startSecond ?? 0, paused: false })
       try {
         const created = await api<{ session: SessionInfo }>(`videos/${videoId}/sessions`, {
@@ -339,7 +367,7 @@ export function usePaidPlayback(videoId: string, owner: string | undefined) {
       const session = sessionRef.current
       const video = videoRef.current
       if (!session || !video || phaseRef.current !== 'playing' || video.paused || video.seeking || payingRef.current) return
-      if (owesPayment(session, position())) void payNext()
+      if (owesPayment(session, position(), pacing(paymentMsRef.current, session.segmentSeconds).ahead)) void payNext()
     }, PAY_CHECK_MS)
     return () => clearInterval(timer)
   }, [position, payNext])

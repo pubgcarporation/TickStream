@@ -10,6 +10,9 @@ export const SEGMENT_SECONDS = 1
  */
 export const PAID_AHEAD_SEGMENTS = 1
 
+/** Most segments one payment may buy. A slow connection buys several at once so payments keep up with playback. */
+export const MAX_PAYMENT_SEGMENTS = 6
+
 /** Price per second, in USDC base units (6 decimals). 100 units is 0.0001 USDC per second. */
 export const MIN_PRICE_PER_SECOND = 1
 export const MAX_PRICE_PER_SECOND = 100_000
