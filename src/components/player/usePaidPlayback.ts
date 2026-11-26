@@ -30,7 +30,7 @@ const TICK_MS = 1000
 const PAY_CHECK_MS = 100
 
 /**
- * True when the video that must be paid is not paid yet. Video is paid in blocks of PAY_BLOCK_SECONDS (2 seconds).
+ * True when the video that must be paid is not paid yet. Video is paid in blocks of PAY_BLOCK_SECONDS (3 seconds).
  * Opening a video needs the first block paid (`blocks` = 1). While it plays, the block being watched and the one after
  * it are always paid (`blocks` = 2): the moment a block starts, the next one is paid. The rule is by time, so a video
  * that still has 1-second segments is paid one segment at a time until the block is covered.
@@ -124,8 +124,8 @@ export function usePaidPlayback(videoId: string, owner: string | undefined) {
         liveSyncDurationCount: 100,
         liveMaxLatencyDurationCount: Number.POSITIVE_INFINITY,
         // Only paid video is ever available, so there is nothing to buffer far ahead.
-        maxBufferLength: 4,
-        maxMaxBufferLength: 6,
+        maxBufferLength: 12,
+        maxMaxBufferLength: 15,
         backBufferLength: 30,
         xhrSetup: (xhr) => {
           const token = getToken()
@@ -333,7 +333,7 @@ export function usePaidPlayback(videoId: string, owner: string | undefined) {
     return () => clearInterval(timer)
   }, [position, stopPlayback])
 
-  // Several times a second: the moment a new 2-second block starts, pay for the block after it. Never while paused.
+  // Several times a second: the moment a new block starts, pay for the block after it. Never while paused.
   useEffect(() => {
     const timer = setInterval(() => {
       const session = sessionRef.current

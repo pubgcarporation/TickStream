@@ -10,6 +10,7 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { BatchEvmScheme } from '@circle-fin/x402-batching/client'
 import { Pool } from 'pg'
+import { PAY_BLOCK_SECONDS, SEGMENT_SECONDS } from '@shared/constants'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
 
 const DB = process.env.TEST_DATABASE_URL
@@ -123,7 +124,7 @@ run('TickStream API', () => {
     await pool?.end()
   })
 
-  test('every 2-second payment is price x 2 seconds and goes to the creator', async () => {
+  test('a video with 2-second segments is paid one segment at a time, price x 2 seconds, straight to the creator', async () => {
     const video = await createVideo(60, 100)
     const id = await startSession(video, 2)
     const before = settled.length
@@ -136,10 +137,22 @@ run('TickStream API', () => {
     expect(mine.every((s) => s.to.toLowerCase() === creator.address.toLowerCase() && s.value === '200')).toBe(true)
   })
 
+  test('a new video has 3-second segments: each payment buys 3 seconds and the cap must cover two blocks', async () => {
+    expect(SEGMENT_SECONDS).toBe(3)
+    expect(PAY_BLOCK_SECONDS).toBe(3)
+    const video = await createVideo(10, 100, SEGMENT_SECONDS)
+    await expect(startSession(video, 3, 599)).rejects.toMatchObject({ code: 'cap_too_low' })
+    const id = await startSession(video, 3)
+    const amounts: number[] = []
+    for (let i = 0; i < 4; i += 1) amounts.push((await payments.payNextChunk(id, scheme)).amountMicro)
+    // 10 seconds is three full blocks and a last block of 1 second.
+    expect(amounts).toEqual([300, 300, 300, 100])
+  })
+
   test('a video that still has 1-second segments is paid one segment at a time, with no limit on how far paid video can be fetched', async () => {
     const video = await createVideo(20, 100, 1)
-    // The first two 2-second blocks (4 seconds here, so 4 segments) must be affordable.
-    await expect(startSession(video, 1, 399)).rejects.toMatchObject({ code: 'cap_too_low' })
+    // The first two 3-second blocks (6 seconds here, so 6 one-second segments) must be affordable.
+    await expect(startSession(video, 1, 599)).rejects.toMatchObject({ code: 'cap_too_low' })
     const id = await startSession(video, 1)
     const before = settled.length
     for (let i = 0; i < 10; i += 1) {
@@ -185,7 +198,8 @@ run('TickStream API', () => {
 
   test('the spending limit stops payments', async () => {
     const video = await createVideo(60, 100)
-    const id = await startSession(video, 2, 400)
+    const id = await startSession(video, 2, 600)
+    await payments.payNextChunk(id, scheme)
     await payments.payNextChunk(id, scheme)
     await payments.payNextChunk(id, scheme)
     await expect(payments.payNextChunk(id, scheme)).rejects.toMatchObject({ code: 'cap_reached' })

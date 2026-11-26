@@ -1,16 +1,16 @@
 /**
  * Length of one encrypted HLS segment for every video. A payment unlocks exactly one segment, so this is also how many
- * seconds each payment buys. Videos encoded before this was 2 seconds are re-encoded with the `videos:reencode` job;
+ * seconds each payment buys. Videos encoded with another length are re-encoded with the `videos:reencode` job;
  * until then they keep the length stored on them (`segment_seconds`) and are paid one segment at a time.
  */
-export const SEGMENT_SECONDS = 2
+export const SEGMENT_SECONDS = 3
 
 /**
  * The playing block and the block after it are always paid. Opening a video pays the first block. As soon as a block
  * starts playing, the next one is paid, so the viewer is never more than one block away from unpaid video and never
  * watches video that is not paid for.
  */
-export const PAY_BLOCK_SECONDS = 2
+export const PAY_BLOCK_SECONDS = 3
 
 /** Price per second, in USDC base units (6 decimals). 100 units is 0.0001 USDC per second. */
 export const MIN_PRICE_PER_SECOND = 1

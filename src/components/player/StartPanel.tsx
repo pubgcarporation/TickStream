@@ -25,7 +25,7 @@ export function StartPanel({ priceMicro, durationSeconds, previewSeconds, resume
   const { user, signIn, signingIn } = useAuth()
   const { balance, spender, unlock, error: balanceError } = useSpendingWallet()
   const [unlocking, setUnlocking] = useState(false)
-  // Playback starts with the first 2 seconds paid and the next 2 paid right after, then 2 more as each block starts.
+  // Playback starts with the first block paid and the next block paid right after, then one more as each block starts.
   const firstCost = priceMicro * PAY_BLOCK_SECONDS * 2
   const blockCost = priceMicro * PAY_BLOCK_SECONDS
   const available = balance?.available ?? 0n

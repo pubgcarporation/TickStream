@@ -29,7 +29,8 @@ interface Row {
 }
 
 /** File name prefix for segments of this length, so they never collide with the files they replace. */
-const PREFIX = `s${SEGMENT_SECONDS}`
+/** Unique per run, so new files never overwrite the files of an earlier encode that viewers may still be playing. */
+const PREFIX = `r${Date.now().toString(36)}`
 const CLAIM_TTL_MS = 90_000
 const CLAIM_RENEW_MS = 30_000
 

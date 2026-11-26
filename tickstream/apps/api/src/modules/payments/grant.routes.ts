@@ -25,7 +25,7 @@ export function registerGrantRoutes(router: Router): void {
   router.post('/sessions/:id/grant', 'required', async (ctx) => {
     const viewer = requireUser(ctx)
     const id = uuid(ctx.params.id ?? '')
-    // 2-second payments mean about 30 a minute, plus a retry or two. A looser cap still stops a runaway client.
+    // 3-second payments mean about 20 a minute, plus a retry or two. A looser cap still stops a runaway client.
     await rateLimit('grant', id, 120, 60)
     const redis = getRedis()
     const lock = await acquireLock(keys.grantLock(id), 20_000)
