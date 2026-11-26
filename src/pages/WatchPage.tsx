@@ -132,7 +132,6 @@ export function WatchPage({ videoId }: { videoId: string }) {
             videoId={video.id}
             videoRef={playback.videoRef}
             view={view}
-            viewer={address}
             durationSeconds={video.durationSeconds ?? 0}
             onToggle={playback.togglePlay}
             onSeek={(second) => void playback.seek(second)}

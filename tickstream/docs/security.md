@@ -24,7 +24,7 @@
 
 - A paying viewer's player receives the decryption key, so a determined person can extract it. Licensed DRM would
   raise the bar and is not included.
-- The watermark is an overlay in the page. A burned-in per-viewer watermark would need server-side re-encoding.
+- There is no on-screen watermark, so a screen recording cannot be traced to a viewer. A burned-in per-viewer watermark would need server-side re-encoding.
 - The spending key is made from a free signature by the viewer's main wallet and held in memory only, so it is not
   written to the browser's storage. Anyone who can run script on the site while it is unlocked could still use it, so
   it is meant to hold small amounts. Older keys saved in the browser keep working until their balance is moved back,

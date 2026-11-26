@@ -1,15 +1,14 @@
 import { Loader2, Maximize2, Pause, Play, Volume2, VolumeX } from 'lucide-react'
-import { useRef, useState, type CSSProperties, type KeyboardEvent, type RefObject } from 'react'
+import { useRef, useState, type KeyboardEvent, type RefObject } from 'react'
 import { thumbnailUrl } from '@/lib/api'
 import { formatDuration } from '@/lib/format'
 import type { PlaybackView } from './usePaidPlayback'
-import { Watermark } from './Watermark'
+import { PlayerProgress } from './PlayerProgress'
 
 interface PlayerSurfaceProps {
   videoId: string
   videoRef: RefObject<HTMLVideoElement>
   view: PlaybackView
-  viewer: string | undefined
   durationSeconds: number
   onToggle: () => void
   onSeek: (second: number) => void
@@ -21,7 +20,7 @@ interface PlayerSurfaceProps {
   className?: string
 }
 
-export function PlayerSurface({ videoId, videoRef, view, viewer, durationSeconds, onToggle, onSeek, onStart, onAddFunds, onRetry, className }: PlayerSurfaceProps) {
+export function PlayerSurface({ videoId, videoRef, view, durationSeconds, onToggle, onSeek, onStart, onAddFunds, onRetry, className }: PlayerSurfaceProps) {
   const frame = useRef<HTMLDivElement | null>(null)
   const [muted, setMuted] = useState(false)
   const [scrub, setScrub] = useState<number | null>(null)
@@ -107,8 +106,6 @@ export function PlayerSurface({ videoId, videoRef, view, viewer, durationSeconds
           )}
         </div>
       )}
-      {active && viewer && view.session && <Watermark address={viewer} sessionId={view.session.id} />}
-
       {(view.phase === 'needs-funds' || view.phase === 'capped') && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/70 px-6 text-center backdrop-blur-sm">
           <p className="max-w-sm text-pretty text-sm font-medium text-white">
@@ -142,49 +139,39 @@ export function PlayerSurface({ videoId, videoRef, view, viewer, durationSeconds
       )}
 
       {active && (
-        <div
-          className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent px-3 pb-2 pt-12 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 ${
-            view.paused ? 'opacity-100' : 'opacity-100 sm:opacity-0'
-          }`}
-        >
-          <input
-            type="range"
-            min={0}
-            max={Math.max(1, Math.floor(durationSeconds))}
-            step={1}
-            style={{ '--pct': `${Math.min(100, (shown / Math.max(1, durationSeconds)) * 100)}%` } as CSSProperties}
-            value={Math.floor(shown)}
-            onChange={(event) => setScrub(Number(event.target.value))}
-            onPointerUp={() => {
-              if (scrub !== null) onSeek(scrub)
-              setScrub(null)
-            }}
-            onKeyUp={() => {
-              if (scrub !== null) onSeek(scrub)
-              setScrub(null)
-            }}
-            aria-label="Seek"
-            className="scrubber"
-          />
-          <div className="mt-1 flex items-center gap-1 text-white">
-            <button onClick={onToggle} aria-label={view.paused ? 'Play' : 'Pause'} className="flex size-11 items-center justify-center rounded-full hover:bg-white/15">
-              {view.paused ? <Play className="size-5" /> : <Pause className="size-5" />}
-            </button>
-            <span className="ml-1 text-xs font-medium tabular-nums">
-              {formatDuration(shown)} <span className="text-white/60">/ {formatDuration(durationSeconds)}</span>
-            </span>
-            <button
-              onClick={() => setMuted((value) => !value)}
-              aria-label={muted ? 'Unmute' : 'Mute'}
-              className="ml-auto flex size-11 items-center justify-center rounded-full hover:bg-white/15"
-            >
-              {muted ? <VolumeX className="size-5" /> : <Volume2 className="size-5" />}
-            </button>
-            <button onClick={fullscreen} aria-label="Fullscreen" className="flex size-11 items-center justify-center rounded-full hover:bg-white/15">
-              <Maximize2 className="size-5" />
-            </button>
+        <>
+          <div
+            className={`absolute inset-x-0 bottom-1 bg-gradient-to-t from-black/80 via-black/30 to-transparent px-2 pb-1 pt-10 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 ${
+              view.paused ? 'opacity-100' : 'opacity-100 sm:opacity-0'
+            }`}
+          >
+            <div className="flex items-center gap-0.5 text-white">
+              <button onClick={onToggle} aria-label={view.paused ? 'Play' : 'Pause'} className="flex size-10 items-center justify-center rounded-full hover:bg-white/15">
+                {view.paused ? <Play className="size-5 fill-white" /> : <Pause className="size-5 fill-white" />}
+              </button>
+              <button
+                onClick={() => setMuted((value) => !value)}
+                aria-label={muted ? 'Unmute' : 'Mute'}
+                className="flex size-10 items-center justify-center rounded-full hover:bg-white/15"
+              >
+                {muted ? <VolumeX className="size-5" /> : <Volume2 className="size-5" />}
+              </button>
+              <span className="ml-1 text-[13px] font-medium tabular-nums">
+                {formatDuration(shown)} <span className="text-white/65">/ {formatDuration(durationSeconds)}</span>
+              </span>
+              <button onClick={fullscreen} aria-label="Fullscreen" className="ml-auto flex size-10 items-center justify-center rounded-full hover:bg-white/15">
+                <Maximize2 className="size-5" />
+              </button>
+            </div>
           </div>
-        </div>
+          <PlayerProgress
+            position={view.position}
+            paidEnd={view.session?.authorizedEndSecond ?? 0}
+            duration={durationSeconds}
+            onPreview={setScrub}
+            onCommit={onSeek}
+          />
+        </>
       )}
     </div>
   )
